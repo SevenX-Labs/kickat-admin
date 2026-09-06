@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Menu, Bell, Search, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -28,7 +29,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
         {/* Mobile KickAt Logo */}
         <div className="flex items-center gap-2 lg:hidden">
-          <Image src="/logo-clean.png" alt="KickAt" width={90} height={28} className="object-contain" />
+          <Image src="/logo-clean.png" alt="KickAt" width={95} height={30} className="object-contain mix-blend-multiply" />
         </div>
 
         {/* Global Search */}
@@ -56,13 +57,15 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
         {/* Admin Profile */}
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-sm shadow-xs">
-            K
-          </div>
-          <div className="hidden text-left md:block">
-            <p className="text-xs font-semibold text-slate-800">Admin User</p>
-            <p className="text-[10px] font-medium text-slate-400">admin@kickat.in</p>
-          </div>
+          <Link href="/admin/dashboard/profile" className="flex items-center gap-2.5 hover:opacity-85 transition-opacity">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-sm shadow-xs">
+              AD
+            </div>
+            <div className="hidden text-left md:block">
+              <p className="text-xs font-semibold text-slate-800">Admin User</p>
+              <p className="text-[10px] font-medium text-slate-400">admin@kickat.in</p>
+            </div>
+          </Link>
           <button
             onClick={handleLogout}
             title="Logout"

@@ -47,39 +47,41 @@ export default function LoginPage() {
         {/* LEFT COLUMN: Premium SaaS Login Card */}
         <div className="relative w-full max-w-[428px] shrink-0">
           
-          <div className="rounded-[24px] border border-black/[0.04] bg-white/95 px-8 py-8 sm:px-9 sm:py-9 shadow-[0_20px_60px_rgba(249,115,22,0.10),0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all">
+          <div className="rounded-[24px] border border-black/[0.04] bg-white px-7 py-7 sm:px-9 sm:py-8 shadow-[0_20px_60px_rgba(249,115,22,0.10),0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all">
             
             {/* Header: Logo and Subtitle with clear vertical stack */}
             <div className="flex flex-col items-center text-center">
               
               {/* Logo block */}
               <div className="flex flex-col items-center">
-                <Image
-                  src="/logo-clean.png"
-                  alt="KickAt"
-                  width={140}
-                  height={50}
-                  className="h-12 w-auto object-contain drop-shadow-xs"
-                  priority
-                />
+                <div className="relative flex items-center justify-center">
+                  <Image
+                    src="/logo-clean.png"
+                    alt="KickAt"
+                    width={240}
+                    height={100}
+                    className="h-14 sm:h-16 md:h-18 w-auto max-w-[190px] sm:max-w-[230px] object-contain select-none mix-blend-multiply transition-all duration-200"
+                    priority
+                  />
+                </div>
                 
                 {/* Clear separation to prevent collision */}
-                <span className="mt-3.5 font-mono-eyebrow text-[10px] font-semibold tracking-[0.2em] text-[#E7A03B] uppercase">
+                <span className="mt-2.5 sm:mt-3 font-mono-eyebrow text-[10.5px] sm:text-[11px] font-semibold tracking-[0.22em] text-[#E7A03B] uppercase">
                   Admin Portal Access
                 </span>
               </div>
               
               {/* Welcome back heading */}
-              <h2 className="mt-4 font-fraunces text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-[#211C15]">
+              <h2 className="mt-3.5 sm:mt-4 font-fraunces text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-[#211C15]">
                 Welcome back
               </h2>
-              <p className="mt-1.5 max-w-[290px] font-sans text-xs sm:text-[13px] text-slate-500 font-normal leading-relaxed">
+              <p className="mt-1 max-w-[290px] font-sans text-xs sm:text-[13px] text-slate-500 font-normal leading-relaxed">
                 Enter your credentials to access the store management system.
               </p>
             </div>
 
             {/* Form */}
-            <form className="mt-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="mt-5 sm:mt-6 space-y-3.5 sm:space-y-4" onSubmit={(e) => e.preventDefault()}>
               
               {/* Email Address */}
               <div className="space-y-1.5 text-left">
@@ -95,7 +97,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@kickat.in"
-                    className="h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
                   />
                 </div>
               </div>
@@ -108,7 +110,7 @@ export default function LoginPage() {
                   </label>
                   <Link
                     href="/admin/forgot-password"
-                    className="font-sans text-[11px] font-semibold text-[#F97316] transition-colors hover:text-[#EA580C] hover:underline"
+                    className="font-sans text-[11px] font-medium text-orange-600 hover:text-orange-700 hover:underline transition-colors"
                   >
                     Forgot password?
                   </Link>
@@ -122,15 +124,15 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-11 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-10 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="group/btn absolute inset-y-0 right-0 flex items-center pr-3"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition-colors group-hover/btn:bg-slate-100 group-hover/btn:text-slate-600">
+                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                    <span className="cursor-pointer">
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
                       ) : (
@@ -161,10 +163,10 @@ export default function LoginPage() {
               </div>
 
               {/* Primary CTA */}
-              <div className="pt-2">
+              <div className="pt-1.5 sm:pt-2">
                 <Link
                   href="/admin/dashboard"
-                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 hover:shadow-[0_6px_20px_rgba(249,115,22,0.42)] active:translate-y-[1px] active:scale-[0.99]"
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 hover:shadow-[0_6px_20px_rgba(249,115,22,0.42)] active:translate-y-[1px] active:scale-[0.99]"
                 >
                   <span>Sign In to Dashboard</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
