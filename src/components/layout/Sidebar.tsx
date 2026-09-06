@@ -20,6 +20,7 @@ import {
   Settings,
   ChevronRight
 } from "lucide-react";
+import { NAVIGATION_ITEMS } from "@/constants";
 
 const NAV_ICONS: Record<string, any> = {
   LayoutDashboard,
@@ -43,23 +44,6 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const MENU_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-  { label: "Products", href: "/dashboard/products", icon: "Package" },
-  { label: "Categories", href: "/dashboard/categories", icon: "FolderTree" },
-  { label: "Orders", href: "/dashboard/orders", icon: "ShoppingBag" },
-  { label: "Customers", href: "/dashboard/customers", icon: "Users" },
-  { label: "Shipments", href: "/dashboard/shipments", icon: "Truck" },
-  { label: "Reviews", href: "/dashboard/reviews", icon: "Star" },
-  { label: "Campaigns", href: "/dashboard/campaigns", icon: "Megaphone" },
-  { label: "Blogs", href: "/dashboard/blogs", icon: "FileText" },
-  { label: "Blog Categories", href: "/dashboard/blog-categories", icon: "Folder" },
-  { label: "Analytics", href: "/dashboard/analytics", icon: "BarChart3" },
-  { label: "Reports", href: "/dashboard/reports", icon: "PieChart" },
-  { label: "Media Upload", href: "/dashboard/upload", icon: "UploadCloud" },
-  { label: "Settings", href: "/dashboard/settings", icon: "Settings" },
-];
-
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
@@ -78,7 +62,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       `}>
         {/* Brand / Logo Header */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-6">
-          <Link href="/dashboard" className="flex items-center gap-3">
+          <Link href="/admin/dashboard" className="flex items-center gap-3">
             <div className="relative flex h-10 w-28 items-center justify-start overflow-hidden">
               <Image 
                 src="/logo-clean.png" 
@@ -99,9 +83,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-slate-200">
           <p className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Navigation</p>
           <nav className="space-y-1">
-            {MENU_ITEMS.map((item) => {
+            {NAVIGATION_ITEMS.map((item) => {
               const Icon = NAV_ICONS[item.icon] || LayoutDashboard;
-              const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
 
               return (
                 <Link

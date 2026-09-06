@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { Menu, Bell, Search, LogOut, UserCheck } from "lucide-react";
+import { Menu, Bell, Search, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { removeStoredToken } from "@/lib/auth";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -14,8 +12,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   const router = useRouter();
 
   const handleLogout = () => {
-    removeStoredToken();
-    router.push("/login");
+    router.push("/admin/login");
   };
 
   return (
