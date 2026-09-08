@@ -1,3 +1,553 @@
-export default function ProductDetailPage() {
-  return null;
+"use client";
+
+import { 
+  ArrowLeft, 
+  UploadCloud, 
+  Image as ImageIcon, 
+  Trash2, 
+  Check, 
+  Sparkles,
+  Package, 
+  DollarSign, 
+  Layers, 
+  ShieldCheck,
+  Eye,
+  Info,
+  TrendingUp,
+  History,
+  ShoppingCart
+} from "lucide-react";
+import Link from "next/link";
+import { useState, use } from "react";
+import { useRouter } from "next/navigation";
+
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const router = useRouter();
+
+  // Form states initialized with product data
+  const [title, setTitle] = useState("Royal Canin Maxi Puppy Dry Dog Food");
+  const [slug, setSlug] = useState("royal-canin-maxi-puppy-15kg");
+  const [brand, setBrand] = useState("Royal Canin");
+  const [category, setCategory] = useState("Dog Nutrition & Kibble");
+  const [species, setSpecies] = useState("Dogs");
+  const [shortDesc, setShortDesc] = useState("Nutritional support formulated for large breed puppies (adult weight 26-44 kg) up to 15 months.");
+  const [description, setDescription] = useState("Maxi Puppy dry food helps support your puppy's natural defenses thanks particularly to a complex of antioxidants including vitamin E. It contains an exclusive combination of nutrients with high-quality protein and prebiotics to support digestive health and a balanced intestinal flora.");
+
+  const [mrp, setMrp] = useState<number | "">(9100);
+  const [price, setPrice] = useState<number | "">(7999);
+  const [costPrice, setCostPrice] = useState<number | "">(5400);
+  const [gstRate, setGstRate] = useState("18%");
+  const [hsnCode, setHsnCode] = useState("23091000");
+
+  const [sku, setSku] = useState("RC-MAX-PUP-15KG");
+  const [barcode, setBarcode] = useState("3182550732055");
+  const [stock, setStock] = useState<number | "">(42);
+  const [lowStockAlert, setLowStockAlert] = useState<number | "">(10);
+  const [weight, setWeight] = useState("15 kg");
+
+  const [status, setStatus] = useState<"ACTIVE" | "DRAFT" | "ARCHIVED">("ACTIVE");
+  const [isFeatured, setIsFeatured] = useState(true);
+  const [isBestSeller, setIsBestSeller] = useState(true);
+  const [freeShipping, setFreeShipping] = useState(true);
+
+  const [images, setImages] = useState<string[]>([
+    "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400&h=400&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=400&h=400&fit=crop&q=80"
+  ]);
+
+  const [saving, setSaving] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const marginPct = (mrp && price && costPrice && typeof price === "number" && typeof costPrice === "number")
+    ? Math.round(((price - costPrice) / price) * 100)
+    : 0;
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      setSavedSuccess(true);
+      setTimeout(() => {
+        setSavedSuccess(false);
+      }, 2500);
+    }, 600);
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4 sm:space-y-6 w-full min-w-0 pb-16">
+      
+      {/* Toast Alert */}
+      {savedSuccess && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl">
+          <Check className="h-4 w-4 text-emerald-400" />
+          <span>Product #{resolvedParams.id} changes saved!</span>
+        </div>
+      )}
+
+      {/* Top Bar Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+          <Link
+            href="/admin/dashboard/products"
+            className="clay-button flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 transition shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-fraunces text-xl sm:text-2xl font-bold tracking-tight text-[#2A241E] truncate">
+                {title}
+              </h1>
+              <span className="hidden sm:inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                ACTIVE
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 font-mono">
+              SKU: {sku} • ID: {resolvedParams.id}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          <Link
+            href="/admin/dashboard/products"
+            className="clay-button px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-800"
+          >
+            Back
+          </Link>
+          <button
+            type="submit"
+            disabled={saving}
+            className="clay-button inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Check className="h-4 w-4 stroke-[2.5]" />
+            <span>{saving ? "Saving..." : "Save Changes"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3 Quick Performance Stat Cards for this Product */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="clay-card p-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">Lifetime Units Sold</span>
+          <p className="text-lg sm:text-xl font-black text-[#2A241E] mt-1">1,420 bags</p>
+          <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Top 5% performer</p>
+        </div>
+        <div className="clay-card p-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">Gross Revenue</span>
+          <p className="text-lg sm:text-xl font-black text-[#2A241E] mt-1">₹1.13 Cr</p>
+          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">₹7,999 avg order value</p>
+        </div>
+        <div className="clay-card p-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">Customer Rating</span>
+          <p className="text-lg sm:text-xl font-black text-[#2A241E] mt-1">⭐ 4.9 / 5.0</p>
+          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Based on 142 reviews</p>
+        </div>
+        <div className="clay-card p-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">Current Stock</span>
+          <p className="text-lg sm:text-xl font-black text-emerald-600 mt-1">{stock} bags</p>
+          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Reorder threshold: 10</p>
+        </div>
+      </div>
+
+      {/* Main Form 2-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+        
+        {/* Left 8 Columns */}
+        <div className="lg:col-span-8 space-y-4 sm:space-y-6">
+          
+          {/* Section 1: Basic Info */}
+          <div className="clay-card p-4 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Package className="h-4 w-4 text-orange-500" />
+              <h2 className="font-fraunces text-sm sm:text-base font-bold text-[#2A241E]">
+                Product Information
+              </h2>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Product Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">URL Slug</label>
+                  <input
+                    type="text"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Brand Name</label>
+                  <select
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    <option value="Royal Canin">Royal Canin</option>
+                    <option value="Pedigree">Pedigree</option>
+                    <option value="Whiskas">Whiskas</option>
+                    <option value="Farmina N&D">Farmina N&D</option>
+                    <option value="Kickat Essentials">Kickat Essentials</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Catalog Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    <option value="Dog Nutrition & Kibble">Dog Nutrition & Kibble</option>
+                    <option value="Cat Treats & Catnip Delights">Cat Treats & Catnip Delights</option>
+                    <option value="Pet Grooming & Spa Hygiene">Pet Grooming & Spa Hygiene</option>
+                    <option value="Veterinary Care & Supplements">Veterinary Care & Supplements</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Target Species</label>
+                  <select
+                    value={species}
+                    onChange={(e) => setSpecies(e.target.value)}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    <option value="Dogs">🐕 Dogs (Canine)</option>
+                    <option value="Cats">🐱 Cats (Feline)</option>
+                    <option value="All Pets">🐾 Universal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Short Summary</label>
+                <input
+                  type="text"
+                  value={shortDesc}
+                  onChange={(e) => setShortDesc(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Detailed Description</label>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Product Images */}
+          <div className="clay-card p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-indigo-500" />
+                <h2 className="font-fraunces text-sm sm:text-base font-bold text-[#2A241E]">
+                  Product Imagery
+                </h2>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">JPEG, PNG, WEBP</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative group rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 aspect-square">
+                  <img src={img} alt="Product" className="w-full h-full object-cover" />
+                  {idx === 0 && (
+                    <span className="absolute top-2 left-2 bg-orange-500 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                      Cover
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                    className="absolute top-2 right-2 h-6 w-6 rounded-lg bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-rose-600"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              <label className="border-2 border-dashed border-slate-200 hover:border-orange-400 rounded-2xl flex flex-col items-center justify-center p-3 text-center cursor-pointer aspect-square bg-[#FAF7F3] hover:bg-orange-50/50 transition">
+                <UploadCloud className="h-6 w-6 text-orange-500 mb-1" />
+                <span className="text-[11px] font-bold text-slate-700">Add Media</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setImages([...images, url]);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section 3: Pricing & GST */}
+          <div className="clay-card p-4 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <DollarSign className="h-4 w-4 text-emerald-500" />
+              <h2 className="font-fraunces text-sm sm:text-base font-bold text-[#2A241E]">
+                Pricing, Margins & Taxes
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">MRP (₹) *</label>
+                <input
+                  type="number"
+                  value={mrp}
+                  onChange={(e) => setMrp(Number(e.target.value) || "")}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Sale Price (₹) *</label>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value) || "")}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-bold outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Cost Price (₹)</label>
+                <input
+                  type="number"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(Number(e.target.value) || "")}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+            </div>
+
+            {/* Margin badge */}
+            <div className="clay-inset p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                <span className="text-xs font-bold text-slate-700">Gross Profit Margin:</span>
+              </div>
+              <div className="text-right">
+                <span className={`text-sm font-black ${marginPct > 20 ? "text-emerald-600" : "text-amber-600"}`}>
+                  {marginPct}% Margin
+                </span>
+                <span className="text-[11px] text-slate-500 ml-1.5">
+                  (₹{typeof price === "number" && typeof costPrice === "number" ? price - costPrice : 0} profit/unit)
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">GST Slab (%)</label>
+                <select
+                  value={gstRate}
+                  onChange={(e) => setGstRate(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
+                >
+                  <option value="18%">18% (Standard Pet Food)</option>
+                  <option value="12%">12% (Supplements)</option>
+                  <option value="5%">5% (Kibble Base)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">HSN Code</label>
+                <input
+                  type="text"
+                  value={hsnCode}
+                  onChange={(e) => setHsnCode(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Inventory & Stock */}
+          <div className="clay-card p-4 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Layers className="h-4 w-4 text-blue-500" />
+              <h2 className="font-fraunces text-sm sm:text-base font-bold text-[#2A241E]">
+                Inventory, SKU & Specs
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">SKU Code *</label>
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Barcode / EAN</label>
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">In Stock Count *</label>
+                <input
+                  type="number"
+                  value={stock}
+                  onChange={(e) => setStock(Number(e.target.value) || "")}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Low Stock Warning</label>
+                <input
+                  type="number"
+                  value={lowStockAlert}
+                  onChange={(e) => setLowStockAlert(Number(e.target.value) || "")}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">Net Weight / Vol</label>
+                <input
+                  type="text"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right 4 Columns: Side Controls */}
+        <div className="lg:col-span-4 space-y-4 sm:space-y-6">
+          
+          {/* Status Card */}
+          <div className="clay-card p-4 sm:p-5 space-y-4">
+            <h3 className="font-fraunces text-xs sm:text-sm font-bold text-[#2A241E]">
+              Publishing Controls
+            </h3>
+
+            <div className="space-y-2">
+              {[
+                { label: "Active (Visible in store)", val: "ACTIVE", color: "text-emerald-600" },
+                { label: "Draft (Hidden)", val: "DRAFT", color: "text-amber-600" },
+                { label: "Archived (Out of circulation)", val: "ARCHIVED", color: "text-slate-400" },
+              ].map((st) => (
+                <label key={st.val} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-[#FAF7F3] cursor-pointer transition">
+                  <input
+                    type="radio"
+                    name="pub_status"
+                    checked={status === st.val}
+                    onChange={() => setStatus(st.val as any)}
+                    className="text-orange-600 focus:ring-orange-500"
+                  />
+                  <span className={`text-xs font-bold ${st.color}`}>{st.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-semibold text-slate-700">Featured on Homepage</span>
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="rounded text-orange-600 focus:ring-orange-500 h-4 w-4"
+                />
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-semibold text-slate-700">Mark as Best Seller</span>
+                <input
+                  type="checkbox"
+                  checked={isBestSeller}
+                  onChange={(e) => setIsBestSeller(e.target.checked)}
+                  className="rounded text-orange-600 focus:ring-orange-500 h-4 w-4"
+                />
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-semibold text-slate-700">Free Express Delivery</span>
+                <input
+                  type="checkbox"
+                  checked={freeShipping}
+                  onChange={(e) => setFreeShipping(e.target.checked)}
+                  className="rounded text-orange-600 focus:ring-orange-500 h-4 w-4"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Quick Actions Card */}
+          <div className="clay-card p-4 sm:p-5 space-y-3">
+            <h3 className="font-fraunces text-xs sm:text-sm font-bold text-[#2A241E]">
+              Item Operations
+            </h3>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => alert("Duplicate product created: copy of " + title)}
+                className="clay-button w-full py-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition"
+              >
+                Duplicate Listing
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Delete this product permanently?")) {
+                    router.push("/admin/dashboard/products");
+                  }
+                }}
+                className="clay-button w-full py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition"
+              >
+                Delete Product
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </form>
+  );
 }
