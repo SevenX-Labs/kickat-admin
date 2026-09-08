@@ -76,6 +76,7 @@ export default function CategoriesPage() {
   const [formName, setFormName] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [formImageUrl, setFormImageUrl] = useState("");
+  const [pendingCategoryFile, setPendingCategoryFile] = useState<File | null>(null);
   const [formOrder, setFormOrder] = useState<number>(0);
   const [formIsActive, setFormIsActive] = useState<boolean>(true);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
@@ -199,6 +200,10 @@ export default function CategoriesPage() {
 
   // Modal Open Handlers
   const handleOpenAdd = (defaultParentId: string = "") => {
+    if (formImageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageUrl);
+    }
+    setPendingCategoryFile(null);
     setEditingCategory(null);
     setFormName("");
     setFormSlug("");
@@ -214,6 +219,10 @@ export default function CategoriesPage() {
   };
 
   const handleOpenEdit = (cat: AdminCategoryItem) => {
+    if (formImageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageUrl);
+    }
+    setPendingCategoryFile(null);
     setEditingCategory(cat);
     setFormName(cat.name);
     setFormSlug(cat.slug);
@@ -236,8 +245,8 @@ export default function CategoriesPage() {
     }
   };
 
-  // Image Upload Handlers
-  const handleFileUpload = async (file: File) => {
+  // Image Upload Handlers: Instant local preview, upload deferred until submit
+  const handleFileUpload = (file: File) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -250,19 +259,15 @@ export default function CategoriesPage() {
       return;
     }
 
-    setIsUploadingImage(true);
-    setImageUploadError(null);
-
-    try {
-      const res = await AdminUploadService.uploadImage(file, "categories");
-      setFormImageUrl(res.url);
-      showToast("Category photo uploaded successfully!");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to upload category image.";
-      setImageUploadError(msg);
-    } finally {
-      setIsUploadingImage(false);
+    if (formImageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageUrl);
     }
+
+    const previewUrl = URL.createObjectURL(file);
+    setPendingCategoryFile(file);
+    setFormImageUrl(previewUrl);
+    setUploadMode("file");
+    setImageUploadError(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -271,6 +276,14 @@ export default function CategoriesPage() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
+  };
+
+  const handleCloseModal = () => {
+    if (formImageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageUrl);
+    }
+    setPendingCategoryFile(null);
+    setIsModalOpen(false);
   };
 
   // Submit Modal: Create or Update Category
@@ -288,11 +301,26 @@ export default function CategoriesPage() {
     setModalError(null);
 
     try {
+      let finalImageUrl: string | null = formImageUrl.trim() || null;
+
+      // Deferred Upload: Only upload image file when clicking final submit
+      if (pendingCategoryFile) {
+        setIsUploadingImage(true);
+        const res = await AdminUploadService.uploadImage(pendingCategoryFile, "categories");
+        finalImageUrl = res.url;
+        if (formImageUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(formImageUrl);
+        }
+        setPendingCategoryFile(null);
+      } else if (formImageUrl.startsWith("blob:")) {
+        finalImageUrl = null;
+      }
+
       if (editingCategory) {
         const updatePayload: UpdateCategoryDto = {
           name: formName.trim(),
           slug: finalSlug,
-          imageUrl: formImageUrl.trim() || null,
+          imageUrl: finalImageUrl,
           parentId,
           order: Number(formOrder),
           isActive: formIsActive,
@@ -304,7 +332,7 @@ export default function CategoriesPage() {
         const createPayload: CreateCategoryDto = {
           name: formName.trim(),
           slug: finalSlug,
-          imageUrl: formImageUrl.trim() || null,
+          imageUrl: finalImageUrl,
           parentId,
           order: Number(formOrder),
           isActive: formIsActive,
@@ -1256,7 +1284,7 @@ export default function CategoriesPage() {
               </div>
 
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 transition cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -1433,10 +1461,19 @@ export default function CategoriesPage() {
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    className={`relative rounded-2xl border-2 border-dashed p-4 text-center transition-all ${
+                    onClick={() => {
+                      if (!formImageUrl && !isUploadingImage) {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className={`relative rounded-2xl border-2 border-dashed p-4 text-center transition-all select-none group ${
+                      !formImageUrl
+                        ? "cursor-pointer hover:border-[#FF7A00] hover:bg-orange-50/30"
+                        : "border-slate-200 bg-[#F8F5F1]"
+                    } ${
                       dragOver
-                        ? "border-[#FF7A00] bg-orange-50/60"
-                        : "border-slate-200 bg-[#F8F5F1] hover:bg-slate-50 hover:border-slate-300"
+                        ? "!border-[#FF7A00] !bg-orange-50/60"
+                        : ""
                     }`}
                   >
                     <input
@@ -1483,7 +1520,13 @@ export default function CategoriesPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormImageUrl("")}
+                            onClick={() => {
+                              if (formImageUrl.startsWith("blob:")) {
+                                URL.revokeObjectURL(formImageUrl);
+                              }
+                              setPendingCategoryFile(null);
+                              setFormImageUrl("");
+                            }}
                             className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1491,28 +1534,21 @@ export default function CategoriesPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="py-2 space-y-1">
+                      <div className="py-2 space-y-1.5 pointer-events-none">
                         <div className="flex justify-center">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A00]">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A00] shadow-2xs group-hover:scale-105 transition-transform">
                             {isUploadingImage ? (
                               <RefreshCw className="h-4 w-4 animate-spin" />
                             ) : (
-                              <UploadCloud className="h-4 w-4" />
+                              <UploadCloud className="h-5 w-5" />
                             )}
                           </div>
                         </div>
-                        <div className="text-xs text-slate-600">
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploadingImage}
-                            className="font-bold text-[#FF7A00] hover:underline cursor-pointer"
-                          >
-                            Click to upload
-                          </button>{" "}
-                          <span>or drag and drop</span>
+                        <div className="text-xs text-slate-700">
+                          <span className="font-bold text-[#FF7A00]">Click to upload</span>{" "}
+                          <span className="text-slate-500">or drag and drop</span>
                         </div>
-                        <p className="text-[10.5px] text-slate-400">PNG, JPG, WebP up to 5MB</p>
+                        <p className="text-[11px] text-slate-400">PNG, JPG, WebP up to 5MB</p>
                       </div>
                     )}
                   </div>
@@ -1598,7 +1634,7 @@ export default function CategoriesPage() {
               <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   disabled={submitting || isUploadingImage}
                   className="clay-button px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 cursor-pointer"
                 >

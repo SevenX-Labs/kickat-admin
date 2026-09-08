@@ -9,53 +9,72 @@ import {
   ChevronRight,
   Star,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
-import { AdminUploadService } from "@/services/adminUploadService";
 
 export interface PhotoGalleryUploaderProps {
   images: string[];
   onChange: (images: string[]) => void;
+  onFilesSelected?: (files: File[]) => void;
+  onRemove?: (index: number) => void;
   error?: string;
 }
 
 export function PhotoGalleryUploader({
   images,
   onChange,
+  onFilesSelected,
+  onRemove,
   error,
 }: PhotoGalleryUploaderProps) {
-  const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (files: FileList | null) => {
+  const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadError(null);
 
     const availableSlots = 9 - images.length;
     if (availableSlots <= 0) {
-      setUploadError("Maximum 9 product photos allowed. Please delete an image first.");
+      setUploadError("Maximum 9 product photos allowed. Please remove a photo before adding more.");
       return;
     }
 
-    const filesToUpload = Array.from(files).slice(0, availableSlots);
-    setIsUploading(true);
+    const filesToProcess = Array.from(files).slice(0, availableSlots);
 
-    try {
-      const uploadPromises = filesToUpload.map((file) =>
-        AdminUploadService.uploadImage(file, "products")
-      );
-      const results = await Promise.all(uploadPromises);
-      const newUrls = results.map((r) => r.url);
-      onChange([...images, ...newUrls]);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to upload one or more photos.";
-      setUploadError(msg);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+    const allowedMime = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+    ];
+
+    const validFiles: File[] = [];
+    for (const f of filesToProcess) {
+      if (!allowedMime.includes(f.type)) {
+        setUploadError(`"${f.name}" is not a supported image format. Please select JPG, PNG, WebP, GIF, or SVG.`);
+        return;
       }
+      if (f.size > 10 * 1024 * 1024) {
+        setUploadError(`"${f.name}" exceeds the 10MB size limit.`);
+        return;
+      }
+      validFiles.push(f);
+    }
+
+    if (onFilesSelected) {
+      onFilesSelected(validFiles);
+    } else {
+      // Local preview fallback if parent doesn't provide onFilesSelected
+      const newUrls = validFiles.map((f) => URL.createObjectURL(f));
+      onChange([...images, ...newUrls]);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -66,8 +85,12 @@ export function PhotoGalleryUploader({
   };
 
   const handleRemove = (index: number) => {
-    const updated = images.filter((_, i) => i !== index);
-    onChange(updated);
+    if (onRemove) {
+      onRemove(index);
+    } else {
+      const updated = images.filter((_, i) => i !== index);
+      onChange(updated);
+    }
   };
 
   const handleMove = (index: number, direction: "left" | "right") => {
@@ -91,11 +114,13 @@ export function PhotoGalleryUploader({
   return (
     <div className="space-y-6">
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h2 className="font-fraunces text-xl font-bold text-slate-900">Product Photos</h2>
+          <h3 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+            Product Photo Gallery
+          </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Add clear photos of your product. The first photo will be the main product photo.
+            Add high-resolution photos of your product. The first photo serves as the primary cover photo.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -125,12 +150,12 @@ export function PhotoGalleryUploader({
           }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          onClick={() => !isUploading && fileInputRef.current?.click()}
+          onClick={() => fileInputRef.current?.click()}
           className={`relative rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center transition cursor-pointer select-none ${
             dragOver
               ? "border-[#FF7A00] bg-orange-50/60"
               : "border-slate-200/90 bg-[#FDFBF7] hover:border-orange-300 hover:bg-orange-50/20"
-          } ${isUploading ? "opacity-60 cursor-wait" : ""}`}
+          }`}
         >
           <input
             ref={fileInputRef}
@@ -139,27 +164,25 @@ export function PhotoGalleryUploader({
             multiple
             className="hidden"
             onChange={(e) => handleFileSelect(e.target.files)}
-            disabled={isUploading}
           />
 
-          <div className="flex flex-col items-center justify-center space-y-3">
+          <div className="flex flex-col items-center justify-center space-y-2.5">
             <div className="h-12 w-12 rounded-2xl bg-orange-100/70 text-[#FF7A00] flex items-center justify-center shadow-xs">
-              {isUploading ? (
-                <div className="h-6 w-6 rounded-full border-2 border-[#FF7A00] border-t-transparent animate-spin" />
-              ) : (
-                <UploadCloud className="h-6 w-6" />
-              )}
+              <UploadCloud className="h-6 w-6" />
             </div>
 
             <div className="space-y-1">
               <p className="text-sm font-bold text-slate-800">
-                {isUploading
-                  ? "Uploading photos to CDN..."
-                  : "Click to upload or drag & drop photos"}
+                Click to add photos or drag &amp; drop
               </p>
               <p className="text-xs text-slate-400">
                 PNG, JPG, WEBP, GIF, SVG up to 10MB per image
               </p>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/60 text-amber-800 text-[11px] font-medium">
+              <Sparkles className="h-3 w-3 text-amber-600 shrink-0" />
+              <span>Instant local preview &bull; Uploads to DB only when you finish and save</span>
             </div>
           </div>
         </div>
@@ -177,7 +200,7 @@ export function PhotoGalleryUploader({
       {images.length > 0 ? (
         <div className="space-y-3">
           <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-            Uploaded Photos ({images.length})
+            Selected Photos ({images.length})
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
             {images.map((url, idx) => {
@@ -193,6 +216,7 @@ export function PhotoGalleryUploader({
                 >
                   {/* Image Container */}
                   <div className="aspect-square w-full bg-slate-50 relative flex items-center justify-center overflow-hidden p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
                       alt={`Product photo ${idx + 1}`}
@@ -249,8 +273,8 @@ export function PhotoGalleryUploader({
                     <button
                       type="button"
                       onClick={() => handleRemove(idx)}
-                      title="Delete photo"
-                      aria-label="Delete photo"
+                      title="Remove photo"
+                      aria-label="Remove photo"
                       className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

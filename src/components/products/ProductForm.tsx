@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo , useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -41,6 +41,7 @@ import {
   VariantAttributes,
 } from "@/types/admin-product";
 import { AdminProductService } from "@/services/adminProductService";
+import { AdminUploadService } from "@/services/adminUploadService";
 import { AdminCategoryService } from "@/services/adminCategoryService";
 import { AdminCategoryItem } from "@/types/admin-category";
 
@@ -109,6 +110,53 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       ? initialProduct.images
       : []
   );
+  // Pending local files awaiting final submission upload
+  const pendingFilesRef = useRef<Map<string, File>>(new Map());
+  const [submitStatusText, setSubmitStatusText] = useState<string>("");
+
+  // Revoke any created blob URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      for (const url of pendingFilesRef.current.keys()) {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      }
+    };
+  }, []);
+
+  const handleFilesSelected = (files: File[]) => {
+    const availableSlots = 9 - images.length;
+    const filesToAdd = files.slice(0, availableSlots);
+    const newBlobUrls: string[] = [];
+
+    for (const file of filesToAdd) {
+      const blobUrl = URL.createObjectURL(file);
+      pendingFilesRef.current.set(blobUrl, file);
+      newBlobUrls.push(blobUrl);
+    }
+
+    setImages((prev) => [...prev, ...newBlobUrls]);
+    if (errors.images) {
+      setErrors((prev) => ({ ...prev, images: "" }));
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const urlToRemove = images[index];
+    if (urlToRemove) {
+      if (pendingFilesRef.current.has(urlToRemove)) {
+        if (urlToRemove.startsWith("blob:")) {
+          URL.revokeObjectURL(urlToRemove);
+        }
+        pendingFilesRef.current.delete(urlToRemove);
+      }
+      setImages((prev) => prev.filter((_, i) => i !== index));
+      setOptions((prev) =>
+        prev.map((opt) => (opt.imageUrl === urlToRemove ? { ...opt, imageUrl: null } : opt))
+      );
+    }
+  };
 
   // Form State - Step 3: Pricing & Options
   const [sellingMode, setSellingMode] = useState<SellingMode>(() =>
@@ -512,8 +560,36 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     }
 
     setSubmitting(true);
+    setSubmitStatusText("Preparing product data...");
 
     try {
+      // 1. Deferred Upload: Upload any pending local files ONLY on final submit
+      const urlReplacementMap = new Map<string, string>();
+      const pendingList: { blobUrl: string; file: File }[] = [];
+
+      for (const [blobUrl, file] of pendingFilesRef.current.entries()) {
+        const isUsedInImages = images.includes(blobUrl);
+        const isUsedInOptions = options.some((opt) => opt.imageUrl === blobUrl);
+        if (isUsedInImages || isUsedInOptions) {
+          pendingList.push({ blobUrl, file });
+        }
+      }
+
+      if (pendingList.length > 0) {
+        let count = 0;
+        for (const item of pendingList) {
+          count++;
+          setSubmitStatusText(`Uploading photo ${count} of ${pendingList.length} to storage...`);
+          const res = await AdminUploadService.uploadImage(item.file, "products");
+          urlReplacementMap.set(item.blobUrl, res.url);
+        }
+      }
+
+      // Replace blob URLs with uploaded CDN URLs
+      const finalImages = images.map((url) => urlReplacementMap.get(url) || url);
+
+      setSubmitStatusText("Saving product in database...");
+
       // Build Variants Payload if options mode
       const hasOptions = sellingMode === "options" && options.length > 0;
 
@@ -536,6 +612,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         ? options.map((opt) => {
             // Strictly preserve all existing key-value pairs in attributes
             const attrs = { ...opt.attributes };
+            const finalOptionImageUrl = opt.imageUrl
+              ? urlReplacementMap.get(opt.imageUrl) || opt.imageUrl
+              : null;
 
             return {
               ...(opt.id ? { id: opt.id } : {}),
@@ -550,7 +629,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                   : null,
               stock: typeof opt.stock === "number" ? opt.stock : 0,
               attributes: attrs,
-              imageUrl: opt.imageUrl || null,
+              imageUrl: finalOptionImageUrl,
             };
           })
         : [];
@@ -606,7 +685,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           price: effectivePrice,
           discountPrice: effectiveDiscountPrice,
           stock: calculatedTotalStock,
-          images,
+          images: finalImages,
           descriptionTitle: descriptionTitle.trim() || null,
           description: description.trim() || null,
           materials: materials.trim() || null,
@@ -623,6 +702,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
         await AdminProductService.createProduct(createPayload);
         setSuccessMessage("Product created successfully!");
+        for (const blobUrl of pendingFilesRef.current.keys()) {
+          if (blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
+        }
+        pendingFilesRef.current.clear();
         setTimeout(() => {
           router.push("/admin/dashboard/products");
         }, 1200);
@@ -639,7 +722,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           price: effectivePrice,
           discountPrice: effectiveDiscountPrice,
           stock: calculatedTotalStock,
-          images,
+          images: finalImages,
           descriptionTitle: descriptionTitle.trim() || null,
           description: description.trim() || null,
           materials: materials.trim() || null,
@@ -656,6 +739,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
         await AdminProductService.updateProduct(initialProduct.id, updatePayload);
         setSuccessMessage("Product updated successfully!");
+        for (const blobUrl of pendingFilesRef.current.keys()) {
+          if (blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
+        }
+        pendingFilesRef.current.clear();
         setTimeout(() => {
           router.push("/admin/dashboard/products");
         }, 1200);
@@ -669,6 +756,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setSubmitting(false);
+      setSubmitStatusText("");
     }
   };
 
@@ -1054,6 +1142,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 setErrors({ ...errors, images: "" });
               }
             }}
+            onFilesSelected={handleFilesSelected}
+            onRemove={handleRemovePhoto}
             error={errors.images}
           />
         )}
@@ -2029,6 +2119,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           />
         )}
 
+        {/* Submitting Progress Banner */}
+        {submitting && submitStatusText && (
+          <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold flex items-center gap-2.5 animate-fade-in shadow-xs mb-4">
+            <div className="h-4 w-4 rounded-full border-2 border-[#FF7A00] border-t-transparent animate-spin shrink-0" />
+            <span>{submitStatusText}</span>
+          </div>
+        )}
+
         {/* Bottom Navigation Buttons */}
         <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
           {currentStep > 1 ? (
@@ -2069,7 +2167,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 {submitting ? (
                   <>
                     <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    <span>{primaryButtonLabel}</span>
+                    <span>{submitStatusText || primaryButtonLabel}</span>
                   </>
                 ) : (
                   <>
