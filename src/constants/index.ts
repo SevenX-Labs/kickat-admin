@@ -37,6 +37,7 @@ export const SIDEBAR_NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Campaigns", href: "/admin/dashboard/campaigns", icon: "Megaphone" },
       { label: "Blogs", href: "/admin/dashboard/blogs", icon: "FileText" },
+      { label: "Testimonials", href: "/admin/dashboard/testimonials", icon: "MessageSquareQuote" },
     ],
   },
   {
