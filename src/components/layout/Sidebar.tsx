@@ -148,34 +148,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
-        {/* 3D Clay Promo Card (FinTrack Reference: Save more, Achieve more!) */}
-        <div className="p-3.5 shrink-0">
-          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#635BFF] via-[#685FF8] to-[#7B72F0] p-4 text-white shadow-[0_10px_22px_rgba(99,91,255,0.30)]">
-            <div className="relative z-10 space-y-1 pr-10">
-              <div className="flex items-center gap-1 text-xs font-bold text-indigo-100">
-                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                <span>Save more, Achieve more!</span>
-              </div>
-              <p className="text-[10.5px] text-indigo-100/90 leading-snug">
-                Start your financial journey today.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="/admin/dashboard/products"
-                  className="clay-button inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-[#635BFF] shadow-sm hover:bg-slate-50 transition active:scale-95"
-                >
-                  <span>Create Goal</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* 3D Piggy Bank with Gold Coin Accent (Pure SVG / CSS) */}
-            <div className="absolute -bottom-1 -right-1 w-14 h-14 flex items-center justify-center select-none pointer-events-none">
-              <span className="text-3xl drop-shadow-md">🐷</span>
-            </div>
-          </div>
-        </div>
-
         {/* Bottom User & Logout */}
         <div className="border-t border-slate-100/80 p-3 pt-2 shrink-0">
           <div className="flex items-center justify-between rounded-2xl bg-[#F7F3EE] p-2 border border-white/60">

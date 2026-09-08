@@ -250,10 +250,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between pt-3 pb-1 text-xs text-slate-400 border-t border-orange-100/70 shrink-0 select-none">
         <p>© {new Date().getFullYear()} KickAt Ecommerce Platform. All rights reserved.</p>
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium text-slate-500">KickAt Admin Suite</span>
-          <span className="rounded-md bg-orange-100/80 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">v1.0</span>
-        </div>
+        
       </footer>
     </div>
   );
