@@ -18,7 +18,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       />
 
       {/* Main Canvas Area: Only Right Side Scrolls, zero visible scrollbars */}
-      <div className="flex flex-1 flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden transition-all duration-300">
+      <div className="flex flex-1 flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ">
         <Header 
           onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           isCollapsed={isCollapsed}

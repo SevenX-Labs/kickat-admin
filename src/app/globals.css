@@ -40,7 +40,7 @@
     inset 0 -3px 5px rgba(200, 185, 170, 0.15),
     inset 0 3px 5px rgba(255, 255, 255, 0.95);
   border: 1.5px solid rgba(255, 255, 255, 0.95);
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .clay-card:hover {

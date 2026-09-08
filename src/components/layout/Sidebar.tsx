@@ -42,7 +42,6 @@ interface SidebarProps {
   isOpen: boolean;
   onClose?: () => void;
   isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 export function Sidebar({ 
@@ -71,18 +70,18 @@ export function Sidebar({
       {/* Floating 3D Clay Sidebar (FinTrack Style) */}
       <aside 
         style={{
-          width: isCollapsed ? "80px" : undefined,
-          minWidth: isCollapsed ? "80px" : undefined,
+          width: isCollapsed ? 80 : 255,
+          minWidth: isCollapsed ? 80 : 255,
         }}
         className={`
-          clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 transition-all duration-300 ease-in-out lg:static lg:h-full
+          clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 lg:static lg:h-full
+          transition-[width] duration-200 ease-out will-change-[width]
           ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"}
-          ${isCollapsed ? "w-20 lg:w-20" : "w-[245px] xl:w-[260px]"}
         `}
       >
         {/* Brand Header */}
         <div className={`
-          flex h-16 sm:h-18 shrink-0 items-center border-b border-slate-100/60 lg:border-none transition-all
+          flex h-16 sm:h-18 shrink-0 items-center border-b border-slate-100/60 lg:border-none
           ${isCollapsed ? "justify-center px-1.5" : "justify-between px-4 sm:px-5"}
         `}>
           <Link 
@@ -91,7 +90,7 @@ export function Sidebar({
             title={isCollapsed ? "FinTrack Dashboard" : undefined}
           >
             {/* 3D Puffy Clay Logo Badge */}
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#635BFF] to-[#7B72F0] text-white shadow-[0_6px_14px_rgba(99,91,255,0.35),inset_0_2px_3px_rgba(255,255,255,0.45),inset_0_-2px_3px_rgba(40,30,140,0.35)] transition-transform group-hover:scale-105">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#635BFF] to-[#7B72F0] text-white shadow-[0_6px_14px_rgba(99,91,255,0.35),inset_0_2px_3px_rgba(255,255,255,0.45),inset_0_-2px_3px_rgba(40,30,140,0.35)] hover:scale-105 active:scale-95 transition-transform">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-none stroke-white stroke-[2.5]" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
@@ -147,7 +146,7 @@ export function Sidebar({
                       onClick={onClose}
                       title={isCollapsed ? item.label : undefined}
                       className={`
-                        group relative flex items-center transition-all duration-200
+                        group relative flex items-center transition-colors duration-150
                         ${isCollapsed 
                           ? "justify-center h-10 w-10 mx-auto rounded-2xl" 
                           : "justify-between px-3 py-2 text-xs font-semibold rounded-2xl"
@@ -159,7 +158,7 @@ export function Sidebar({
                       `}
                     >
                       <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2.5 min-w-0"}`}>
-                        <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-white" : "text-slate-500"}`} />
+                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-500"}`} />
                         {!isCollapsed && <span className="truncate">{item.label}</span>}
                       </div>
 
@@ -195,7 +194,7 @@ export function Sidebar({
               onClick={onClose}
               title={isCollapsed ? "Admin Profile" : undefined}
               className={`
-                group relative flex items-center transition-all duration-200
+                group relative flex items-center transition-colors duration-150
                 ${isCollapsed 
                   ? "justify-center h-10 w-10 mx-auto rounded-2xl" 
                   : "justify-between px-3 py-2 text-xs font-semibold rounded-2xl"
@@ -207,7 +206,7 @@ export function Sidebar({
               `}
             >
               <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2.5 min-w-0"}`}>
-                <User className={`h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${pathname === "/admin/dashboard/profile" ? "text-white" : "text-slate-500"}`} />
+                <User className={`h-4 w-4 shrink-0 ${pathname === "/admin/dashboard/profile" ? "text-white" : "text-slate-500"}`} />
                 {!isCollapsed && <span className="truncate">Admin Profile</span>}
               </div>
 
@@ -230,20 +229,14 @@ export function Sidebar({
               <Link 
                 href="/admin/dashboard/profile" 
                 title="Admin User (admin@kickat.in)"
-                className="group relative flex h-10 w-10 items-center justify-center rounded-2xl bg-[#635BFF] text-white text-xs font-bold shadow-[0_2px_6px_rgba(99,91,255,0.3)] hover:scale-105 transition-transform"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#635BFF] text-white text-xs font-bold shadow-[0_2px_6px_rgba(99,91,255,0.3)] hover:scale-105 active:scale-95 transition-transform"
               >
                 AD
-                <div className="pointer-events-none absolute left-full ml-3 hidden group-hover:flex items-center z-50">
-                  <div className="rounded-xl bg-[#2A241E] text-white px-3 py-1.5 text-xs font-medium shadow-xl whitespace-nowrap">
-                    Admin User
-                  </div>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2A241E]" />
-                </div>
               </Link>
               <button
                 onClick={handleLogout}
                 title="Logout"
-                className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 transition"
+                className="clay-button flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 transition"
                 aria-label="Logout"
               >
                 <LogOut className="h-3.5 w-3.5" />

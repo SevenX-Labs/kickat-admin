@@ -44,7 +44,7 @@ export function Header({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="clay-button hidden lg:flex h-11 w-11 shrink-0 items-center justify-center text-slate-700 hover:text-indigo-600 transition"
+            className="clay-button hidden lg:flex h-11 w-11 shrink-0 items-center justify-center text-slate-700 hover:text-indigo-600 transition cursor-pointer select-none active:scale-95 duration-100"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
