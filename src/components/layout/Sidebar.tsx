@@ -17,9 +17,7 @@ import {
   Settings,
   User,
   LogOut,
-  X,
-  ChevronLeft,
-  ChevronRight
+  X
 } from "lucide-react";
 import { SIDEBAR_NAV_SECTIONS } from "@/constants";
 import React from "react";
@@ -50,8 +48,7 @@ interface SidebarProps {
 export function Sidebar({ 
   isOpen, 
   onClose, 
-  isCollapsed = false, 
-  onToggleCollapse 
+  isCollapsed = false 
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -109,9 +106,8 @@ export function Sidebar({
             )}
           </Link>
 
-          {/* Controls: Close on Mobile / Collapse on Desktop */}
+          {/* Controls: Close on Mobile only */}
           <div className="flex items-center gap-1">
-            {/* Mobile close button */}
             <button
               onClick={onClose}
               className="clay-button flex h-9 w-9 items-center justify-center text-slate-500 hover:text-slate-900 lg:hidden"
@@ -119,34 +115,8 @@ export function Sidebar({
             >
               <X className="h-4 w-4" />
             </button>
-
-            {/* Desktop collapse toggle button */}
-            {onToggleCollapse && !isCollapsed && (
-              <button
-                onClick={onToggleCollapse}
-                className="clay-button hidden lg:flex h-8 w-8 rounded-xl items-center justify-center text-slate-400 hover:text-indigo-600 transition hover:bg-slate-50"
-                title="Collapse sidebar"
-                aria-label="Collapse sidebar"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-            )}
           </div>
         </div>
-
-        {/* Collapsed state expand toggle button */}
-        {isCollapsed && onToggleCollapse && (
-          <div className="hidden lg:flex justify-center pb-2 pt-0.5">
-            <button
-              onClick={onToggleCollapse}
-              className="clay-button flex h-7 w-7 rounded-xl items-center justify-center text-slate-400 hover:text-indigo-600 transition hover:bg-slate-50"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
 
         {/* Scrollable Navigation List (Zero Visible Scrollbar) */}
         <div className={`
