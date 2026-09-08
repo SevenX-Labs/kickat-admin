@@ -273,6 +273,33 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     }
   };
 
+  const handleCategoryChange = (newCatId: string) => {
+    setCategoryId(newCatId);
+    if (errors.categoryId) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.categoryId;
+        return next;
+      });
+    }
+
+    const cat = categories.find((c) => c.id === newCatId);
+    if (cat) {
+      const combined = `${cat.name} ${cat.slug} ${cat.parent?.name || ""} ${cat.parent?.slug || ""}`.toLowerCase();
+      if (/dog|canine|puppy|puppies/.test(combined)) {
+        setPetSpecies("DOG");
+      } else if (/cat|feline|kitten|kittens/.test(combined)) {
+        setPetSpecies("CAT");
+      } else if (/bird|avian|parrot/.test(combined)) {
+        setPetSpecies("BIRD");
+      } else if (/fish|aquarium|aquatic/.test(combined)) {
+        setPetSpecies("FISH");
+      } else if (/rabbit|bunny|hamster|guinea|rodent/.test(combined)) {
+        setPetSpecies("RABBIT");
+      }
+    }
+  };
+
   // Determine if category is food/nutrition related
   const selectedCategory = useMemo(() => {
     return categories.find((c) => c.id === categoryId);
@@ -781,7 +808,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 </label>
                 <select
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-800 outline-none transition cursor-pointer ${
                     errors.categoryId
                       ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
@@ -805,9 +832,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
               {/* Pet Type Selector */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700">
-                  Pet Type
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Pet Type
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    Auto-selected from category (or click to change)
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                   {PET_SPECIES_OPTIONS.map((item) => {
                     const isSelected = petSpecies === item.id;
