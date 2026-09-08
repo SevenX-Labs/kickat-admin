@@ -735,7 +735,7 @@ export default function ProductDetailPage({
                     <option value="CAT">🐈 Cat</option>
                     <option value="BIRD">🦜 Bird</option>
                     <option value="FISH">🐠 Fish</option>
-                    <option value="SMALL_ANIMAL">🐹 Small Animal</option>
+                    <option value="RABBIT">🐇 Rabbit</option>
                     <option value="OTHER">✨ Other Species</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -750,13 +750,9 @@ export default function ProductDetailPage({
                     onChange={(e) => setDietaryPreference(e.target.value as any)}
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 p-2.5 pr-8 text-xs text-slate-800 outline-none focus:bg-white cursor-pointer appearance-none"
                   >
-                    <option value="NON_VEG">🍗 Non-Vegetarian (Real Meat)</option>
+                    <option value="NON_VEG">🍗 Non-Vegetarian</option>
                     <option value="VEG">🥕 Vegetarian</option>
-                    <option value="GRAIN_FREE">🌾 Grain Free Formula</option>
-                    <option value="GLUTEN_FREE">🚫 Gluten Free</option>
-                    <option value="ORGANIC">🌱 100% Organic</option>
-                    <option value="RAW">🥩 Raw / Freeze Dried</option>
-                    <option value="HYPOALLERGENIC">🛡️ Hypoallergenic Gentle</option>
+                    <option value="BOTH">🍖 Both / Mixed</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 </div>

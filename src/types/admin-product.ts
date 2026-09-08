@@ -1,15 +1,8 @@
 // types/admin-product.ts
 
 export type ProductStatus = "ACTIVE" | "DRAFT" | "INACTIVE";
-export type PetSpecies = "DOG" | "CAT" | "BIRD" | "FISH" | "SMALL_ANIMAL" | "OTHER";
-export type DietaryPreference =
-  | "VEG"
-  | "NON_VEG"
-  | "GRAIN_FREE"
-  | "GLUTEN_FREE"
-  | "ORGANIC"
-  | "RAW"
-  | "HYPOALLERGENIC";
+export type PetSpecies = "DOG" | "CAT" | "BIRD" | "FISH" | "RABBIT" | "OTHER";
+export type DietaryPreference = "VEG" | "NON_VEG" | "BOTH";
 
 export type AdminProductSortEnum =
   | "createdAt_desc"

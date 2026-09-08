@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Package,
   Plus,
@@ -23,15 +23,22 @@ import {
   ChevronDown,
   Boxes,
   Sparkles,
-  ExternalLink,
+  Flame,
+  Clock,
   Check,
   X,
   AlertCircle,
   LayoutGrid,
   List,
+  Dog,
+  Cat,
+  Bird,
+  Fish,
+  Rabbit,
+  PawPrint,
+  IndianRupee,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   AdminProductItem,
   ProductSummary,
@@ -114,7 +121,7 @@ export default function ProductsPage() {
         }
       })
       .catch(() => {
-        // Categories list optional for filter
+        // Optional
       });
   }, []);
 
@@ -170,13 +177,11 @@ export default function ProductsPage() {
     fetchProducts(true);
   }, [fetchProducts]);
 
-  // Reset page to 1 when filters change
   const handleFilterChange = () => {
     setPage(1);
     setSelectedIds(new Set());
   };
 
-  // Selection toggle
   const toggleSelectAll = () => {
     if (selectedIds.size === products.length) {
       setSelectedIds(new Set());
@@ -194,7 +199,6 @@ export default function ProductsPage() {
     });
   };
 
-  // Status toggle handler
   const handleStatusChange = async (product: AdminProductItem, newStatus: ProductStatus) => {
     if (product.status === newStatus) return;
     try {
@@ -203,7 +207,7 @@ export default function ProductsPage() {
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
       );
-      showToast(`Product status updated to ${newStatus}`, "success");
+      showToast(`Product status set to ${newStatus}`, "success");
     } catch (err) {
       showToast(AdminProductService.extractErrorMessage(err, "Failed to update status"), "error");
     } finally {
@@ -211,7 +215,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Quick Stock Modal Open
   const handleOpenStockModal = (product: AdminProductItem) => {
     setStockModalProduct(product);
     setStockInputValue(product.stock || 0);
@@ -229,7 +232,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Quick Stock Save
   const handleSaveStock = async () => {
     if (!stockModalProduct) return;
     try {
@@ -257,7 +259,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Delete product action
   const handleConfirmDelete = async () => {
     if (!deleteProductTarget) return;
     try {
@@ -276,7 +277,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Bulk Status Update
   const handleBulkStatus = async (newStatus: ProductStatus) => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -290,7 +290,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Bulk Delete
   const handleConfirmBulkDelete = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -313,27 +312,27 @@ export default function ProductsPage() {
     }
   };
 
-  // Species Emoji Helper
-  const getSpeciesEmoji = (species?: PetSpecies | null) => {
+  // Render React Icon for Species
+  const renderSpeciesIcon = (species?: PetSpecies | null, size = "h-4 w-4") => {
     switch (species) {
       case "DOG":
-        return "🐕";
+        return <Dog className={size} />;
       case "CAT":
-        return "🐈";
+        return <Cat className={size} />;
       case "BIRD":
-        return "🦜";
+        return <Bird className={size} />;
       case "FISH":
-        return "🐠";
-      case "SMALL_ANIMAL":
-        return "🐹";
+        return <Fish className={size} />;
+      case "RABBIT":
+        return <Rabbit className={size} />;
       default:
-        return "🐾";
+        return <PawPrint className={size} />;
     }
   };
 
   return (
     <div className="space-y-5 pb-12 w-full min-w-0 no-scrollbar animate-fade-in text-[#2A241E]">
-      {/* Toast Feedback Notification */}
+      {/* Toast Feedback */}
       {toast && (
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md transition-all animate-slide-in-down ${
@@ -358,14 +357,14 @@ export default function ProductsPage() {
       )}
 
       {/* =========================================================
-          1. HEADER & PRIMARY ACTION
+          1. HEADER & PRIMARY ACTIONS
           ========================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
         <div>
           <h1 className="font-fraunces text-2xl sm:text-3xl font-bold tracking-tight text-[#2A241E]">
             Products &amp; Inventory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Manage your store catalog, real-time stock levels, multi-variants, and image galleries.
           </p>
         </div>
@@ -392,7 +391,7 @@ export default function ProductsPage() {
       </div>
 
       {/* =========================================================
-          2. LIVE SUMMARY METRIC CARDS (3D Clay Styled)
+          2. LIVE SUMMARY METRIC CARDS (React Icons)
           ========================================================= */}
       {loading ? (
         <StatCardsSkeleton />
@@ -400,7 +399,7 @@ export default function ProductsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Products */}
           <div className="clay-card p-4 flex items-center gap-3.5 transition-all hover:scale-[1.01]">
-            <div className="clay-badge-purple flex h-11 w-11 shrink-0 items-center justify-center text-lg text-white shadow-xs">
+            <div className="clay-badge-purple flex h-11 w-11 shrink-0 items-center justify-center text-white shadow-xs rounded-2xl">
               <Package className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -410,13 +409,13 @@ export default function ProductsPage() {
               <p className="font-fraunces text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5">
                 {summary?.totalProducts ?? products.length}
               </p>
-              <span className="text-[10px] text-slate-400 font-medium">Store catalog items</span>
+              <span className="text-[10px] text-slate-400 font-medium">Catalog items</span>
             </div>
           </div>
 
           {/* Active in Store */}
           <div className="clay-card p-4 flex items-center gap-3.5 transition-all hover:scale-[1.01]">
-            <div className="clay-badge-green flex h-11 w-11 shrink-0 items-center justify-center text-lg text-white shadow-xs">
+            <div className="clay-badge-green flex h-11 w-11 shrink-0 items-center justify-center text-white shadow-xs rounded-2xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -427,14 +426,14 @@ export default function ProductsPage() {
                 {summary?.activeCount ?? products.filter((p) => p.status === "ACTIVE").length}
               </p>
               <span className="text-[10px] text-slate-400 font-medium">
-                {summary?.draftCount ?? 0} draft / {summary?.inactiveCount ?? 0} inactive
+                {summary?.draftCount ?? 0} draft &bull; {summary?.inactiveCount ?? 0} inactive
               </span>
             </div>
           </div>
 
           {/* Low Stock Alert */}
           <div className="clay-card p-4 flex items-center gap-3.5 transition-all hover:scale-[1.01]">
-            <div className="clay-badge-amber flex h-11 w-11 shrink-0 items-center justify-center text-lg text-white shadow-xs">
+            <div className="clay-badge-amber flex h-11 w-11 shrink-0 items-center justify-center text-white shadow-xs rounded-2xl">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -444,13 +443,13 @@ export default function ProductsPage() {
               <p className="font-fraunces text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5">
                 {summary?.lowStockCount ?? 0}
               </p>
-              <span className="text-[10px] text-slate-400 font-medium">&le; 10 items remaining</span>
+              <span className="text-[10px] text-slate-400 font-medium">&le; 10 units left</span>
             </div>
           </div>
 
           {/* Out of Stock */}
           <div className="clay-card p-4 flex items-center gap-3.5 transition-all hover:scale-[1.01]">
-            <div className="clay-badge-coral flex h-11 w-11 shrink-0 items-center justify-center text-lg text-white shadow-xs">
+            <div className="clay-badge-coral flex h-11 w-11 shrink-0 items-center justify-center text-white shadow-xs rounded-2xl">
               <XCircle className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -460,7 +459,7 @@ export default function ProductsPage() {
               <p className="font-fraunces text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5">
                 {summary?.outOfStockCount ?? 0}
               </p>
-              <span className="text-[10px] text-slate-400 font-medium">Requires replenishment</span>
+              <span className="text-[10px] text-slate-400 font-medium">Needs restock</span>
             </div>
           </div>
         </div>
@@ -517,7 +516,7 @@ export default function ProductsPage() {
             ))}
           </div>
 
-          {/* View Mode Toggle (Grid / Table) */}
+          {/* View Mode Toggle */}
           <div className="flex items-center gap-1 border border-slate-200/80 p-1 rounded-xl bg-[#F8F5F1] shrink-0 self-end md:self-auto">
             <button
               onClick={() => setViewMode("GRID")}
@@ -540,7 +539,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Secondary Filter Dropdowns */}
+        {/* Filter Dropdowns */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-xs">
           {/* Category Filter */}
           <div className="relative">
@@ -552,7 +551,7 @@ export default function ProductsPage() {
               }}
               className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
             >
-              <option value="ALL">📁 All Categories</option>
+              <option value="ALL">All Categories</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.parentId ? `└ ${cat.name}` : cat.name}
@@ -572,13 +571,13 @@ export default function ProductsPage() {
               }}
               className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
             >
-              <option value="ALL">🐾 All Pet Species</option>
-              <option value="DOG">🐕 Dog</option>
-              <option value="CAT">🐈 Cat</option>
-              <option value="BIRD">🦜 Bird</option>
-              <option value="FISH">🐠 Fish</option>
-              <option value="SMALL_ANIMAL">🐹 Small Animal</option>
-              <option value="OTHER">✨ Other Species</option>
+              <option value="ALL">All Pet Species</option>
+              <option value="DOG">Dog</option>
+              <option value="CAT">Cat</option>
+              <option value="BIRD">Bird</option>
+              <option value="FISH">Fish</option>
+              <option value="RABBIT">Rabbit</option>
+              <option value="OTHER">Other Species</option>
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
           </div>
@@ -593,10 +592,10 @@ export default function ProductsPage() {
               }}
               className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
             >
-              <option value="ALL">📦 All Stock States</option>
-              <option value="IN_STOCK">🟢 In Stock (&gt; 0)</option>
-              <option value="LOW_STOCK">🟡 Low Stock (&le; 10)</option>
-              <option value="OUT_OF_STOCK">🔴 Out of Stock (0)</option>
+              <option value="ALL">All Stock States</option>
+              <option value="IN_STOCK">In Stock (&gt; 0)</option>
+              <option value="LOW_STOCK">Low Stock (&le; 10)</option>
+              <option value="OUT_OF_STOCK">Out of Stock (0)</option>
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
           </div>
@@ -611,14 +610,14 @@ export default function ProductsPage() {
               }}
               className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
             >
-              <option value="createdAt_desc">⏱️ Newest First</option>
-              <option value="createdAt_asc">⏱️ Oldest First</option>
-              <option value="price_asc">💵 Price: Low to High</option>
-              <option value="price_desc">💵 Price: High to Low</option>
-              <option value="stock_asc">📦 Stock: Low to High</option>
-              <option value="stock_desc">📦 Stock: High to Low</option>
-              <option value="name_asc">🔤 Name: A to Z</option>
-              <option value="rating_desc">⭐ Top Customer Rating</option>
+              <option value="createdAt_desc">Newest First</option>
+              <option value="createdAt_asc">Oldest First</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="stock_asc">Stock: Low to High</option>
+              <option value="stock_desc">Stock: High to Low</option>
+              <option value="name_asc">Name: A to Z</option>
+              <option value="rating_desc">Top Customer Rating</option>
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
           </div>
@@ -692,8 +691,8 @@ export default function ProductsPage() {
       ) : products.length === 0 ? (
         // Clean Empty State
         <div className="clay-card p-10 sm:p-14 text-center space-y-4 max-w-lg mx-auto">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-amber-500 text-white text-3xl mx-auto shadow-md">
-            📦
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-amber-500 text-white mx-auto shadow-md">
+            <Package className="h-8 w-8" />
           </div>
           <div className="space-y-1">
             <h3 className="font-fraunces text-lg sm:text-xl font-bold text-[#2A241E]">
@@ -772,14 +771,15 @@ export default function ProductsPage() {
                         alt={p.name}
                         className="h-full w-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
-                          // Fallback on broken image
                           (e.currentTarget as any).src = "";
                           e.currentTarget.className = "hidden";
                         }}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-300">
-                        <span className="text-4xl mb-1">{getSpeciesEmoji(p.petSpecies)}</span>
+                        <div className="p-3 rounded-2xl bg-white/80 text-orange-500 mb-1 shadow-xs">
+                          {renderSpeciesIcon(p.petSpecies, "h-8 w-8")}
+                        </div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                           KickAt Original
                         </span>
@@ -789,7 +789,7 @@ export default function ProductsPage() {
                     {/* Status Badge */}
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                       <span
-                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs backdrop-blur-xs ${
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs backdrop-blur-xs flex items-center gap-1 ${
                           p.status === "ACTIVE"
                             ? "bg-emerald-500/90 text-white"
                             : p.status === "DRAFT"
@@ -797,14 +797,17 @@ export default function ProductsPage() {
                             : "bg-slate-500/90 text-white"
                         }`}
                       >
-                        {p.status}
+                        {p.status === "ACTIVE" && <CheckCircle2 className="h-3 w-3" />}
+                        {p.status === "DRAFT" && <Clock className="h-3 w-3" />}
+                        {p.status === "INACTIVE" && <XCircle className="h-3 w-3" />}
+                        <span>{p.status}</span>
                       </span>
                     </div>
 
                     {/* Stock Alert Badge */}
                     <div className="absolute bottom-2.5 left-2.5">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs ${
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs flex items-center gap-1 ${
                           p.stock === 0
                             ? "bg-rose-500 text-white"
                             : p.stock <= 10
@@ -812,15 +815,31 @@ export default function ProductsPage() {
                             : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                         }`}
                       >
-                        {p.stock === 0 ? "Out of Stock" : `${p.stock} in stock`}
+                        {p.stock === 0 ? (
+                          <>
+                            <XCircle className="h-3 w-3" />
+                            <span>Out of Stock</span>
+                          </>
+                        ) : p.stock <= 10 ? (
+                          <>
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>{p.stock} low stock</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>{p.stock} in stock</span>
+                          </>
+                        )}
                       </span>
                     </div>
 
                     {/* Species Badge */}
                     {p.petSpecies && (
                       <div className="absolute bottom-2.5 right-2.5">
-                        <span className="text-xs bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-lg font-bold text-slate-700 shadow-xs">
-                          {getSpeciesEmoji(p.petSpecies)} {p.petSpecies}
+                        <span className="text-xs bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-lg font-bold text-slate-700 shadow-xs flex items-center gap-1">
+                          {renderSpeciesIcon(p.petSpecies, "h-3.5 w-3.5 text-orange-600")}
+                          <span>{p.petSpecies}</span>
                         </span>
                       </div>
                     )}
@@ -837,8 +856,8 @@ export default function ProductsPage() {
                       </span>
                     )}
                     {p.isBestSeller && (
-                      <span className="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                        <Sparkles className="h-2.5 w-2.5" /> Best Seller
+                      <span className="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-amber-600" /> Best Seller
                       </span>
                     )}
                   </div>
@@ -943,7 +962,7 @@ export default function ProductsPage() {
                   <th className="p-3.5">Product</th>
                   <th className="p-3.5">Category</th>
                   <th className="p-3.5">Species</th>
-                  <th className="p-3.5">Price (MRP / Selling)</th>
+                  <th className="p-3.5">Price</th>
                   <th className="p-3.5">Stock</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5 text-right">Actions</th>
@@ -981,7 +1000,7 @@ export default function ProductsPage() {
                                 className="h-full w-full object-contain"
                               />
                             ) : (
-                              <span className="text-lg">{getSpeciesEmoji(p.petSpecies)}</span>
+                              renderSpeciesIcon(p.petSpecies, "h-5 w-5 text-orange-500")
                             )}
                           </div>
                           <div className="min-w-0 max-w-xs">
@@ -1005,8 +1024,9 @@ export default function ProductsPage() {
 
                       {/* Species */}
                       <td className="p-3.5">
-                        <span className="text-xs font-bold text-slate-700">
-                          {getSpeciesEmoji(p.petSpecies)} {p.petSpecies || "All"}
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          {renderSpeciesIcon(p.petSpecies, "h-3.5 w-3.5 text-orange-600")}
+                          <span>{p.petSpecies || "All"}</span>
                         </span>
                       </td>
 
@@ -1026,7 +1046,7 @@ export default function ProductsPage() {
                       <td className="p-3.5">
                         <button
                           onClick={() => handleOpenStockModal(p)}
-                          className={`font-bold px-2 py-0.5 rounded-lg text-xs transition cursor-pointer ${
+                          className={`font-bold px-2 py-0.5 rounded-lg text-xs transition cursor-pointer flex items-center gap-1 ${
                             p.stock === 0
                               ? "bg-rose-50 text-rose-700 border border-rose-200"
                               : p.stock <= 10
@@ -1034,7 +1054,7 @@ export default function ProductsPage() {
                               : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           }`}
                         >
-                          {p.stock} units
+                          <span>{p.stock} units</span>
                         </button>
                       </td>
 
@@ -1131,7 +1151,7 @@ export default function ProductsPage() {
           <div className="clay-card w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="clay-badge-purple p-2 text-white">
+                <div className="clay-badge-purple p-2 text-white rounded-xl">
                   <Boxes className="h-4 w-4" />
                 </div>
                 <div>
@@ -1234,7 +1254,7 @@ export default function ProductsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="clay-card w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center gap-3 text-rose-600">
-              <div className="clay-badge-coral p-2.5 text-white">
+              <div className="clay-badge-coral p-2.5 text-white rounded-xl">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
@@ -1250,7 +1270,6 @@ export default function ProductsPage() {
               <p className="font-mono text-slate-400 text-[11px]">ID: {deleteProductTarget.id}</p>
             </div>
 
-            {/* Soft vs Permanent Toggle */}
             <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -1289,7 +1308,7 @@ export default function ProductsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="clay-card w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center gap-3 text-rose-600">
-              <div className="clay-badge-coral p-2.5 text-white">
+              <div className="clay-badge-coral p-2.5 text-white rounded-xl">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
