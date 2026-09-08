@@ -565,7 +565,7 @@ export default function TestimonialsPage() {
           ========================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="clay-card w-full max-w-lg p-5 sm:p-6 bg-white space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar animate-scale-in">
+          <div className="clay-modal w-full max-w-lg p-5 sm:p-6 bg-white space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar animate-scale-in">
             
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
