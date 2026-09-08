@@ -2,7 +2,11 @@
 
 import { 
   MoreVertical, 
-  ChevronDown
+  ChevronDown,
+  IndianRupee,
+  ShoppingBag,
+  Package,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -44,20 +48,20 @@ export default function DashboardPage() {
           ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
         
-        {/* Card 1: Total Revenue (3D Purple Clay Wallet) */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
+        {/* Card 1: Total Revenue */}
+        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Revenue</span>
+            <span className="text-xs font-bold text-slate-500">Total Revenue</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Value & 3D Artwork */}
-          <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
-            <div className="min-w-0 space-y-1">
-              <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
+          {/* Main Row: Full Value & 3D Clay Rupee Icon */}
+          <div className="flex items-center justify-between gap-2 pt-3 z-10">
+            <div className="space-y-1 min-w-0">
+              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
                 ₹14,85,680
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
@@ -66,34 +70,27 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Purple Clay Wallet */}
-            <div className="relative shrink-0 flex items-center justify-center select-none pl-1">
-              <div className="absolute -top-2.5 right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FFDA79] via-[#F7B731] to-[#D98014] shadow-[0_3px_6px_rgba(247,183,49,0.4),inset_0_1.5px_1.5px_rgba(255,255,255,0.8),inset_0_-1.5px_2px_rgba(150,90,10,0.5)] flex items-center justify-center text-[9px] font-black text-[#5C3B00] z-0">
-                ₹
-              </div>
-              <div className="clay-badge-purple relative z-10 w-14 h-12 rounded-2xl flex items-center justify-end pr-1 shadow-md">
-                <div className="w-5 h-4 rounded-md bg-[#5347DE] shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.4),inset_0_-1.5px_2px_rgba(35,28,120,0.5),1px_2px_4px_rgba(0,0,0,0.2)] flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-[#F7B731] shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_1px_2px_rgba(0,0,0,0.3)]" />
-                </div>
-              </div>
+            {/* Proper 3D Purple Clay Revenue Icon */}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B72F0] via-[#635BFF] to-[#4F46E5] text-white shadow-[0_6px_16px_rgba(99,91,255,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <IndianRupee className="h-6 w-6 stroke-[2.4]" />
             </div>
           </div>
         </div>
 
-        {/* Card 2: Total Orders (3D Green Clay Order Delivery Sack) */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
+        {/* Card 2: Total Orders */}
+        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Orders</span>
+            <span className="text-xs font-bold text-slate-500">Total Orders</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Value & 3D Artwork */}
-          <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
-            <div className="min-w-0 space-y-1">
-              <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
+          {/* Main Row: Full Value & 3D Clay Shopping Bag Icon */}
+          <div className="flex items-center justify-between gap-2 pt-3 z-10">
+            <div className="space-y-1 min-w-0">
+              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
                 3,842
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
@@ -102,31 +99,27 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Green Clay Order Delivery Sack */}
-            <div className="relative shrink-0 flex flex-col items-center justify-center select-none pl-1">
-              <div className="w-6 h-2.5 rounded-t-full bg-[#2E8B50] shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.4)] mb-[-2px] z-20" />
-              <div className="w-7 h-1.5 rounded-full bg-[#F5CD79] shadow-xs z-30 mb-[-2px]" />
-              <div className="clay-badge-green relative z-10 w-14 h-12 rounded-2xl flex items-center justify-center shadow-md">
-                <span className="text-white font-black text-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]">📦</span>
-              </div>
+            {/* Proper 3D Orange Clay Orders Icon */}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <ShoppingBag className="h-6 w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
-        {/* Card 3: Total Products (3D Coral Clay Catalog Box) */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
+        {/* Card 3: Total Products */}
+        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Products</span>
+            <span className="text-xs font-bold text-slate-500">Total Products</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Value & 3D Artwork */}
-          <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
-            <div className="min-w-0 space-y-1">
-              <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
+          {/* Main Row: Full Value & 3D Clay Products Icon */}
+          <div className="flex items-center justify-between gap-2 pt-3 z-10">
+            <div className="space-y-1 min-w-0">
+              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
                 248
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
@@ -135,30 +128,27 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Coral Clay Catalog Box */}
-            <div className="relative shrink-0 flex flex-col items-center justify-center select-none pl-1">
-              <div className="w-7 h-4 rounded-t-full border-[3px] border-[#C83848] bg-transparent mb-[-3px] z-0 shadow-xs" />
-              <div className="clay-badge-coral relative z-10 w-14 h-11 rounded-2xl flex items-center justify-center shadow-md">
-                <div className="w-5 h-4 rounded-md bg-[#C83848] shadow-inner flex items-center justify-center text-[10px]">🏷️</div>
-              </div>
+            {/* Proper 3D Blue Clay Products Icon */}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <Package className="h-6 w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
-        {/* Card 4: Total Customers (3D Gold Clay Pet Parents Badge) */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
+        {/* Card 4: Total Customers */}
+        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Customers</span>
+            <span className="text-xs font-bold text-slate-500">Total Customers</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Value & 3D Artwork */}
-          <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
-            <div className="min-w-0 space-y-1">
-              <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
+          {/* Main Row: Full Value & 3D Clay Customers Icon */}
+          <div className="flex items-center justify-between gap-2 pt-3 z-10">
+            <div className="space-y-1 min-w-0">
+              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
                 8,920
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
@@ -167,19 +157,9 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Gold Clay Pet Parents Coins Badge */}
-            <div className="relative shrink-0 flex items-end justify-center select-none h-12 w-14 pl-1">
-              {/* Left stack */}
-              <div className="relative flex flex-col items-center -mr-1 z-10">
-                <div className="w-6 h-3.5 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-20 flex items-center justify-center text-[7px] font-black text-[#663C00]">🐾</div>
-                <div className="w-6 h-3.5 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] border border-[#FFF2B2]/60 z-10" />
-              </div>
-              {/* Right stack */}
-              <div className="relative flex flex-col items-center z-20">
-                <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-30 flex items-center justify-center text-[8px] font-black text-[#663C00]">👥</div>
-                <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-20" />
-                <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] border border-[#FFF2B2]/60 z-10" />
-              </div>
+            {/* Proper 3D Emerald Clay Customers Icon */}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#34D399] via-[#10B981] to-[#059669] text-white shadow-[0_6px_16px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <Users className="h-6 w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
