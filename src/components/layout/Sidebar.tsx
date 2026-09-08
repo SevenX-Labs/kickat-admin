@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AdminAuthService } from "@/services/adminAuthService";
 import { 
   LayoutDashboard, 
   BarChart3,
@@ -54,9 +55,13 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (onClose) onClose();
-    router.push("/admin/login");
+    try {
+      await AdminAuthService.logout();
+    } finally {
+      router.push("/admin/login");
+    }
   };
 
   return (

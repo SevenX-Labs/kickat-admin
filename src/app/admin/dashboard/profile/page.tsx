@@ -5,66 +5,146 @@ import {
   Shield, 
   Mail, 
   Phone, 
-  Calendar, 
-  KeyRound, 
   Check, 
   Lock, 
   Smartphone, 
   Laptop, 
   Save, 
-  LogOut,
   Camera,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  Trash2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { AdminAuthService } from "@/services/adminAuthService";
+import { AdminSessionItem } from "@/types/admin-auth";
 
 export default function AdminProfilePage() {
-  const [firstName, setFirstName] = useState("Sahil");
-  const [lastName, setLastName] = useState("Hode");
-  const [email, setEmail] = useState("admin@kickat.in");
+  const [adminId, setAdminId] = useState("kickat2021");
+  const [firstName, setFirstName] = useState("Super");
+  const [lastName, setLastName] = useState("Admin");
+  const [email, setEmail] = useState("admin@kickat.co.in");
+  const [role, setRole] = useState("SUPER_ADMIN");
   const [phone, setPhone] = useState("+91 98200 12345");
   
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPass, setChangingPass] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; isError?: boolean } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+  // Sessions list
+  const [sessions, setSessions] = useState<AdminSessionItem[]>([
+    {
+      id: "current-session-local",
+      ipAddress: "127.0.0.1",
+      userAgent: "Chrome 128 (Desktop) • Current active session",
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+    }
+  ]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const showToast = (msg: string, isError = false) => {
+    setToastMessage({ text: msg, isError });
+    setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // Load real profile and active sessions
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const profileRes = await AdminAuthService.getProfile();
+        if (profileRes?.admin) {
+          const a = profileRes.admin;
+          setAdminId(a.adminId || "kickat2021");
+          setEmail(a.email || "");
+          setRole(a.role || "SUPER_ADMIN");
+          if (a.name) {
+            const parts = a.name.split(" ");
+            setFirstName(parts[0] || "Admin");
+            setLastName(parts.slice(1).join(" ") || "");
+          }
+        }
+      } catch {
+        // Fall back gracefully to cached/stored profile
+      }
+
+      setLoadingSessions(true);
+      try {
+        const sessionsRes = await AdminAuthService.getSessions();
+        if (sessionsRes?.sessions && sessionsRes.sessions.length > 0) {
+          setSessions(sessionsRes.sessions);
+        }
+      } catch {
+        // Keep default local representation
+      } finally {
+        setLoadingSessions(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     setTimeout(() => {
       setSavingProfile(false);
-      showToast("Admin profile details updated!");
+      showToast("Admin personal preferences saved successfully.");
     }, 600);
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword) {
-      alert("Please fill in current and new password.");
+    if (!currentPassword) {
+      showToast("Please enter your current password.", true);
+      return;
+    }
+    if (newPassword.length < 8) {
+      showToast("New password must be at least 8 characters long.", true);
       return;
     }
     if (newPassword !== confirmPassword) {
-      alert("New passwords do not match.");
+      showToast("New passwords do not match.", true);
       return;
     }
+
     setChangingPass(true);
-    setTimeout(() => {
-      setChangingPass(false);
+    try {
+      const res = await AdminAuthService.changePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      showToast(res.message || "Password updated securely!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      showToast("Password updated securely!");
-    }, 700);
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        "Failed to change password. Please check your current password.";
+      showToast(serverMsg, true);
+    } finally {
+      setChangingPass(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await AdminAuthService.revokeSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      showToast("Session terminated successfully.");
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        "Cannot revoke current active session or session already expired.";
+      showToast(serverMsg, true);
+    }
   };
 
   return (
@@ -72,9 +152,15 @@ export default function AdminProfilePage() {
       
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in">
-          <Check className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in text-white ${
+          toastMessage.isError ? "bg-rose-600" : "bg-[#2A241E]"
+        }`}>
+          {toastMessage.isError ? (
+            <AlertCircle className="h-4 w-4 text-white" />
+          ) : (
+            <Check className="h-4 w-4 text-emerald-400" />
+          )}
+          <span>{toastMessage.text}</span>
         </div>
       )}
 
@@ -84,7 +170,7 @@ export default function AdminProfilePage() {
           Admin Account & Profile
         </h1>
         <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-          Manage your administrative credentials, security keys, and access controls.
+          Manage your administrative credentials, security keys, and active sessions.
         </p>
       </div>
 
@@ -94,10 +180,10 @@ export default function AdminProfilePage() {
           {/* Avatar with badge */}
           <div className="relative">
             <div className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-[#635BFF] via-indigo-600 to-purple-600 text-3xl font-black text-white shadow-lg">
-              SH
+              {firstName ? firstName.charAt(0) : "A"}{lastName ? lastName.charAt(0) : "D"}
             </div>
             <button 
-              onClick={() => showToast("Avatar upload feature ready")}
+              onClick={() => showToast("Profile photo upload ready.")}
               className="clay-button absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-xl text-slate-600 hover:text-indigo-600 shadow-xs cursor-pointer"
               title="Upload new avatar"
             >
@@ -112,7 +198,7 @@ export default function AdminProfilePage() {
                 {firstName} {lastName}
               </h2>
               <span className="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-orange-50 text-orange-700 border border-orange-200 uppercase font-mono-eyebrow">
-                Super Admin
+                {role}
               </span>
               <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Active Session
@@ -122,9 +208,9 @@ export default function AdminProfilePage() {
               Global administrator access with master permissions across product catalogs, financial reports, customer databases, and logistics routing.
             </p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-1 text-xs text-slate-400 font-medium">
-              <span>Location: Mumbai, India</span>
+              <span>Admin ID: <strong className="text-slate-700 font-mono">{adminId}</strong></span>
               <span>•</span>
-              <span>Last active: Today at 09:12 AM</span>
+              <span>Email: <strong className="text-slate-700">{email}</strong></span>
             </div>
           </div>
         </div>
@@ -132,20 +218,20 @@ export default function AdminProfilePage() {
         {/* 4 Overview Quick Stats */}
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-slate-100">
           <div className="clay-inset p-3 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Role Scope</span>
-            <p className="text-xs font-bold text-slate-800 truncate">Root Owner</p>
+            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Admin Identifier</span>
+            <p className="text-xs font-bold text-slate-800 truncate font-mono">{adminId}</p>
           </div>
           <div className="clay-inset p-3 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Joined Date</span>
-            <p className="text-xs font-bold text-slate-800">Jan 12, 2024</p>
+            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Security Role</span>
+            <p className="text-xs font-bold text-slate-800">{role}</p>
           </div>
           <div className="clay-inset p-3 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">2-Step Auth</span>
-            <p className="text-xs font-bold text-emerald-600">Enforced</p>
+            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">API Base</span>
+            <p className="text-xs font-bold text-emerald-600 truncate">kickat.co.in</p>
           </div>
           <div className="clay-inset p-3 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Active Logins</span>
-            <p className="text-xs font-bold text-indigo-600">2 Devices</p>
+            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Active Sessions</span>
+            <p className="text-xs font-bold text-indigo-600">{sessions.length} Device{sessions.length > 1 ? "s" : ""}</p>
           </div>
         </div>
       </div>
@@ -188,7 +274,7 @@ export default function AdminProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Email Address</label>
+                  <label className="block text-xs font-bold text-slate-700">Registered Email</label>
                   <input
                     type="email"
                     value={email}
@@ -242,6 +328,7 @@ export default function AdminProfilePage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                 />
               </div>
@@ -252,7 +339,8 @@ export default function AdminProfilePage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
+                  placeholder="Min. 8 characters (1 uppercase, 1 num, 1 sym)"
+                  required
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                 />
               </div>
@@ -264,6 +352,7 @@ export default function AdminProfilePage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                 />
               </div>
@@ -271,46 +360,63 @@ export default function AdminProfilePage() {
               <button
                 type="submit"
                 disabled={changingPass}
-                className="clay-button w-full py-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer"
+                className="clay-button w-full py-2.5 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer flex items-center justify-center gap-2"
               >
-                {changingPass ? "Updating..." : "Update Password"}
+                {changingPass ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Updating Password...</span>
+                  </>
+                ) : (
+                  <span>Update Password</span>
+                )}
               </button>
             </form>
           </div>
 
-          {/* Active Devices Card */}
+          {/* Active Devices / Sessions Card */}
           <div className="clay-card p-4 sm:p-5 space-y-3">
-            <h4 className="font-fraunces text-xs sm:text-sm font-bold text-[#2A241E]">
-              Active Devices
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-fraunces text-xs sm:text-sm font-bold text-[#2A241E]">
+                Active Sessions
+              </h4>
+              {loadingSessions && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+              )}
+            </div>
 
             <div className="space-y-2 text-xs">
-              <div className="clay-inset p-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Laptop className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="font-bold text-slate-800">Linux Desktop (Chrome 128)</p>
-                    <p className="text-[10px] text-slate-400">Current active session • Mumbai, IN</p>
+              {sessions.map((sess, idx) => (
+                <div key={sess.id || idx} className="clay-inset p-2.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {sess.userAgent?.toLowerCase().includes("iphone") || sess.userAgent?.toLowerCase().includes("mobile") ? (
+                      <Smartphone className="h-4 w-4 text-slate-500 shrink-0" />
+                    ) : (
+                      <Laptop className="h-4 w-4 text-emerald-600 shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-800 truncate">
+                        {sess.userAgent || "Active Device Session"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        IP: {sess.ipAddress || "127.0.0.1"} • Created {sess.createdAt ? new Date(sess.createdAt).toLocaleDateString() : "Recently"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <span className="text-[9.5px] font-bold text-emerald-600">Online</span>
-              </div>
 
-              <div className="clay-inset p-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Smartphone className="h-4 w-4 text-slate-500 shrink-0" />
-                  <div>
-                    <p className="font-bold text-slate-800">iPhone 15 Pro (Safari Mobile)</p>
-                    <p className="text-[10px] text-slate-400">Last active 3 hours ago</p>
-                  </div>
+                  {idx === 0 ? (
+                    <span className="text-[9.5px] font-bold text-emerald-600 shrink-0 bg-emerald-50 px-2 py-0.5 rounded-full">Current</span>
+                  ) : (
+                    <button
+                      onClick={() => handleRevokeSession(sess.id)}
+                      className="text-[10px] font-bold text-rose-600 hover:underline shrink-0 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Revoke</span>
+                    </button>
+                  )}
                 </div>
-                <button
-                  onClick={() => showToast("Session revoked for iPhone 15 Pro")}
-                  className="text-[10px] font-bold text-rose-600 hover:underline"
-                >
-                  Revoke
-                </button>
-              </div>
+              ))}
             </div>
           </div>
 

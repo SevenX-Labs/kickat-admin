@@ -1,20 +1,18 @@
-import { apiClient } from "./api";
+import { AdminAuthService } from "./adminAuthService";
+
+export { AdminAuthService };
 
 export const authService = {
-  login: async (credentials: { email: string; password: string }) => {
-    const res = await apiClient.post("/admin/auth/login", credentials);
-    return res.data;
-  },
-  forgotPassword: async (email: string) => {
-    const res = await apiClient.post("/admin/auth/forgot-password", { email });
-    return res.data;
-  },
-  resetPassword: async (data: { token: string; password: string }) => {
-    const res = await apiClient.post("/admin/auth/reset-password", data);
-    return res.data;
-  },
-  getProfile: async () => {
-    const res = await apiClient.get("/admin/auth/me");
-    return res.data;
+  ...AdminAuthService,
+  /**
+   * Backwards-compatible login wrapper that supports both adminId and email fields
+   */
+  login: async (credentials: { adminId?: string; email?: string; password: string }) => {
+    return AdminAuthService.login({
+      adminId: credentials.adminId || credentials.email || "",
+      password: credentials.password,
+    });
   },
 };
+
+export default authService;

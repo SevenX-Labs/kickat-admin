@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Menu, Bell, Search, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AdminAuthService } from "@/services/adminAuthService";
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -21,8 +22,12 @@ export function Header({
 
   const handleMobileToggle = onToggleMobileSidebar || onToggleSidebar;
 
-  const handleLogout = () => {
-    router.push("/admin/login");
+  const handleLogout = async () => {
+    try {
+      await AdminAuthService.logout();
+    } finally {
+      router.push("/admin/login");
+    }
   };
 
   return (

@@ -2,25 +2,73 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { 
   Eye, 
   EyeOff, 
   Lock, 
-  Mail, 
+  UserCheck, 
   ArrowRight, 
   Package, 
   ShoppingCart, 
   Users, 
   TrendingUp, 
-  Check
+  Check,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
+import { AdminAuthService } from "@/services/adminAuthService";
 
-export default function LoginPage() {
+function LoginFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isSessionExpired = searchParams?.get("session_expired") === "true";
+
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("admin@kickat.in");
-  const [password, setPassword] = useState("••••••••••••");
+  const [adminId, setAdminId] = useState("kickat2021");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const trimmedId = adminId.trim();
+    if (!trimmedId) {
+      setError("Please enter your Admin ID.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    const enteredPassword = password;
+    // Wipe password from memory immediately
+    setPassword("");
+    setLoading(true);
+    try {
+      await AdminAuthService.login(
+        {
+          adminId: trimmedId,
+          password: enteredPassword,
+        },
+        rememberMe
+      );
+      router.push("/admin/dashboard");
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        "Login failed. Please check your credentials.";
+      setError(serverMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen min-h-[100dvh] w-full bg-[radial-gradient(ellipse_at_top,_#FFFFFF_0%,_#FFFDF9_45%,_#FAF4EC_100%)] text-slate-900 overflow-y-auto lg:overflow-x-hidden flex flex-col justify-between selection:bg-orange-500 selection:text-white px-4 sm:px-8 lg:px-12 xl:px-16 py-4 sm:py-6">
@@ -79,23 +127,40 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Session Expired Banner */}
+            {isSessionExpired && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-800">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                <span>Your session has expired. Please sign in again.</span>
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Form */}
-            <form className="mt-5 sm:mt-6 space-y-3.5 sm:space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="mt-5 sm:mt-6 space-y-3.5 sm:space-y-4" onSubmit={handleSubmit}>
               
-              {/* Email Address */}
+              {/* Admin ID */}
               <div className="space-y-1.5 text-left">
                 <label className="font-mono-eyebrow text-[10px] font-medium tracking-[0.14em] text-slate-700 uppercase">
-                  Email Address
+                  Admin ID
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                    <Mail className="h-[18px] w-[18px]" />
+                    <UserCheck className="h-[18px] w-[18px]" />
                   </div>
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@kickat.in"
+                    type="text"
+                    value={adminId}
+                    onChange={(e) => setAdminId(e.target.value)}
+                    placeholder="e.g. kickat2021"
+                    required
                     className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
                   />
                 </div>
@@ -123,6 +188,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
+                    required
                     className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-11 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
                   />
                   <button
@@ -161,13 +227,23 @@ export default function LoginPage() {
 
               {/* Primary CTA */}
               <div className="pt-1.5 sm:pt-2">
-                <Link
-                  href="/admin/dashboard"
-                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 hover:shadow-[0_6px_20px_rgba(249,115,22,0.42)] active:translate-y-[1px] active:scale-[0.99]"
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 hover:shadow-[0_6px_20px_rgba(249,115,22,0.42)] active:translate-y-[1px] active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
                 >
-                  <span>Sign In to Dashboard</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In to Dashboard</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>
@@ -244,10 +320,18 @@ export default function LoginPage() {
 
       </main>
 
-      {/* Footer - Responsive and safe for mobile screens */}
+      {/* Footer */}
       <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-center sm:justify-start pt-3 pb-5 sm:pb-2 text-center sm:text-left text-[11px] sm:text-xs text-slate-400 border-t border-orange-100/70 shrink-0 select-none">
         <p>© {new Date().getFullYear()} KickAt Ecommerce Platform. All rights reserved.</p>
       </footer>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAF4EC]">Loading...</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }

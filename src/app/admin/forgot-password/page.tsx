@@ -2,17 +2,151 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Mail, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { 
+  UserCheck, 
+  KeyRound, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2,
+  ShieldCheck
+} from "lucide-react";
+import { AdminAuthService } from "@/services/adminAuthService";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Wizard state: 1: Admin ID -> 2: OTP -> 3: New Password -> 4: Success
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Form values
+  const [adminId, setAdminId] = useState("");
+  const [otp, setOtp] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Status & Feedback
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<string | null>(null);
+
+  // Step 1: Send OTP to Email
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubmitted(true);
+    setError(null);
+    setInfoMsg(null);
+
+    const trimmed = adminId.trim();
+    if (!trimmed) {
+      setError("Please provide your Admin ID.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await AdminAuthService.forgotPassword({ adminId: trimmed });
+      setInfoMsg(res.message || `6-digit OTP sent to registered email for ${trimmed}`);
+      setStep(2);
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        "Unable to send OTP. Please check your Admin ID.";
+      setError(serverMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify 6-digit OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfoMsg(null);
+
+    const trimmedOtp = otp.trim();
+    if (!trimmedOtp || trimmedOtp.length !== 6) {
+      setError("Please enter the complete 6-digit OTP.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await AdminAuthService.verifyResetOtp({
+        adminId: adminId.trim(),
+        otp: trimmedOtp,
+      });
+      setResetToken(res.resetToken);
+      setInfoMsg("OTP verified successfully! Create your new password.");
+      setStep(3);
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        "Invalid or expired OTP code. Please try again.";
+      setError(serverMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Reset Password
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfoMsg(null);
+
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@%*?&#^()_+\-=\[\]{};':"\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      setError("Password must contain at least 1 uppercase letter, 1 number, and 1 special symbol.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    const payload = {
+      resetToken,
+      newPassword,
+      confirmPassword,
+    };
+    // Clear sensitive password inputs from memory
+    setNewPassword("");
+    setConfirmPassword("");
+    setLoading(true);
+    try {
+      const res = await AdminAuthService.resetPassword(payload);
+      // Wipe ephemeral reset token and OTP from memory
+      setResetToken("");
+      setOtp("");
+      setInfoMsg(res.message || "Password updated successfully!");
+      setStep(4);
+      setTimeout(() => {
+        router.push("/admin/login");
+      }, 2500);
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        "Password reset failed. The token may have expired.";
+      setError(serverMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,54 +181,73 @@ export default function ForgotPasswordPage() {
             </div>
 
             <span className="mt-2 font-mono-eyebrow text-[10px] sm:text-[11px] font-semibold tracking-[0.2em] text-[#E7A03B] uppercase">
-              Password Recovery
+              Password Recovery Wizard
             </span>
 
-            <h2 className="mt-3 font-fraunces text-2xl sm:text-[26px] font-bold tracking-[-0.02em] text-[#211C15]">
-              Forgot password?
+            <h2 className="mt-2 font-fraunces text-2xl sm:text-[26px] font-bold tracking-[-0.02em] text-[#211C15]">
+              {step === 1 && "Recover Access"}
+              {step === 2 && "Verify OTP"}
+              {step === 3 && "Set New Password"}
+              {step === 4 && "Success!"}
             </h2>
+
             <p className="mt-1 text-xs sm:text-[13px] text-slate-500 max-w-[320px] leading-relaxed">
-              No worries, enter your admin email address and we will send you instructions to reset it.
+              {step === 1 && "Enter your unique Admin ID to receive a secure 6-digit recovery code on your linked email."}
+              {step === 2 && `Enter the 6-digit OTP code sent to the email linked to ${adminId}.`}
+              {step === 3 && "Choose a strong, new password with at least 8 characters, uppercase, number & symbol."}
+              {step === 4 && "Your administrator password has been safely updated."}
             </p>
           </div>
 
-          {submitted ? (
-            <div className="mt-6 space-y-4 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-600 border border-green-200/60 shadow-xs">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-800">Reset link sent!</h3>
-                <p className="text-xs text-slate-500 max-w-[280px] mx-auto">
-                  We have dispatched a secure recovery link to <span className="font-semibold text-slate-700">{email}</span>.
-                </p>
-              </div>
-              <div className="pt-2">
-                <Link
-                  href="/admin/login"
-                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-colors w-full"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Return to Login</span>
-                </Link>
-              </div>
+          {/* Step Indicator */}
+          {step < 4 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {[1, 2, 3].map((s) => (
+                <div key={s} className="flex items-center gap-1.5">
+                  <div className={`h-2 rounded-full transition-all duration-300 ${
+                    step === s 
+                      ? "w-7 bg-orange-500" 
+                      : step > s 
+                        ? "w-2 bg-emerald-500" 
+                        : "w-2 bg-slate-200"
+                  }`} />
+                </div>
+              ))}
             </div>
-          ) : (
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          )}
+
+          {/* Feedback Messages */}
+          {error && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {infoMsg && !error && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+              <span>{infoMsg}</span>
+            </div>
+          )}
+
+          {/* Step 1: Enter Admin ID */}
+          {step === 1 && (
+            <form className="mt-5 space-y-4" onSubmit={handleRequestOtp}>
               <div className="space-y-1.5 text-left">
                 <label className="font-mono-eyebrow text-[10px] font-medium tracking-[0.14em] text-slate-700 uppercase">
-                  Admin Email Address
+                  Admin ID
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                    <Mail className="h-[18px] w-[18px]" />
+                    <UserCheck className="h-[18px] w-[18px]" />
                   </div>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@kickat.in"
+                    value={adminId}
+                    onChange={(e) => setAdminId(e.target.value)}
+                    placeholder="e.g. kickat2021"
                     className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
                   />
                 </div>
@@ -103,10 +256,20 @@ export default function ForgotPasswordPage() {
               <div className="pt-1">
                 <button
                   type="submit"
-                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99]"
+                  disabled={loading}
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
                 >
-                  <span>Send Reset Instructions</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Sending OTP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send 6-Digit OTP</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -120,6 +283,166 @@ export default function ForgotPasswordPage() {
                 </Link>
               </div>
             </form>
+          )}
+
+          {/* Step 2: Verify 6-digit OTP */}
+          {step === 2 && (
+            <form className="mt-5 space-y-4" onSubmit={handleVerifyOtp}>
+              <div className="space-y-1.5 text-left">
+                <div className="flex items-center justify-between">
+                  <label className="font-mono-eyebrow text-[10px] font-medium tracking-[0.14em] text-slate-700 uppercase">
+                    6-Digit OTP Code
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRequestOtp}
+                    disabled={loading}
+                    className="text-[11px] font-semibold text-orange-600 hover:underline"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <KeyRound className="h-[18px] w-[18px]" />
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="h-11 sm:h-12 w-full text-center tracking-[0.3em] font-mono text-base font-bold rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-slate-800 placeholder-slate-300 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Verifying OTP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify Code & Continue</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-orange-600 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Change Admin ID</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step 3: Create New Password */}
+          {step === 3 && (
+            <form className="mt-5 space-y-4" onSubmit={handleResetPassword}>
+              <div className="space-y-1.5 text-left">
+                <label className="font-mono-eyebrow text-[10px] font-medium tracking-[0.14em] text-slate-700 uppercase">
+                  New Password
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Lock className="h-[18px] w-[18px]" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-11 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="font-mono-eyebrow text-[10px] font-medium tracking-[0.14em] text-slate-700 uppercase">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Lock className="h-[18px] w-[18px]" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Updating Password...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Reset Password</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step 4: Success */}
+          {step === 4 && (
+            <div className="mt-6 space-y-4 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-xs">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-800">Password updated successfully</h3>
+                <p className="text-xs text-slate-500 max-w-[280px] mx-auto">
+                  Your account password is now reset. Redirecting you to the sign-in page...
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/admin/login"
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 py-3 text-xs font-bold text-white shadow-md hover:brightness-105 transition-all w-full"
+                >
+                  <span>Go to Sign In Now</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
           )}
 
         </div>
