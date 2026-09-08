@@ -9,7 +9,9 @@ import {
   AlertCircle,
   Check,
   Tag,
+  Sparkles,
 } from "lucide-react";
+import { generateProductSku } from "./slugUtils";
 import { VariantAttributes } from "@/types/admin-product";
 
 export interface OptionItemData {
@@ -27,6 +29,7 @@ export interface VariantOptionCardProps {
   index: number;
   option: OptionItemData;
   availableImages: string[];
+  productName?: string;
   onChange: (updated: OptionItemData) => void;
   onDuplicate: () => void;
   onRemove: () => void;
@@ -52,6 +55,7 @@ export function VariantOptionCard({
   index,
   option,
   availableImages,
+  productName,
   onChange,
   onDuplicate,
   onRemove,
@@ -59,6 +63,48 @@ export function VariantOptionCard({
   errors,
 }: VariantOptionCardProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const [isSkuCustomized, setIsSkuCustomized] = useState(false);
+
+  const handleNameChange = (newName: string) => {
+    let newSku = option.sku;
+    if (!isSkuCustomized) {
+      newSku = generateProductSku(productName || "", newName, index + 1);
+    }
+
+    // Auto-detect and sync attribute if only 1 attribute exists
+    let newAttributes = { ...option.attributes };
+    const attrKeys = Object.keys(newAttributes);
+    if (attrKeys.length <= 1) {
+      let detectedKey = attrKeys[0] || "color";
+      const trimmed = newName.trim();
+      if (/\d+\s*(kg|g|gm|gms|lbs|oz|ml|l|ltr)\b/i.test(trimmed)) {
+        detectedKey = "weight";
+      } else if (/^(xs|s|m|l|xl|xxl|small|medium|large|extra\s*large)$/i.test(trimmed)) {
+        detectedKey = "size";
+      } else if (/\b(pack|pack\s*of\s*\d+|pcs|pieces|set)\b/i.test(trimmed)) {
+        detectedKey = "packSize";
+      } else if (/\b(chicken|beef|salmon|fish|lamb|tuna|turkey|duck|veg)\b/i.test(trimmed)) {
+        detectedKey = "flavor";
+      }
+      newAttributes = { [detectedKey]: trimmed };
+    }
+
+    onChange({
+      ...option,
+      name: newName,
+      sku: newSku,
+      attributes: newAttributes,
+    });
+  };
+
+  const handleRegenerateSku = () => {
+    setIsSkuCustomized(false);
+    const newSku = generateProductSku(productName || "", option.name, index + 1);
+    onChange({
+      ...option,
+      sku: newSku,
+    });
+  };
 
   // Convert Record<string, string> attributes into an array of { key, value } for flexible editing
   const attrEntries = Object.entries(option.attributes || {});
@@ -166,7 +212,7 @@ export function VariantOptionCard({
           <input
             type="text"
             value={option.name}
-            onChange={(e) => onChange({ ...option, name: e.target.value })}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder="e.g., Red, Small, 1.5 kg, Pack of 2"
             className={`w-full rounded-xl border px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
               errors?.name
@@ -186,20 +232,34 @@ export function VariantOptionCard({
           )}
         </div>
 
-        {/* Product Code / SKU (Optional) */}
+        {/* Product Code / SKU */}
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-700">
-            Product Code (Optional)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-slate-700">
+              Product Code (SKU)
+            </label>
+            <button
+              type="button"
+              onClick={handleRegenerateSku}
+              title="Auto-generate clean SKU"
+              className="text-[11px] font-semibold text-[#FF7A00] hover:underline cursor-pointer select-none flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>Auto-generate</span>
+            </button>
+          </div>
           <input
             type="text"
             value={option.sku || ""}
-            onChange={(e) => onChange({ ...option, sku: e.target.value })}
-            placeholder="e.g., KKT-RED-01"
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+            onChange={(e) => {
+              setIsSkuCustomized(true);
+              onChange({ ...option, sku: e.target.value.toUpperCase() });
+            }}
+            placeholder={generateProductSku(productName || "", option.name, index + 1) || "e.g., KKT-RED-01"}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
           />
           <p className="text-[11px] text-slate-400">
-            Internal identifier for inventory tracking.
+            Auto-generated SKU code for inventory tracking & order dispatch.
           </p>
         </div>
       </div>

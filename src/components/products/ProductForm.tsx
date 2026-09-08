@@ -50,6 +50,7 @@ import { ProductSellingMode, SellingMode } from "./ProductSellingMode";
 import { VariantOptionCard, OptionItemData } from "./VariantOptionCard";
 import { HighlightsEditor } from "./HighlightsEditor";
 import { ReviewSummary } from "./ReviewSummary";
+import { slugify, generateProductSku } from "./slugUtils";
 
 export interface ProductFormProps {
   mode: "create" | "edit";
@@ -264,12 +265,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   const handleNameChange = (val: string) => {
     setName(val);
     if (!isSlugManual && mode === "create") {
-      const generated = val
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-      setSlug(generated);
+      setSlug(slugify(val));
     }
   };
 
@@ -304,6 +300,17 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   const selectedCategory = useMemo(() => {
     return categories.find((c) => c.id === categoryId);
   }, [categories, categoryId]);
+
+  const detectedSpecies = useMemo((): PetSpecies | null => {
+    if (!selectedCategory) return null;
+    const combined = `${selectedCategory.name} ${selectedCategory.slug} ${selectedCategory.parent?.name || ""} ${selectedCategory.parent?.slug || ""}`.toLowerCase();
+    if (/\bdog\b|\bcanine\b|\bpuppy\b|\bpuppies\b/.test(combined)) return "DOG";
+    if (/\bcat\b|\bfeline\b|\bkitten\b|\bkittens\b/.test(combined)) return "CAT";
+    if (/\bbird\b|\bavian\b|\bparrot\b/.test(combined)) return "BIRD";
+    if (/\bfish\b|\baquarium\b|\baquatic\b/.test(combined)) return "FISH";
+    if (/\brabbit\b|\bbunny\b|\bhamster\b|\bguinea\b|\brodent\b/.test(combined)) return "RABBIT";
+    return null;
+  }, [selectedCategory]);
 
   const isFoodCategory = useMemo(() => {
     if (!selectedCategory) return false;
@@ -353,10 +360,11 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   // Option actions
   const handleAddOption = () => {
     const newIndex = options.length + 1;
-    const defaultColor = newIndex === 1 ? "Red" : newIndex === 2 ? "Blue" : `Option ${newIndex}`;
+    const defaultColor = newIndex === 1 ? "Red" : newIndex === 2 ? "Blue" : newIndex === 3 ? "Green" : `Option ${newIndex}`;
+    const autoSku = generateProductSku(name, defaultColor, newIndex);
     const newOption: OptionItemData = {
       name: defaultColor,
-      sku: "",
+      sku: autoSku,
       price: price !== "" ? price : 499,
       discountPrice: discountPrice !== "" && discountPrice !== null ? discountPrice : 449,
       stock: 20,
@@ -368,9 +376,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   const handleDuplicateOption = (index: number) => {
     const source = options[index];
+    const newIndex = options.length + 1;
+    const cleanName = `${source.name} (Copy)`;
+    const newSku = source.sku
+      ? `${source.sku.replace(/-(COPY|\d+)$/i, "")}-COPY`
+      : generateProductSku(name, cleanName, newIndex);
     const duplicated: OptionItemData = {
-      name: `${source.name} (Copy)`,
-      sku: source.sku ? `${source.sku}-COPY` : "",
+      name: cleanName,
+      sku: newSku,
       price: source.price,
       discountPrice: source.discountPrice,
       stock: source.stock,
@@ -587,7 +600,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           name: name.trim(),
           ...(slug.trim() ? { slug: slug.trim() } : {}),
           categoryId,
-          petSpecies: petSpecies || null,
+          petSpecies: detectedSpecies || petSpecies || null,
           dietaryPreference: isFoodCategory ? dietaryPreference : null,
           status,
           isTrending,
@@ -620,7 +633,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           name: name.trim(),
           slug: slug.trim() || undefined,
           categoryId,
-          petSpecies: petSpecies || null,
+          petSpecies: detectedSpecies || petSpecies || null,
           dietaryPreference: isFoodCategory ? dietaryPreference : null,
           status,
           isTrending,
@@ -828,40 +841,45 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                     {errors.categoryId}
                   </p>
                 )}
+                {detectedSpecies && (
+                  <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5 font-medium">
+                    <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
+                    <span>
+                      Pet Type: <strong className="text-slate-800 font-semibold">{detectedSpecies.charAt(0) + detectedSpecies.slice(1).toLowerCase()}</strong> (Automatically detected from category)
+                    </span>
+                  </p>
+                )}
               </div>
 
-              {/* Pet Type Selector */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              {/* Pet Type Selector - Only shown if the category does NOT already define a specific animal */}
+              {!detectedSpecies && (
+                <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-700">
                     Pet Type
                   </label>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    Auto-selected from category (or click to change)
-                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                    {PET_SPECIES_OPTIONS.map((item) => {
+                      const isSelected = petSpecies === item.id;
+                      const IconComp = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setPetSpecies(item.id)}
+                          className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer select-none ${
+                            isSelected
+                              ? "bg-[#FFF5EB] border-[#FF7A00] text-[#FF7A00] shadow-xs"
+                              : "bg-slate-50/70 border-slate-200/80 text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <IconComp className="h-5 w-5 mb-1 text-inherit" />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  {PET_SPECIES_OPTIONS.map((item) => {
-                    const isSelected = petSpecies === item.id;
-                    const IconComp = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setPetSpecies(item.id)}
-                        className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer select-none ${
-                          isSelected
-                            ? "bg-[#FFF5EB] border-[#FF7A00] text-[#FF7A00] shadow-xs"
-                            : "bg-slate-50/70 border-slate-200/80 text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        <IconComp className="h-5 w-5 mb-1 text-inherit" />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
 
               {/* Dietary / Formula (Category-Aware: Shown for food/treats) */}
               {isFoodCategory && (
@@ -1043,19 +1061,33 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               onChange={(m) => {
                 setSellingMode(m);
                 if (m === "options" && options.length === 0) {
-                  // Pre-populate with first option using existing single prices or defaults
+                  // Pre-populate with initial options with professional auto-generated SKUs
+                  const opt1 = "Red";
+                  const opt2 = "Blue";
                   setOptions([
                     {
-                      name: "Red",
-                      sku: "",
+                      name: opt1,
+                      sku: generateProductSku(name, opt1, 1),
                       price: price !== "" ? price : 499,
                       discountPrice:
                         discountPrice !== "" && discountPrice !== null
                           ? discountPrice
                           : 449,
                       stock: stock !== "" ? Number(stock) : 20,
-                      attributes: { color: "Red" },
+                      attributes: { color: opt1 },
                       imageUrl: images[0] || null,
+                    },
+                    {
+                      name: opt2,
+                      sku: generateProductSku(name, opt2, 2),
+                      price: price !== "" ? price : 499,
+                      discountPrice:
+                        discountPrice !== "" && discountPrice !== null
+                          ? discountPrice
+                          : 449,
+                      stock: 15,
+                      attributes: { color: opt2 },
+                      imageUrl: images[1] || images[0] || null,
                     },
                   ]);
                 }
@@ -1243,6 +1275,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                       index={idx}
                       option={opt}
                       availableImages={images}
+                      productName={name}
                       onChange={(updated) => handleUpdateOption(idx, updated)}
                       onDuplicate={() => handleDuplicateOption(idx)}
                       onRemove={() => handleRemoveOption(idx)}
