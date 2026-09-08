@@ -49,117 +49,117 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
         
         {/* Card 1: Total Revenue */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
+        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500">Total Revenue</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Revenue</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Full Value & 3D Clay Rupee Icon */}
-          <div className="flex items-center justify-between gap-2 pt-3 z-10">
-            <div className="space-y-1 min-w-0">
-              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
+          {/* Main Row: Full Value & Proper 3D Clay Rupee Icon */}
+          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
                 ₹14,85,680
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span>↑ 14.2%</span>
+                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 14.2%</span>
                 <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
               </div>
             </div>
 
-            {/* Proper 3D Purple Clay Revenue Icon */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B72F0] via-[#635BFF] to-[#4F46E5] text-white shadow-[0_6px_16px_rgba(99,91,255,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
-              <IndianRupee className="h-6 w-6 stroke-[2.4]" />
+            {/* Proper 3D Royal Purple Clay Rupee Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B72F0] via-[#635BFF] to-[#4F46E5] text-white shadow-[0_6px_16px_rgba(99,91,255,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <IndianRupee className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.4]" />
             </div>
           </div>
         </div>
 
         {/* Card 2: Total Orders */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
+        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500">Total Orders</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Orders</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Full Value & 3D Clay Shopping Bag Icon */}
-          <div className="flex items-center justify-between gap-2 pt-3 z-10">
-            <div className="space-y-1 min-w-0">
-              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
+          {/* Main Row: Full Value & Proper 3D Clay Shopping Bag Icon */}
+          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
                 3,842
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span>↑ 8.3%</span>
+                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 8.3%</span>
                 <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
               </div>
             </div>
 
-            {/* Proper 3D Orange Clay Orders Icon */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
-              <ShoppingBag className="h-6 w-6 stroke-[2.3]" />
+            {/* Proper 3D Sunset Orange Clay Shopping Bag Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <ShoppingBag className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
         {/* Card 3: Total Products */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
+        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500">Total Products</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Products</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Full Value & 3D Clay Products Icon */}
-          <div className="flex items-center justify-between gap-2 pt-3 z-10">
-            <div className="space-y-1 min-w-0">
-              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
+          {/* Main Row: Full Value & Proper 3D Clay Products Icon */}
+          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
                 248
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span>↑ 5.2%</span>
+                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 5.2%</span>
                 <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
               </div>
             </div>
 
-            {/* Proper 3D Blue Clay Products Icon */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
-              <Package className="h-6 w-6 stroke-[2.3]" />
+            {/* Proper 3D Cerulean Blue Clay Products Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <Package className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
         {/* Card 4: Total Customers */}
-        <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
+        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500">Total Customers</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Customers</span>
             <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Main Row: Full Value & 3D Clay Customers Icon */}
-          <div className="flex items-center justify-between gap-2 pt-3 z-10">
-            <div className="space-y-1 min-w-0">
-              <div className="text-xl sm:text-2xl xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap">
+          {/* Main Row: Full Value & Proper 3D Clay Customers Icon */}
+          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
                 8,920
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span>↑ 15.8%</span>
+                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 15.8%</span>
                 <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
               </div>
             </div>
 
             {/* Proper 3D Emerald Clay Customers Icon */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#34D399] via-[#10B981] to-[#059669] text-white shadow-[0_6px_16px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
-              <Users className="h-6 w-6 stroke-[2.3]" />
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#34D399] via-[#10B981] to-[#059669] text-white shadow-[0_6px_16px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <Users className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
