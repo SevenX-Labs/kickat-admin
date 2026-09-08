@@ -57,7 +57,7 @@ export function Header({
             <span className="inline-block transform hover:rotate-12 transition-transform select-none shrink-0">👋</span>
           </h1>
           <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 truncate hidden xs:block">
-            Here&apos;s what&apos;s happening with your finances today.
+            Here&apos;s what&apos;s happening with your store today.
           </p>
         </div>
       </div>

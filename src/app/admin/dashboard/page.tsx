@@ -36,16 +36,20 @@ export default function DashboardPage() {
     <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 no-scrollbar animate-fade-in">
       
       {/* =========================================================
-          1. TOP ROW: 4 Tactile 3D Clay Stat Cards (Zero Overlap Layout)
+          1. TOP ROW: 4 E-COMMERCE 3D CLAY STAT CARDS
+          - Total Revenue
+          - Total Orders
+          - Total Products
+          - Total Customers
           ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
         
-        {/* Card 1: Total Balance (3D Purple Clay Wallet) */}
+        {/* Card 1: Total Revenue (3D Purple Clay Wallet) */}
         <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Balance</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 truncate">Total Revenue</span>
+            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
@@ -54,10 +58,10 @@ export default function DashboardPage() {
           <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
             <div className="min-w-0 space-y-1">
               <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-                ₹2,45,680
+                ₹14,85,680
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span>↑ 12.5%</span>
+                <span>↑ 14.2%</span>
                 <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
               </div>
             </div>
@@ -76,12 +80,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Total Income (3D Green Clay Money Sack) */}
+        {/* Card 2: Total Orders (3D Green Clay Order Delivery Sack) */}
         <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Income</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 truncate">Total Orders</span>
+            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
@@ -90,7 +94,7 @@ export default function DashboardPage() {
           <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
             <div className="min-w-0 space-y-1">
               <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-                ₹1,20,850
+                3,842
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
                 <span>↑ 8.3%</span>
@@ -98,23 +102,23 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Green Clay Money Sack */}
+            {/* 3D Green Clay Order Delivery Sack */}
             <div className="relative shrink-0 flex flex-col items-center justify-center select-none pl-1">
               <div className="w-6 h-2.5 rounded-t-full bg-[#2E8B50] shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.4)] mb-[-2px] z-20" />
               <div className="w-7 h-1.5 rounded-full bg-[#F5CD79] shadow-xs z-30 mb-[-2px]" />
               <div className="clay-badge-green relative z-10 w-14 h-12 rounded-2xl flex items-center justify-center shadow-md">
-                <span className="text-white font-black text-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]">₹</span>
+                <span className="text-white font-black text-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]">📦</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Total Expenses (3D Coral Red Clay Shopping Tote) */}
+        {/* Card 3: Total Products (3D Coral Clay Catalog Box) */}
         <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Total Expenses</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 truncate">Total Products</span>
+            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
@@ -123,7 +127,7 @@ export default function DashboardPage() {
           <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
             <div className="min-w-0 space-y-1">
               <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-                ₹78,900
+                248
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
                 <span>↑ 5.2%</span>
@@ -131,22 +135,22 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Coral Clay Tote Bag */}
+            {/* 3D Coral Clay Catalog Box */}
             <div className="relative shrink-0 flex flex-col items-center justify-center select-none pl-1">
               <div className="w-7 h-4 rounded-t-full border-[3px] border-[#C83848] bg-transparent mb-[-3px] z-0 shadow-xs" />
               <div className="clay-badge-coral relative z-10 w-14 h-11 rounded-2xl flex items-center justify-center shadow-md">
-                <div className="w-5 h-4 rounded-md bg-[#C83848] shadow-inner" />
+                <div className="w-5 h-4 rounded-md bg-[#C83848] shadow-inner flex items-center justify-center text-[10px]">🏷️</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Savings This Month (3D Stack of Gold Clay Coins) */}
+        {/* Card 4: Total Customers (3D Gold Clay Pet Parents Badge) */}
         <div className="clay-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 transition-all hover:scale-[1.01]">
           {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 truncate">Savings This Month</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 truncate">Total Customers</span>
+            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
@@ -155,7 +159,7 @@ export default function DashboardPage() {
           <div className="flex items-end justify-between gap-2 pt-2.5 z-10 min-w-0">
             <div className="min-w-0 space-y-1">
               <div className="text-2xl sm:text-[26px] lg:text-2xl xl:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-                ₹41,950
+                8,920
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
                 <span>↑ 15.8%</span>
@@ -163,16 +167,16 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 3D Stack of Gold Clay Coins */}
+            {/* 3D Gold Clay Pet Parents Coins Badge */}
             <div className="relative shrink-0 flex items-end justify-center select-none h-12 w-14 pl-1">
-              {/* Left stack (2 coins) */}
+              {/* Left stack */}
               <div className="relative flex flex-col items-center -mr-1 z-10">
-                <div className="w-6 h-3.5 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-20 flex items-center justify-center text-[7px] font-black text-[#663C00]">₹</div>
+                <div className="w-6 h-3.5 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-20 flex items-center justify-center text-[7px] font-black text-[#663C00]">🐾</div>
                 <div className="w-6 h-3.5 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] border border-[#FFF2B2]/60 z-10" />
               </div>
-              {/* Right stack (3 coins) */}
+              {/* Right stack */}
               <div className="relative flex flex-col items-center z-20">
-                <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-30 flex items-center justify-center text-[7.5px] font-black text-[#663C00]">₹</div>
+                <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-30 flex items-center justify-center text-[8px] font-black text-[#663C00]">👥</div>
                 <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] -mb-1.5 border border-[#FFF2B2]/60 z-20" />
                 <div className="w-7 h-4 rounded-full bg-gradient-to-br from-[#FFE894] via-[#F7B731] to-[#D48810] shadow-[0_2px_4px_rgba(212,136,16,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.8),inset_0_-1px_1.5px_rgba(150,85,10,0.5)] border border-[#FFF2B2]/60 z-10" />
               </div>
@@ -183,16 +187,19 @@ export default function DashboardPage() {
       </div>
 
       {/* =========================================================
-          2. MIDDLE ROW: Spending Overview (3D Donut Chart) + Recent Transactions
+          2. MIDDLE ROW: Category Sales Breakdown + Recent Store Orders
           ========================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 w-full min-w-0">
         
-        {/* LEFT: Spending Overview (6 Cols) */}
+        {/* LEFT: Category Sales Breakdown (6 Cols) */}
         <div className="clay-card p-4 sm:p-5 lg:p-6 lg:col-span-6 flex flex-col justify-between min-w-0">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-            <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-              Spending Overview
-            </h2>
+            <div>
+              <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                Category Sales Breakdown
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">Revenue distribution across pet catalog</p>
+            </div>
             <div 
               onClick={handleToggleTimeRange}
               className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 cursor-pointer select-none hover:bg-slate-50 transition active:scale-95"
@@ -209,32 +216,32 @@ export default function DashboardPage() {
               <svg className="w-44 h-44 sm:w-48 sm:h-48 transform -rotate-90 drop-shadow-[0_10px_20px_rgba(195,180,165,0.3)]" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="38" stroke="#EAE4DC" strokeWidth="15" fill="none" />
                 
-                {/* Purple segment: Housing (31%) */}
+                {/* Purple segment: Dog Nutrition (33%) */}
                 <circle cx="50" cy="50" r="38" stroke="#6D62FE" strokeWidth="15" fill="none"
-                  strokeDasharray="74 165" strokeDashoffset="0" strokeLinecap="round" />
+                  strokeDasharray="79 160" strokeDashoffset="0" strokeLinecap="round" />
                 
-                {/* Green segment: Food & Dining (24%) */}
+                {/* Green segment: Cat Food & Treats (26%) */}
                 <circle cx="50" cy="50" r="38" stroke="#4EBA79" strokeWidth="15" fill="none"
-                  strokeDasharray="57 182" strokeDashoffset="-76" strokeLinecap="round" />
+                  strokeDasharray="62 177" strokeDashoffset="-80" strokeLinecap="round" />
                 
-                {/* Amber segment: Transport (16%) */}
+                {/* Amber segment: Health & Supplements (16%) */}
                 <circle cx="50" cy="50" r="38" stroke="#F7B731" strokeWidth="15" fill="none"
-                  strokeDasharray="38 201" strokeDashoffset="-135" strokeLinecap="round" />
+                  strokeDasharray="38 201" strokeDashoffset="-144" strokeLinecap="round" />
                 
-                {/* Coral segment: Shopping (13%) */}
+                {/* Coral segment: Toys & Activity (13%) */}
                 <circle cx="50" cy="50" r="38" stroke="#F26674" strokeWidth="15" fill="none"
-                  strokeDasharray="31 208" strokeDashoffset="-175" strokeLinecap="round" />
+                  strokeDasharray="31 208" strokeDashoffset="-184" strokeLinecap="round" />
                 
-                {/* Blue segment: Others (16%) */}
+                {/* Blue segment: Grooming & Accessories (12%) */}
                 <circle cx="50" cy="50" r="38" stroke="#45AAF2" strokeWidth="15" fill="none"
-                  strokeDasharray="38 201" strokeDashoffset="-208" strokeLinecap="round" />
+                  strokeDasharray="28 211" strokeDashoffset="-217" strokeLinecap="round" />
               </svg>
 
               {/* Recessed Center Hub */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-eyebrow">Total</span>
-                <span className="text-xl sm:text-2xl font-black tracking-tight text-[#2A241E]">
-                  ₹78,900
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-eyebrow">Gross Sales</span>
+                <span className="text-lg sm:text-xl font-black tracking-tight text-[#2A241E]">
+                  ₹14.85L
                 </span>
               </div>
             </div>
@@ -242,12 +249,11 @@ export default function DashboardPage() {
             {/* Category Breakdown Legend */}
             <div className="w-full sm:w-auto flex-1 space-y-2">
               {[
-                { label: "Housing", amount: "₹25,000", pct: "31%", color: "bg-[#6D62FE]" },
-                { label: "Food & Dining", amount: "₹18,600", pct: "24%", color: "bg-[#4EBA79]" },
-                { label: "Transport", amount: "₹12,300", pct: "16%", color: "bg-[#F7B731]" },
-                { label: "Shopping", amount: "₹10,500", pct: "13%", color: "bg-[#F26674]" },
-                { label: "Entertainment", amount: "₹6,500", pct: "8%", color: "bg-[#A55EEA]" },
-                { label: "Others", amount: "₹6,000", pct: "8%", color: "bg-[#45AAF2]" },
+                { label: "Dog Nutrition", amount: "₹4,85,000", pct: "33%", color: "bg-[#6D62FE]" },
+                { label: "Cat Food & Treats", amount: "₹3,85,000", pct: "26%", color: "bg-[#4EBA79]" },
+                { label: "Health & Supplements", amount: "₹2,45,000", pct: "16%", color: "bg-[#F7B731]" },
+                { label: "Toys & Activity", amount: "₹1,95,000", pct: "13%", color: "bg-[#F26674]" },
+                { label: "Grooming & Care", amount: "₹1,75,680", pct: "12%", color: "bg-[#45AAF2]" },
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between text-xs py-0.5 px-1 rounded-lg hover:bg-slate-50 transition">
                   <div className="flex items-center gap-2 min-w-0">
@@ -265,15 +271,18 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* RIGHT: Recent Transactions & 3D Character Desk (6 Cols) */}
+        {/* RIGHT: Recent Store Orders & 3D KickAt HQ Card (6 Cols) */}
         <div className="clay-card p-4 sm:p-5 lg:p-6 lg:col-span-6 flex flex-col justify-between min-w-0">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-            <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-              Recent Transactions
-            </h2>
+            <div>
+              <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                Recent Store Orders
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">Real-time pet parent checkout activity</p>
+            </div>
             <Link 
               href="/admin/dashboard/orders" 
-              className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition"
+              className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer"
             >
               View All
             </Link>
@@ -281,29 +290,34 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 pt-3.5 items-center">
             
-            {/* Transactions List (7 Cols) */}
+            {/* Orders List (7 Cols) */}
             <div className="md:col-span-7 space-y-2">
               {[
-                { name: "Starbucks Coffee", category: "Food & Dining", amount: "-₹450", time: "Today", icon: "☕", badgeClass: "clay-badge-amber" },
-                { name: "Uber Ride", category: "Transport", amount: "-₹320", time: "Today", icon: "🚙", badgeClass: "clay-badge-blue" },
-                { name: "Salary from ABC Ltd.", category: "Income", amount: "+₹85,000", time: "Yesterday", isPositive: true, icon: "💳", badgeClass: "clay-badge-green" },
-                { name: "Amazon Shopping", category: "Shopping", amount: "-₹1,250", time: "18 May 2026", icon: "🛍️", badgeClass: "clay-badge-coral" },
-              ].map((tx, idx) => (
+                { name: "Rahul Sharma (#KO-8924)", item: "Royal Canin Maxi Puppy 10kg", amount: "₹4,250", time: "15m ago", icon: "🐕", badgeClass: "clay-badge-amber", status: "Paid" },
+                { name: "Ananya Patel (#KO-8923)", item: "Whiskas Ocean Fish Feast 7kg", amount: "₹2,150", time: "42m ago", icon: "🐈", badgeClass: "clay-badge-purple", status: "Paid" },
+                { name: "Vikram Malhotra (#KO-8922)", item: "Orthopedic Memory Pet Bed", amount: "₹5,800", time: "2h ago", icon: "🦴", badgeClass: "clay-badge-green", status: "Shipped" },
+                { name: "Pooja Iyer (#KO-8921)", item: "Natural Yak Milk Chew Sticks", amount: "₹890", time: "3h ago", icon: "🐾", badgeClass: "clay-badge-coral", status: "Delivered" },
+              ].map((ord, idx) => (
                 <div key={idx} className="flex items-center justify-between p-1.5 rounded-2xl hover:bg-[#F9F6F2] transition">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`${tx.badgeClass} flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl`}>
-                      {tx.icon}
+                    <div className={`${ord.badgeClass} flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl`}>
+                      {ord.icon}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-extrabold text-slate-800 leading-tight truncate">{tx.name}</p>
-                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{tx.category}</p>
+                      <p className="text-xs font-extrabold text-slate-800 leading-tight truncate">{ord.name}</p>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">{ord.item}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`text-xs font-extrabold ${tx.isPositive ? "text-[#20BF6B]" : "text-slate-800"}`}>
-                      {tx.amount}
+                    <p className="text-xs font-extrabold text-slate-900">
+                      {ord.amount}
                     </p>
-                    <p className="text-[10px] font-medium text-slate-400">{tx.time}</p>
+                    <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full ${
+                      ord.status === "Delivered" ? "bg-emerald-50 text-emerald-700" :
+                      ord.status === "Shipped" ? "bg-indigo-50 text-indigo-700" : "bg-orange-50 text-orange-700"
+                    }`}>
+                      {ord.status}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -312,19 +326,19 @@ export default function DashboardPage() {
             {/* 3D Clay Desk Scene (5 Cols) */}
             <div className="md:col-span-5 flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-3xl bg-[#F5EFE9] border border-[#E8DFC0]/50 shadow-[inset_2px_2px_5px_rgba(195,180,165,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.9)] text-center relative overflow-hidden">
               <div className="relative select-none transform hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#635BFF] via-[#7B72F0] to-[#A299FB] flex items-center justify-center text-2xl sm:text-3xl shadow-[0_6px_14px_rgba(99,91,255,0.35),inset_0_2px_3px_rgba(255,255,255,0.5)]">
-                  👦
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#FF7A00] via-[#F97316] to-[#EAA03B] flex items-center justify-center text-2xl sm:text-3xl shadow-[0_6px_14px_rgba(249,115,22,0.35),inset_0_2px_3px_rgba(255,255,255,0.5)]">
+                  🐾
                 </div>
               </div>
               
               <div className="w-full mt-2.5 pt-2 border-t-4 border-[#C7955F] rounded-t-xl bg-[#E8C296] shadow-[inset_0_2px_4px_rgba(255,255,255,0.6),0_3px_6px_rgba(0,0,0,0.08)] p-1.5">
                 <div className="flex items-center justify-center gap-2.5 text-base">
-                  <span className="drop-shadow-xs">☕</span>
-                  <span className="drop-shadow-xs">💻</span>
-                  <span className="drop-shadow-xs">🪴</span>
+                  <span className="drop-shadow-xs">🐶</span>
+                  <span className="drop-shadow-xs">📦</span>
+                  <span className="drop-shadow-xs">🐱</span>
                 </div>
               </div>
-              <p className="text-[10.5px] font-extrabold text-slate-600 mt-1.5">KickAt Pet HQ</p>
+              <p className="text-[10.5px] font-extrabold text-slate-700 mt-1.5">KickAt Pet Store HQ</p>
             </div>
 
           </div>
@@ -333,34 +347,37 @@ export default function DashboardPage() {
       </div>
 
       {/* =========================================================
-          3. BOTTOM ROW: Goals Progress + Smart Tip Card
+          3. BOTTOM ROW: Monthly Sales Targets + Store Growth Insight
           ========================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 w-full min-w-0">
         
-        {/* Goals Progress (7 Cols) */}
+        {/* Monthly Sales Targets (7 Cols) */}
         <div className="clay-card p-4 sm:p-5 lg:p-6 lg:col-span-7 space-y-3.5 min-w-0">
           <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-            <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-              Goals Progress
-            </h2>
-            <button className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-              View All Goals
+            <div>
+              <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                Monthly Sales Targets
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">Progress against month-end ecommerce KPIs</p>
+            </div>
+            <button className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer">
+              Target Settings
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             
-            {/* Goal 1: Vacation in Bali (🏝️) */}
+            {/* Goal 1: Monthly Revenue Target */}
             <div className="clay-inset p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-center gap-2.5">
-                <div className="clay-badge-blue flex h-10 w-10 shrink-0 items-center justify-center text-lg text-white shadow-xs">
-                  🏝️
+                <div className="clay-badge-purple flex h-10 w-10 shrink-0 items-center justify-center text-lg text-white shadow-xs">
+                  💰
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-xs font-extrabold text-slate-800 truncate">Vacation in Bali</h3>
+                  <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Revenue Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
-                    <span className="font-bold text-slate-700">₹60,000 / ₹1,00,000</span>
-                    <span className="font-extrabold text-slate-900">60%</span>
+                    <span className="font-bold text-slate-700">₹14.85L / ₹20.00L</span>
+                    <span className="font-extrabold text-indigo-700">74%</span>
                   </div>
                 </div>
               </div>
@@ -369,22 +386,22 @@ export default function DashboardPage() {
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
                   className="clay-badge-purple h-full rounded-full transition-all duration-500" 
-                  style={{ width: "60%" }} 
+                  style={{ width: "74%" }} 
                 />
               </div>
             </div>
 
-            {/* Goal 2: Buy New Laptop (💻) */}
+            {/* Goal 2: Monthly Orders Target */}
             <div className="clay-inset p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-center gap-2.5">
                 <div className="clay-badge-green flex h-10 w-10 shrink-0 items-center justify-center text-lg text-white shadow-xs">
-                  💻
+                  🛍️
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-xs font-extrabold text-slate-800 truncate">Buy New Laptop</h3>
+                  <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Orders Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
-                    <span className="font-bold text-slate-700">₹45,000 / ₹80,000</span>
-                    <span className="font-extrabold text-slate-900">56%</span>
+                    <span className="font-bold text-slate-700">3,842 / 4,500</span>
+                    <span className="font-extrabold text-emerald-700">85%</span>
                   </div>
                 </div>
               </div>
@@ -393,7 +410,7 @@ export default function DashboardPage() {
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
                   className="clay-badge-green h-full rounded-full transition-all duration-500" 
-                  style={{ width: "56%" }} 
+                  style={{ width: "85%" }} 
                 />
               </div>
             </div>
@@ -401,26 +418,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Smart Tip Card (5 Cols) */}
+        {/* Store Growth Insight (5 Cols) */}
         <div className="clay-tip-card p-4 sm:p-5 lg:p-6 lg:col-span-5 flex flex-col justify-between relative overflow-hidden min-w-0">
           <div className="flex items-start gap-3.5 z-10">
             <div className="clay-badge-amber flex h-11 w-11 shrink-0 items-center justify-center text-xl text-white shadow-xs">
               💡
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-extrabold text-[#1E3B1B]">Smart Tip</h3>
+              <h3 className="text-sm font-extrabold text-[#1E3B1B]">Store Growth Insight</h3>
               <p className="text-xs text-[#3E5C38] leading-relaxed font-semibold">
-                You&apos;re saving 15% more this month.
+                Cat nutrition &amp; organic dental chews reorders increased by 28% this week.
               </p>
               <p className="text-xs font-bold text-[#1E3B1B] pt-0.5">
-                Keep it up! 🎉
+                Keep bestsellers stocked! 🚀
               </p>
             </div>
           </div>
 
           <div className="pt-3 flex justify-end z-10 select-none">
             <div className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-lg">
-              🪴
+              🐾
             </div>
           </div>
         </div>
