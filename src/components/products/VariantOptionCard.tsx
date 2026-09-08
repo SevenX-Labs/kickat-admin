@@ -68,7 +68,7 @@ export function VariantOptionCard({
   const handleNameChange = (newName: string) => {
     let newSku = option.sku;
     if (!isSkuCustomized) {
-      newSku = generateProductSku(productName || "", newName, index + 1);
+      newSku = newName.trim() ? generateProductSku(productName || "", newName, index + 1) : "";
     }
 
     // Auto-detect and sync attribute if only 1 attribute exists
@@ -206,14 +206,19 @@ export function VariantOptionCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Option Name */}
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-700">
-            Option Name *
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-slate-700">
+              Option Name (What customers choose) *
+            </label>
+            <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+              Backend field: name
+            </span>
+          </div>
           <input
             type="text"
             value={option.name}
             onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="e.g., Red, Small, 1.5 kg, Pack of 2"
+            placeholder="e.g., 1.5 kg, Large, or Pack of 2"
             className={`w-full rounded-xl border px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
               errors?.name
                 ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
@@ -227,7 +232,7 @@ export function VariantOptionCard({
             </p>
           ) : (
             <p className="text-[11px] text-slate-400">
-              Customers will see this name when selecting the option.
+              Label customers click to select this version (e.g., 1.5 kg, Large, or Red).
             </p>
           )}
         </div>
@@ -236,7 +241,7 @@ export function VariantOptionCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-bold text-slate-700">
-              Product Code (SKU)
+              Product Code / SKU (Optional)
             </label>
             <button
               type="button"
@@ -245,7 +250,7 @@ export function VariantOptionCard({
               className="text-[11px] font-semibold text-[#FF7A00] hover:underline cursor-pointer select-none flex items-center gap-1"
             >
               <Sparkles className="h-3 w-3" />
-              <span>Auto-generate</span>
+              <span>Re-generate</span>
             </button>
           </div>
           <input
@@ -259,7 +264,7 @@ export function VariantOptionCard({
             className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
           />
           <p className="text-[11px] text-slate-400">
-            Auto-generated SKU code for inventory tracking & order dispatch.
+            Auto-generated inventory code (sent as &quot;sku&quot; in backend). Optional to customize.
           </p>
         </div>
       </div>
@@ -342,7 +347,7 @@ export function VariantOptionCard({
         {/* Original Price */}
         <div className="space-y-1">
           <label className="block text-xs font-bold text-slate-700">
-            Original Price *
+            Original Price (MRP) *
           </label>
           <div className="relative">
             <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">
@@ -359,7 +364,7 @@ export function VariantOptionCard({
                   price: e.target.value === "" ? "" : Number(e.target.value),
                 })
               }
-              placeholder="499"
+              placeholder="e.g., 799"
               className={`w-full rounded-xl border pl-7 pr-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
                 errors?.price
                   ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
@@ -378,7 +383,7 @@ export function VariantOptionCard({
         {/* Selling Price */}
         <div className="space-y-1">
           <label className="block text-xs font-bold text-slate-700">
-            Selling Price
+            Selling Price (Offer - Optional)
           </label>
           <div className="relative">
             <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">
@@ -395,7 +400,7 @@ export function VariantOptionCard({
                   discountPrice: e.target.value === "" ? "" : Number(e.target.value),
                 })
               }
-              placeholder="449"
+              placeholder="e.g., 699"
               className={`w-full rounded-xl border pl-7 pr-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
                 errors?.discountPrice
                   ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
@@ -414,7 +419,7 @@ export function VariantOptionCard({
         {/* Stock */}
         <div className="space-y-1">
           <label className="block text-xs font-bold text-slate-700">
-            Stock *
+            Stock Quantity *
           </label>
           <input
             type="number"
@@ -426,7 +431,7 @@ export function VariantOptionCard({
                 stock: e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0),
               })
             }
-            placeholder="20"
+            placeholder="e.g., 50"
             className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
               errors?.stock
                 ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"

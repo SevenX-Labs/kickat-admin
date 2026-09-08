@@ -359,16 +359,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   // Option actions
   const handleAddOption = () => {
-    const newIndex = options.length + 1;
-    const defaultColor = newIndex === 1 ? "Red" : newIndex === 2 ? "Blue" : newIndex === 3 ? "Green" : `Option ${newIndex}`;
-    const autoSku = generateProductSku(name, defaultColor, newIndex);
     const newOption: OptionItemData = {
-      name: defaultColor,
-      sku: autoSku,
-      price: price !== "" ? price : 499,
-      discountPrice: discountPrice !== "" && discountPrice !== null ? discountPrice : 449,
-      stock: 20,
-      attributes: { color: defaultColor },
+      name: "",
+      sku: "",
+      price: price !== "" ? price : "",
+      discountPrice:
+        discountPrice !== "" && discountPrice !== null ? discountPrice : "",
+      stock: "",
+      attributes: {},
       imageUrl: images[0] || null,
     };
     setOptions([...options, newOption]);
@@ -1061,33 +1059,19 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               onChange={(m) => {
                 setSellingMode(m);
                 if (m === "options" && options.length === 0) {
-                  // Pre-populate with initial options with professional auto-generated SKUs
-                  const opt1 = "Red";
-                  const opt2 = "Blue";
+                  // Initialize with a single blank option carrying over single-mode pricing/stock if entered, or empty
                   setOptions([
                     {
-                      name: opt1,
-                      sku: generateProductSku(name, opt1, 1),
-                      price: price !== "" ? price : 499,
+                      name: "",
+                      sku: "",
+                      price: price !== "" ? price : "",
                       discountPrice:
                         discountPrice !== "" && discountPrice !== null
                           ? discountPrice
-                          : 449,
-                      stock: stock !== "" ? Number(stock) : 20,
-                      attributes: { color: opt1 },
+                          : "",
+                      stock: stock !== "" ? Number(stock) : "",
+                      attributes: {},
                       imageUrl: images[0] || null,
-                    },
-                    {
-                      name: opt2,
-                      sku: generateProductSku(name, opt2, 2),
-                      price: price !== "" ? price : 499,
-                      discountPrice:
-                        discountPrice !== "" && discountPrice !== null
-                          ? discountPrice
-                          : 449,
-                      stock: 15,
-                      attributes: { color: opt2 },
-                      imageUrl: images[1] || images[0] || null,
                     },
                   ]);
                 }
