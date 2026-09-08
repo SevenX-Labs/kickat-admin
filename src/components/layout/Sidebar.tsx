@@ -45,18 +45,24 @@ interface SidebarProps {
   isOpen: boolean;
   onClose?: () => void;
   isCollapsed?: boolean;
+  onLogoutClick?: () => void;
 }
 
 export function Sidebar({ 
   isOpen, 
   onClose, 
-  isCollapsed = false 
+  isCollapsed = false,
+  onLogoutClick,
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   const handleLogout = async () => {
     if (onClose) onClose();
+    if (onLogoutClick) {
+      onLogoutClick();
+      return;
+    }
     try {
       await AdminAuthService.logout();
     } finally {

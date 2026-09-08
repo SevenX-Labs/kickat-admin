@@ -10,19 +10,25 @@ interface HeaderProps {
   onToggleMobileSidebar?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onLogoutClick?: () => void;
 }
 
 export function Header({ 
   onToggleSidebar, 
   onToggleMobileSidebar, 
   isCollapsed = false, 
-  onToggleCollapse 
+  onToggleCollapse,
+  onLogoutClick,
 }: HeaderProps) {
   const router = useRouter();
 
   const handleMobileToggle = onToggleMobileSidebar || onToggleSidebar;
 
   const handleLogout = async () => {
+    if (onLogoutClick) {
+      onLogoutClick();
+      return;
+    }
     try {
       await AdminAuthService.logout();
     } finally {

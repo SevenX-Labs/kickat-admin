@@ -174,7 +174,7 @@ function LoginFormContent() {
                   </label>
                   <Link
                     href="/admin/forgot-password"
-                    className="font-sans text-[11px] font-medium text-orange-600 hover:text-orange-700 hover:underline transition-colors"
+                    className="font-sans text-[11px] font-medium text-orange-600 hover:text-orange-700 hover:underline transition-colors cursor-pointer"
                   >
                     Forgot password?
                   </Link>
@@ -194,7 +194,7 @@ function LoginFormContent() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -213,7 +213,7 @@ function LoginFormContent() {
                   onClick={() => setRememberMe(!rememberMe)}
                 >
                   <div className={`
-                    flex h-4 w-4 items-center justify-center rounded-md border transition-all duration-150
+                    flex h-4 w-4 items-center justify-center rounded-md border transition-all duration-150 cursor-pointer
                     ${rememberMe 
                       ? "border-orange-600 bg-orange-500 text-white shadow-xs shadow-orange-500/30" 
                       : "border-slate-300 bg-white group-hover:border-slate-400"
@@ -221,7 +221,7 @@ function LoginFormContent() {
                   `}>
                     {rememberMe && <Check className="h-3 w-3 stroke-[3]" />}
                   </div>
-                  <span className="font-sans font-medium text-slate-700">Remember this device for 30 days</span>
+                  <span className="font-sans font-medium text-slate-700 cursor-pointer">Remember this device for 30 days</span>
                 </label>
               </div>
 
