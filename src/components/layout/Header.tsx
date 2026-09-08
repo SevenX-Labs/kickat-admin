@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell, Search, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { AdminAuthService } from "@/services/adminAuthService";
+import { Menu, Bell, Search, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -20,21 +18,7 @@ export function Header({
   onToggleCollapse,
   onLogoutClick,
 }: HeaderProps) {
-  const router = useRouter();
-
   const handleMobileToggle = onToggleMobileSidebar || onToggleSidebar;
-
-  const handleLogout = async () => {
-    if (onLogoutClick) {
-      onLogoutClick();
-      return;
-    }
-    try {
-      await AdminAuthService.logout();
-    } finally {
-      router.push("/admin/login");
-    }
-  };
 
   return (
     <header className="flex items-center justify-between gap-3 sm:gap-4 w-full min-w-0">
@@ -109,14 +93,7 @@ export function Header({
           >
             <span className="select-none text-lg sm:text-xl">👦</span>
           </Link>
-          <button
-            onClick={handleLogout}
-            title="Logout"
-            className="clay-button hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 rounded-2xl items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-            aria-label="Logout"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+
         </div>
 
       </div>
