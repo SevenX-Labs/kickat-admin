@@ -83,6 +83,7 @@ export default function CategoriesPage() {
 
   // Delete & Integrity Protection Dialog States
   const [deleteTarget, setDeleteTarget] = useState<AdminCategoryItem | null>(null);
+  const [deletePermanent, setDeletePermanent] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [integrityAlert, setIntegrityAlert] = useState<{ title: string; message: string } | null>(null);
 
@@ -370,8 +371,12 @@ export default function CategoriesPage() {
 
     setDeleting(true);
     try {
-      await AdminCategoryService.deleteCategory(deleteTarget.id);
-      showToast(`Category "${deleteTarget.name}" deleted successfully.`);
+      await AdminCategoryService.deleteCategory(deleteTarget.id, deletePermanent);
+      showToast(
+        deletePermanent
+          ? `Category "${deleteTarget.name}" permanently removed from database.`
+          : `Category "${deleteTarget.name}" soft-deleted successfully.`
+      );
       setDeleteTarget(null);
       await fetchCategories(false);
     } catch (err: unknown) {
@@ -1588,6 +1593,21 @@ export default function CategoriesPage() {
                 </p>
                 <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/60 mt-2 font-medium">
                   Integrity note: The backend prevents deletion if active products or child subcategories are linked.
+                </p>
+
+                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none pt-2">
+                  <input
+                    type="checkbox"
+                    checked={deletePermanent}
+                    onChange={(e) => setDeletePermanent(e.target.checked)}
+                    className="h-4 w-4 rounded accent-rose-600 cursor-pointer"
+                  />
+                  <span className="font-semibold text-rose-700">
+                    Permanently delete from database (Hard Delete)
+                  </span>
+                </label>
+                <p className="text-[10.5px] text-slate-400 pl-6">
+                  Checked by default to completely purge the row from the database. Uncheck for soft-delete.
                 </p>
               </div>
             </div>

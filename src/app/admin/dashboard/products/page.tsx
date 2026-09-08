@@ -93,12 +93,12 @@ export default function ProductsPage() {
 
   // Delete Modal State
   const [deleteProductTarget, setDeleteProductTarget] = useState<AdminProductItem | null>(null);
-  const [deletePermanent, setDeletePermanent] = useState(false);
+  const [deletePermanent, setDeletePermanent] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
   // Bulk Delete Modal State
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [bulkDeletePermanent, setBulkDeletePermanent] = useState(false);
+  const [bulkDeletePermanent, setBulkDeletePermanent] = useState(true);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // In-flight status toggles

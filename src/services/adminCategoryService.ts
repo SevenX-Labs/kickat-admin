@@ -100,9 +100,10 @@ export const AdminCategoryService = {
    * 8. Delete Category (with Integrity Protections)
    * DELETE /api/v1/admin/categories/:id
    */
-  async deleteCategory(id: string): Promise<{ success: boolean; message?: string }> {
+  async deleteCategory(id: string, permanent = true): Promise<{ success: boolean; message?: string }> {
     const res = await apiClient.delete<{ success: boolean; message?: string }>(
-      `/admin/categories/${encodeURIComponent(id)}`
+      `/admin/categories/${encodeURIComponent(id)}`,
+      { params: { permanent } }
     );
     return res.data;
   },

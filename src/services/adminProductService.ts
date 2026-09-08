@@ -115,7 +115,7 @@ export const AdminProductService = {
    */
   async bulkDelete(
     productIds: string[],
-    permanent = false
+    permanent = true
   ): Promise<{ success: boolean; message: string; data: { deletedCount: number } }> {
     const res = await apiClient.post<{
       success: boolean;
@@ -131,7 +131,7 @@ export const AdminProductService = {
    */
   async deleteProduct(
     id: string,
-    permanent = false
+    permanent = true
   ): Promise<{ success: boolean; message: string }> {
     const res = await apiClient.delete<{ success: boolean; message: string }>(
       `/admin/products/${encodeURIComponent(id)}`,

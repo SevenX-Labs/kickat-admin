@@ -227,7 +227,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletePermanent, setDeletePermanent] = useState(false);
+  const [deletePermanent, setDeletePermanent] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteProduct = async () => {
