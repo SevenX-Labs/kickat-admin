@@ -69,6 +69,8 @@ export interface ProductSizeGuide {
   note?: string;
 }
 
+export type VariantAttributes = Record<string, string>;
+
 export interface ProductVariant {
   id?: string;
   productId?: string;
@@ -77,7 +79,7 @@ export interface ProductVariant {
   price: number;
   discountPrice?: number | null;
   stock: number;
-  attributes?: Record<string, any>;
+  attributes?: VariantAttributes;
   imageUrl?: string | null;
 }
 
@@ -209,7 +211,7 @@ export interface CreateProductDto {
     price: number;
     discountPrice?: number | null;
     stock: number;
-    attributes?: Record<string, any>;
+    attributes?: VariantAttributes;
     imageUrl?: string | null;
   }>;
 }
@@ -222,7 +224,7 @@ export interface UpdateProductDto extends Partial<CreateProductDto> {
     price: number;
     discountPrice?: number | null;
     stock: number;
-    attributes?: Record<string, any>;
+    attributes?: VariantAttributes;
     imageUrl?: string | null;
   }>;
 }
