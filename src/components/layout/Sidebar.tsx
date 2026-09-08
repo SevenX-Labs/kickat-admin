@@ -72,15 +72,21 @@ export function Sidebar({
       )}
 
       {/* Floating 3D Clay Sidebar (FinTrack Style) */}
-      <aside className={`
-        clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 transition-all duration-300 ease-in-out lg:static lg:h-full lg:translate-x-0
-        ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"}
-        ${isCollapsed ? "lg:w-[76px]" : "w-[245px] xl:w-[260px]"}
-      `}>
+      <aside 
+        style={{
+          width: isCollapsed ? "80px" : undefined,
+          minWidth: isCollapsed ? "80px" : undefined,
+        }}
+        className={`
+          clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 transition-all duration-300 ease-in-out lg:static lg:h-full
+          ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"}
+          ${isCollapsed ? "w-20 lg:w-20" : "w-[245px] xl:w-[260px]"}
+        `}
+      >
         {/* Brand Header */}
         <div className={`
           flex h-16 sm:h-18 shrink-0 items-center border-b border-slate-100/60 lg:border-none transition-all
-          ${isCollapsed ? "justify-center px-2" : "justify-between px-4 sm:px-5"}
+          ${isCollapsed ? "justify-center px-1.5" : "justify-between px-4 sm:px-5"}
         `}>
           <Link 
             href="/admin/dashboard" 
@@ -130,7 +136,7 @@ export function Sidebar({
 
         {/* Collapsed state expand toggle button */}
         {isCollapsed && onToggleCollapse && (
-          <div className="hidden lg:flex justify-center pb-2 pt-1">
+          <div className="hidden lg:flex justify-center pb-2 pt-0.5">
             <button
               onClick={onToggleCollapse}
               className="clay-button flex h-7 w-7 rounded-xl items-center justify-center text-slate-400 hover:text-indigo-600 transition hover:bg-slate-50"
@@ -142,16 +148,15 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Scrollable Navigation List */}
+        {/* Scrollable Navigation List (Zero Visible Scrollbar) */}
         <div className={`
-          flex-1 overflow-y-auto space-y-3 pb-6 pr-1 pt-1
-          scrollbar-thin scrollbar-thumb-slate-200/90 hover:scrollbar-thumb-slate-300 scrollbar-track-transparent
+          flex-1 overflow-y-auto space-y-2.5 pb-8 pt-1 no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
           ${isCollapsed ? "px-2" : "px-3 sm:px-4"}
         `}>
           {SIDEBAR_NAV_SECTIONS.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {isCollapsed ? (
-                <div className="my-2 h-[1px] w-7 mx-auto bg-slate-200/80 rounded-full" />
+                <div className="my-2 h-[1px] w-6 mx-auto bg-slate-200/80 rounded-full" />
               ) : (
                 <div className="px-3 pb-0.5 pt-1">
                   <span className="font-mono-eyebrow text-[9.5px] font-bold tracking-[0.18em] text-slate-400 uppercase">
@@ -175,7 +180,7 @@ export function Sidebar({
                         group relative flex items-center transition-all duration-200
                         ${isCollapsed 
                           ? "justify-center h-10 w-10 mx-auto rounded-2xl" 
-                          : "justify-between px-3.5 py-2 text-xs font-semibold rounded-2xl"
+                          : "justify-between px-3 py-2 text-xs font-semibold rounded-2xl"
                         }
                         ${isActive 
                           ? "clay-pill-purple text-white shadow-md" 
@@ -190,7 +195,7 @@ export function Sidebar({
 
                       {/* Tooltip in Collapsed Mode */}
                       {isCollapsed && (
-                        <div className="pointer-events-none absolute left-full ml-3.5 hidden group-hover:flex items-center z-50">
+                        <div className="pointer-events-none absolute left-full ml-3 hidden group-hover:flex items-center z-50">
                           <div className="rounded-xl bg-[#2A241E] text-white px-3 py-1.5 text-xs font-medium shadow-xl whitespace-nowrap">
                             {item.label}
                           </div>
@@ -207,7 +212,7 @@ export function Sidebar({
           {/* Account Profile Item */}
           <div className="space-y-1 pt-2 border-t border-slate-100">
             {isCollapsed ? (
-              <div className="my-2 h-[1px] w-7 mx-auto bg-slate-200/80 rounded-full" />
+              <div className="my-2 h-[1px] w-6 mx-auto bg-slate-200/80 rounded-full" />
             ) : (
               <div className="px-3 pb-0.5">
                 <span className="font-mono-eyebrow text-[9.5px] font-bold tracking-[0.18em] text-slate-400 uppercase">
@@ -223,7 +228,7 @@ export function Sidebar({
                 group relative flex items-center transition-all duration-200
                 ${isCollapsed 
                   ? "justify-center h-10 w-10 mx-auto rounded-2xl" 
-                  : "justify-between px-3.5 py-2 text-xs font-semibold rounded-2xl"
+                  : "justify-between px-3 py-2 text-xs font-semibold rounded-2xl"
                 }
                 ${pathname === "/admin/dashboard/profile"
                   ? "clay-pill-purple text-white shadow-md"
@@ -237,7 +242,7 @@ export function Sidebar({
               </div>
 
               {isCollapsed && (
-                <div className="pointer-events-none absolute left-full ml-3.5 hidden group-hover:flex items-center z-50">
+                <div className="pointer-events-none absolute left-full ml-3 hidden group-hover:flex items-center z-50">
                   <div className="rounded-xl bg-[#2A241E] text-white px-3 py-1.5 text-xs font-medium shadow-xl whitespace-nowrap">
                     Admin Profile
                   </div>
