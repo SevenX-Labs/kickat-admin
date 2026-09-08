@@ -48,6 +48,11 @@ import { StepNavigation } from "./StepNavigation";
 import { PhotoGalleryUploader } from "./PhotoGalleryUploader";
 import { ProductSellingMode, SellingMode } from "./ProductSellingMode";
 import { VariantOptionCard, OptionItemData } from "./VariantOptionCard";
+import {
+  CategorySelector,
+  detectPetSpeciesFromCategory,
+  getCategoryBreadcrumb,
+} from "./CategorySelector";
 import { HighlightsEditor } from "./HighlightsEditor";
 import { ReviewSummary } from "./ReviewSummary";
 import { slugify, generateProductSku } from "./slugUtils";
@@ -250,7 +255,17 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       try {
         const res = await AdminCategoryService.getCategories();
         if (mounted && res.data?.categories) {
-          setCategories(res.data.categories);
+          const loadedCats = res.data.categories;
+          setCategories(loadedCats);
+          if (categoryId) {
+            const currentCat = loadedCats.find((c) => c.id === categoryId);
+            if (currentCat) {
+              const derived = detectPetSpeciesFromCategory(currentCat, loadedCats);
+              if (derived) {
+                setPetSpecies(derived);
+              }
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to load categories:", err);
@@ -260,7 +275,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [categoryId]);
 
   const handleNameChange = (val: string) => {
     setName(val);
@@ -269,7 +284,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     }
   };
 
-  const handleCategoryChange = (newCatId: string) => {
+  const handleCategoryChange = (newCatId: string, newCat?: AdminCategoryItem) => {
     setCategoryId(newCatId);
     if (errors.categoryId) {
       setErrors((prev) => {
@@ -279,19 +294,11 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       });
     }
 
-    const cat = categories.find((c) => c.id === newCatId);
+    const cat = newCat || categories.find((c) => c.id === newCatId);
     if (cat) {
-      const combined = `${cat.name} ${cat.slug} ${cat.parent?.name || ""} ${cat.parent?.slug || ""}`.toLowerCase();
-      if (/dog|canine|puppy|puppies/.test(combined)) {
-        setPetSpecies("DOG");
-      } else if (/cat|feline|kitten|kittens/.test(combined)) {
-        setPetSpecies("CAT");
-      } else if (/bird|avian|parrot/.test(combined)) {
-        setPetSpecies("BIRD");
-      } else if (/fish|aquarium|aquatic/.test(combined)) {
-        setPetSpecies("FISH");
-      } else if (/rabbit|bunny|hamster|guinea|rodent/.test(combined)) {
-        setPetSpecies("RABBIT");
+      const derived = detectPetSpeciesFromCategory(cat, categories);
+      if (derived) {
+        setPetSpecies(derived);
       }
     }
   };
@@ -302,15 +309,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   }, [categories, categoryId]);
 
   const detectedSpecies = useMemo((): PetSpecies | null => {
-    if (!selectedCategory) return null;
-    const combined = `${selectedCategory.name} ${selectedCategory.slug} ${selectedCategory.parent?.name || ""} ${selectedCategory.parent?.slug || ""}`.toLowerCase();
-    if (/\bdog\b|\bcanine\b|\bpuppy\b|\bpuppies\b/.test(combined)) return "DOG";
-    if (/\bcat\b|\bfeline\b|\bkitten\b|\bkittens\b/.test(combined)) return "CAT";
-    if (/\bbird\b|\bavian\b|\bparrot\b/.test(combined)) return "BIRD";
-    if (/\bfish\b|\baquarium\b|\baquatic\b/.test(combined)) return "FISH";
-    if (/\brabbit\b|\bbunny\b|\bhamster\b|\bguinea\b|\brodent\b/.test(combined)) return "RABBIT";
-    return null;
-  }, [selectedCategory]);
+    return detectPetSpeciesFromCategory(selectedCategory, categories);
+  }, [selectedCategory, categories]);
 
   const isFoodCategory = useMemo(() => {
     if (!selectedCategory) return false;
@@ -817,44 +817,54 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 <label className="block text-xs font-bold text-slate-700">
                   Category *
                 </label>
-                <select
+                <CategorySelector
                   value={categoryId}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-800 outline-none transition cursor-pointer ${
-                    errors.categoryId
-                      ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
-                      : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
-                  }`}
-                >
-                  <option value="">Select category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.categoryId && (
-                  <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3 shrink-0" />
-                    {errors.categoryId}
-                  </p>
-                )}
-                {detectedSpecies && (
-                  <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
-                    <span>
-                      Pet Type: <strong className="text-slate-800 font-semibold">{detectedSpecies.charAt(0) + detectedSpecies.slice(1).toLowerCase()}</strong> (Automatically detected from category)
-                    </span>
-                  </p>
-                )}
+                  categories={categories}
+                  error={errors.categoryId}
+                  onChange={handleCategoryChange}
+                />
               </div>
 
-              {/* Pet Type Selector - Only shown if the category does NOT already define a specific animal */}
-              {!detectedSpecies && (
-                <div className="space-y-2">
+              {/* Pet Type */}
+              {detectedSpecies ? (
+                <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-700">
                     Pet Type
                   </label>
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-orange-100/80 text-[#FF7A00] flex items-center justify-center font-bold">
+                        {(() => {
+                          const opt = PET_SPECIES_OPTIONS.find((p) => p.id === detectedSpecies);
+                          const IconComp = opt ? opt.icon : HelpCircle;
+                          return <IconComp className="h-5 w-5" />;
+                        })()}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-[#2A241E]">
+                          {PET_SPECIES_OPTIONS.find((p) => p.id === detectedSpecies)?.label || detectedSpecies}
+                        </div>
+                        <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                          <Check className="h-3 w-3 text-emerald-600 stroke-[3]" />
+                          <span>Automatically selected from the product category.</span>
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Derived
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Pet Type
+                    </label>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Select pet species for this category
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                     {PET_SPECIES_OPTIONS.map((item) => {
                       const isSelected = petSpecies === item.id;
@@ -1998,7 +2008,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         {currentStep === 6 && (
           <ReviewSummary
             name={name}
-            categoryName={selectedCategory?.name || ""}
+            categoryName={selectedCategory ? getCategoryBreadcrumb(selectedCategory.id, categories) : ""}
             petSpecies={petSpecies}
             status={status}
             isTrending={isTrending}
