@@ -26,20 +26,22 @@ export default function ForgotPasswordPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form values
-  const [adminId, setAdminId] = useState("");
+  const [adminId, setAdminId] = useState("kickat2021");
   const [otp, setOtp] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Status & Feedback
-  const [loading, setLoading] = useState(false);
+  // Status & Loading flags
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
-  // Step 1: Send OTP to Email
-  const handleRequestOtp = async (e: React.FormEvent) => {
+  // Step 1: Send OTP and IMMEDIATELY move to Step 2 (OTP page)
+  const handleRequestOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setInfoMsg(null);
@@ -50,51 +52,86 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await AdminAuthService.forgotPassword({ adminId: trimmed });
-      setInfoMsg(res.message || `6-digit OTP sent to registered email for ${trimmed}`);
-      setStep(2);
-    } catch (err: any) {
-      const serverMsg =
-        err.response?.data?.message ||
-        err.response?.data?.errors?.[0] ||
-        "Unable to send OTP. Please check your Admin ID.";
-      setError(serverMsg);
-    } finally {
-      setLoading(false);
+    // Immediately advance to Step 2 OTP verification page
+    setStep(2);
+    setSendingOtp(true);
+    setInfoMsg(`Sending 6-digit OTP to email linked to ${trimmed}...`);
+
+    // Dispatch background OTP request
+    AdminAuthService.forgotPassword({ adminId: trimmed })
+      .then((res) => {
+        setInfoMsg(res.message || `6-digit OTP sent to email linked to ${trimmed}`);
+        setError(null);
+      })
+      .catch((err: any) => {
+        const serverMsg =
+          err.response?.data?.message ||
+          err.response?.data?.errors?.[0] ||
+          "Unable to dispatch OTP. Please check your Admin ID.";
+        setError(serverMsg);
+      })
+      .finally(() => {
+        setSendingOtp(false);
+      });
+  };
+
+  // Resend OTP handler on Step 2
+  const handleResendOtp = () => {
+    setError(null);
+    const trimmed = adminId.trim();
+    if (!trimmed) {
+      setStep(1);
+      return;
     }
+
+    setSendingOtp(true);
+    setInfoMsg(`Resending 6-digit code to email linked to ${trimmed}...`);
+
+    AdminAuthService.forgotPassword({ adminId: trimmed })
+      .then((res) => {
+        setInfoMsg(res.message || `New 6-digit OTP sent to registered email for ${trimmed}`);
+        setError(null);
+      })
+      .catch((err: any) => {
+        const serverMsg =
+          err.response?.data?.message ||
+          err.response?.data?.errors?.[0] ||
+          "Unable to resend OTP. Please try again.";
+        setError(serverMsg);
+      })
+      .finally(() => {
+        setSendingOtp(false);
+      });
   };
 
   // Step 2: Verify 6-digit OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setInfoMsg(null);
 
     const trimmedOtp = otp.trim();
     if (!trimmedOtp || trimmedOtp.length !== 6) {
-      setError("Please enter the complete 6-digit OTP.");
+      setError("Please enter the complete 6-digit OTP code.");
       return;
     }
 
-    setLoading(true);
+    setVerifyingOtp(true);
     try {
       const res = await AdminAuthService.verifyResetOtp({
         adminId: adminId.trim(),
         otp: trimmedOtp,
       });
       setResetToken(res.resetToken);
-      setInfoMsg("OTP verified successfully! Create your new password.");
+      setInfoMsg("OTP verified successfully! Configure your new password below.");
       setStep(3);
     } catch (err: any) {
       const serverMsg =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0] ||
-        "Invalid or expired OTP code. Please try again.";
+        "Invalid or expired OTP code. Please check and try again.";
       setError(serverMsg);
     } finally {
-      setLoading(false);
+      setVerifyingOtp(false);
     }
   };
 
@@ -102,14 +139,13 @@ export default function ForgotPasswordPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setInfoMsg(null);
 
     if (newPassword.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
     }
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@%*?&#^()_+\-=\[\]{};':"\|,.<>\/?]).{8,}$/;
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@%*?&#^()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       setError("Password must contain at least 1 uppercase letter, 1 number, and 1 special symbol.");
       return;
@@ -125,10 +161,12 @@ export default function ForgotPasswordPage() {
       newPassword,
       confirmPassword,
     };
+
     // Clear sensitive password inputs from memory
     setNewPassword("");
     setConfirmPassword("");
-    setLoading(true);
+    setResettingPassword(true);
+
     try {
       const res = await AdminAuthService.resetPassword(payload);
       // Wipe ephemeral reset token and OTP from memory
@@ -143,10 +181,10 @@ export default function ForgotPasswordPage() {
       const serverMsg =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0] ||
-        "Password reset failed. The token may have expired.";
+        "Password reset failed. The reset token may have expired.";
       setError(serverMsg);
     } finally {
-      setLoading(false);
+      setResettingPassword(false);
     }
   };
 
@@ -186,7 +224,7 @@ export default function ForgotPasswordPage() {
 
             <h2 className="mt-2 font-fraunces text-2xl sm:text-[26px] font-bold tracking-[-0.02em] text-[#211C15]">
               {step === 1 && "Recover Access"}
-              {step === 2 && "Verify OTP"}
+              {step === 2 && "Enter Verification OTP"}
               {step === 3 && "Set New Password"}
               {step === 4 && "Success!"}
             </h2>
@@ -194,7 +232,7 @@ export default function ForgotPasswordPage() {
             <p className="mt-1 text-xs sm:text-[13px] text-slate-500 max-w-[320px] leading-relaxed">
               {step === 1 && "Enter your unique Admin ID to receive a secure 6-digit recovery code on your linked email."}
               {step === 2 && `Enter the 6-digit OTP code sent to the email linked to ${adminId}.`}
-              {step === 3 && "Choose a strong, new password with at least 8 characters, uppercase, number & symbol."}
+              {step === 3 && "Choose a strong new password with at least 8 characters, uppercase, number & symbol."}
               {step === 4 && "Your administrator password has been safely updated."}
             </p>
           </div>
@@ -216,22 +254,29 @@ export default function ForgotPasswordPage() {
             </div>
           )}
 
-          {/* Feedback Messages */}
+          {/* Dynamic Feedback Banners */}
           {error && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800">
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-fade-in">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {infoMsg && !error && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800">
+          {sendingOtp && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-800 animate-fade-in">
+              <Loader2 className="h-4 w-4 shrink-0 text-amber-600 animate-spin" />
+              <span>Dispatching 6-digit OTP code to registered email...</span>
+            </div>
+          )}
+
+          {infoMsg && !error && !sendingOtp && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800 animate-fade-in">
               <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
               <span>{infoMsg}</span>
             </div>
           )}
 
-          {/* Step 1: Enter Admin ID */}
+          {/* STEP 1: Enter Admin ID */}
           {step === 1 && (
             <form className="mt-5 space-y-4" onSubmit={handleRequestOtp}>
               <div className="space-y-1.5 text-left">
@@ -256,36 +301,34 @@ export default function ForgotPasswordPage() {
               <div className="pt-1">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
+                  className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] cursor-pointer"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Sending OTP...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Send 6-Digit OTP</span>
-                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                    </>
-                  )}
+                  <span>Send 6-Digit OTP</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
               </div>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 flex items-center justify-between text-xs font-semibold">
                 <Link
                   href="/admin/login"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-orange-600 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-slate-500 hover:text-orange-600 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   <span>Back to Sign In</span>
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="text-orange-600 hover:underline cursor-pointer"
+                >
+                  Already have OTP?
+                </button>
               </div>
             </form>
           )}
 
-          {/* Step 2: Verify 6-digit OTP */}
+          {/* STEP 2: Verify 6-digit OTP */}
           {step === 2 && (
             <form className="mt-5 space-y-4" onSubmit={handleVerifyOtp}>
               <div className="space-y-1.5 text-left">
@@ -295,11 +338,11 @@ export default function ForgotPasswordPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={handleRequestOtp}
-                    disabled={loading}
-                    className="text-[11px] font-semibold text-orange-600 hover:underline cursor-pointer"
+                    onClick={handleResendOtp}
+                    disabled={sendingOtp}
+                    className="text-[11px] font-semibold text-orange-600 hover:underline cursor-pointer disabled:opacity-50"
                   >
-                    Resend OTP
+                    {sendingOtp ? "Resending..." : "Resend OTP"}
                   </button>
                 </div>
                 <div className="relative">
@@ -310,6 +353,7 @@ export default function ForgotPasswordPage() {
                     type="text"
                     maxLength={6}
                     required
+                    autoFocus
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     placeholder="123456"
@@ -321,10 +365,10 @@ export default function ForgotPasswordPage() {
               <div className="pt-1">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={verifyingOtp}
                   className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
                 >
-                  {loading ? (
+                  {verifyingOtp ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Verifying OTP...</span>
@@ -341,7 +385,10 @@ export default function ForgotPasswordPage() {
               <div className="pt-2 text-center">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setError(null);
+                    setStep(1);
+                  }}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-orange-600 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
@@ -351,7 +398,7 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          {/* Step 3: Create New Password */}
+          {/* STEP 3: Create New Password */}
           {step === 3 && (
             <form className="mt-5 space-y-4" onSubmit={handleResetPassword}>
               <div className="space-y-1.5 text-left">
@@ -402,10 +449,10 @@ export default function ForgotPasswordPage() {
               <div className="pt-1">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={resettingPassword}
                   className="group flex h-11 sm:h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 font-sans text-sm font-bold text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none cursor-pointer"
                 >
-                  {loading ? (
+                  {resettingPassword ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Updating Password...</span>
@@ -421,7 +468,7 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          {/* Step 4: Success */}
+          {/* STEP 4: Success */}
           {step === 4 && (
             <div className="mt-6 space-y-4 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-xs">
@@ -436,7 +483,7 @@ export default function ForgotPasswordPage() {
               <div className="pt-2">
                 <Link
                   href="/admin/login"
-                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 py-3 text-xs font-bold text-white shadow-md hover:brightness-105 transition-all w-full"
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#F97316] to-[#EA580C] px-5 py-3 text-xs font-bold text-white shadow-md hover:brightness-105 transition-all w-full cursor-pointer"
                 >
                   <span>Go to Sign In Now</span>
                   <ArrowRight className="h-4 w-4" />
