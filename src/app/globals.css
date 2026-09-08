@@ -184,3 +184,24 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+
+/* Sidebar responsive layout guarantees */
+@media (max-width: 1023px) {
+  .sidebar-mobile {
+    width: 275px !important;
+    min-width: 275px !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+@media (min-width: 1024px) {
+  .sidebar-desktop-collapsed {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+  }
+  .sidebar-desktop-expanded {
+    width: 255px !important;
+    min-width: 255px !important;
+  }
+}
