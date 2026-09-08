@@ -89,7 +89,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="clay-button inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+          className="clay-btn-orange inline-flex items-center gap-2 rounded-2xl px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
           <span>{saving ? "Saving..." : "Save Settings"}</span>

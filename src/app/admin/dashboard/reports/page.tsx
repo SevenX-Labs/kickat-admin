@@ -72,7 +72,7 @@ export default function ReportsPage() {
 
           <button
             onClick={() => handleDownload("Comprehensive Executive Summary", "PDF")}
-            className="clay-button inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="clay-btn-orange inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <Download className="h-4 w-4 stroke-[2.5]" />
             <span>Export Master PDF</span>

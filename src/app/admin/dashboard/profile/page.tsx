@@ -212,7 +212,7 @@ export default function AdminProfilePage() {
                 <button
                   type="submit"
                   disabled={savingProfile}
-                  className="clay-button inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  className="clay-btn-orange inline-flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Save className="h-3.5 w-3.5" />
                   <span>{savingProfile ? "Saving..." : "Save Profile"}</span>

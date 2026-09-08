@@ -141,7 +141,7 @@ export default function ProductsPage() {
 
           <Link
             href="/admin/dashboard/products/create"
-            className="clay-button inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all"
+            className="clay-btn-orange inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Add Product</span>

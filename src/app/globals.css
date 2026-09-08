@@ -102,6 +102,47 @@
 }
 
 /* Rounded Clay Buttons */
+
+/* Tactile Primary Orange Clay Button */
+.clay-btn-orange {
+  background: linear-gradient(135deg, #FF6B00 0%, #EA580C 100%) !important;
+  color: #FFFFFF !important;
+  border-radius: 18px;
+  box-shadow: 
+    0 6px 16px rgba(234, 88, 12, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 3px rgba(154, 52, 18, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+.clay-btn-orange:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45);
+}
+.clay-btn-orange:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Tactile Primary Purple Clay Button */
+.clay-btn-purple {
+  background: linear-gradient(135deg, #6B62FE 0%, #584EE6 100%) !important;
+  color: #FFFFFF !important;
+  border-radius: 18px;
+  box-shadow: 
+    0 6px 16px rgba(99, 91, 255, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 3px rgba(45, 38, 150, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+.clay-btn-purple:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 22px rgba(99, 91, 255, 0.45);
+}
+.clay-btn-purple:active {
+  transform: translateY(1px) scale(0.98);
+}
+
 .clay-button {
   background: #FFFFFF;
   border-radius: 18px;
