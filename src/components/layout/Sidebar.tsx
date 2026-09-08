@@ -73,7 +73,7 @@ export function Sidebar({
           clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 lg:static lg:h-full
           sidebar-mobile ${isCollapsed ? "sidebar-desktop-collapsed" : "sidebar-desktop-expanded"}
           transition-[width,transform] duration-200 ease-out will-change-[width,transform]
-          ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"}
+          ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[calc(100%+32px)] lg:translate-x-0"}
         `}
       >
         {/* Brand Header */}

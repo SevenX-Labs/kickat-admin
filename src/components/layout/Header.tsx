@@ -57,7 +57,7 @@ export function Header({
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="font-fraunces text-xl sm:text-2xl lg:text-[28px] font-bold text-[#2A241E] flex items-center gap-1.5 sm:gap-2 tracking-tight truncate">
+          <h1 className="font-fraunces text-base sm:text-xl lg:text-[26px] font-bold text-[#2A241E] flex items-center gap-1.5 sm:gap-2 tracking-tight truncate">
             <span>Good morning!</span>
             <span className="inline-block transform hover:rotate-12 transition-transform select-none shrink-0">👋</span>
           </h1>
