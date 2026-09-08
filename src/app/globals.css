@@ -211,3 +211,38 @@
     min-width: 255px !important;
   }
 }
+
+/* =========================================================
+   WARM CLAY SKELETON SHIMMER SYSTEM
+   ========================================================= */
+
+@keyframes clay-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #EDE6DF 0%,
+    #F6F0EA 50%,
+    #EDE6DF 100%
+  );
+  background-size: 200% 100%;
+  animation: clay-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-shimmer-light {
+  background: linear-gradient(
+    90deg,
+    #F4EFEB 0%,
+    #FFFFFF 50%,
+    #F4EFEB 100%
+  );
+  background-size: 200% 100%;
+  animation: clay-shimmer 1.6s ease-in-out infinite;
+}

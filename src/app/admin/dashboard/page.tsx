@@ -5,13 +5,35 @@ import {
   ChevronDown
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState("This Month");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Initial mount skeleton loader
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleToggleTimeRange = () => {
+    setIsLoading(true);
+    setTimeRange(prev => prev === "This Month" ? "Last Month" : "This Month");
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 450);
+  };
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
-    <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 no-scrollbar">
+    <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 no-scrollbar animate-fade-in">
       
       {/* =========================================================
           1. TOP ROW: 4 Tactile 3D Clay Stat Cards (Zero Overlap Layout)
@@ -172,7 +194,7 @@ export default function DashboardPage() {
               Spending Overview
             </h2>
             <div 
-              onClick={() => setTimeRange(timeRange === "This Month" ? "Last Month" : "This Month")}
+              onClick={handleToggleTimeRange}
               className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 cursor-pointer select-none hover:bg-slate-50 transition active:scale-95"
             >
               <span>{timeRange}</span>
