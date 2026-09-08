@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
 
   return (
-    <div className="relative min-h-screen lg:h-screen w-screen bg-[radial-gradient(ellipse_at_top,_#FFFFFF_0%,_#FFFDF9_45%,_#FAF4EC_100%)] text-slate-900 overflow-y-auto lg:overflow-hidden flex flex-col justify-between selection:bg-orange-500 selection:text-white px-6 sm:px-12 lg:px-16 py-4 sm:py-6">
+    <div className="relative min-h-screen min-h-[100dvh] w-full bg-[radial-gradient(ellipse_at_top,_#FFFFFF_0%,_#FFFDF9_45%,_#FAF4EC_100%)] text-slate-900 overflow-y-auto lg:overflow-x-hidden flex flex-col justify-between selection:bg-orange-500 selection:text-white px-4 sm:px-8 lg:px-12 xl:px-16 py-4 sm:py-6">
       
       {/* Background Texture */}
       <div 
@@ -35,21 +35,21 @@ export default function LoginPage() {
       />
 
       {/* Ambient Glows */}
-      <div className="pointer-events-none fixed -top-28 -left-24 z-0 h-[480px] w-[480px] rounded-full bg-gradient-to-br from-orange-200/35 to-amber-100/10 blur-[110px]" />
-      <div className="pointer-events-none fixed top-1/2 right-8 z-0 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-gradient-to-bl from-orange-200/25 via-amber-100/10 to-transparent blur-[120px]" />
+      <div className="pointer-events-none fixed -top-28 -left-24 z-0 h-[380px] sm:h-[480px] w-[380px] sm:w-[480px] rounded-full bg-gradient-to-br from-orange-200/35 to-amber-100/10 blur-[100px]" />
+      <div className="pointer-events-none fixed top-1/2 right-4 sm:right-8 z-0 h-[400px] sm:h-[500px] w-[400px] sm:w-[500px] -translate-y-1/2 rounded-full bg-gradient-to-bl from-orange-200/25 via-amber-100/10 to-transparent blur-[110px]" />
 
       {/* Top Spacer */}
-      <div className="relative z-20 mx-auto w-full max-w-7xl h-2 shrink-0" />
+      <div className="relative z-20 mx-auto w-full max-w-7xl h-1 sm:h-2 shrink-0" />
 
       {/* Main Split-Screen Container */}
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center lg:flex-row lg:items-center lg:justify-between lg:gap-14 min-h-0 py-2">
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center lg:flex-row lg:items-center lg:justify-between lg:gap-10 xl:gap-14 min-h-0 py-2 sm:py-4">
         
         {/* LEFT COLUMN: Premium SaaS Login Card */}
         <div className="relative w-full max-w-[428px] shrink-0">
           
-          <div className="rounded-[24px] border border-black/[0.04] bg-white px-7 py-7 sm:px-9 sm:py-8 shadow-[0_20px_60px_rgba(249,115,22,0.10),0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all">
+          <div className="rounded-[24px] border border-black/[0.04] bg-white px-5 py-6 sm:px-8 sm:py-8 md:px-9 shadow-[0_20px_60px_rgba(249,115,22,0.10),0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all">
             
-            {/* Header: Logo and Subtitle with clear vertical stack */}
+            {/* Header: Logo and Subtitle */}
             <div className="flex flex-col items-center text-center">
               
               {/* Logo block */}
@@ -60,19 +60,18 @@ export default function LoginPage() {
                     alt="KickAt"
                     width={240}
                     height={100}
-                    className="h-14 sm:h-16 md:h-18 w-auto max-w-[190px] sm:max-w-[230px] object-contain select-none mix-blend-multiply transition-all duration-200"
+                    className="h-12 sm:h-14 md:h-16 w-auto max-w-[170px] sm:max-w-[210px] object-contain select-none mix-blend-multiply transition-all duration-200"
                     priority
                   />
                 </div>
                 
-                {/* Clear separation to prevent collision */}
-                <span className="mt-2.5 sm:mt-3 font-mono-eyebrow text-[10.5px] sm:text-[11px] font-semibold tracking-[0.22em] text-[#E7A03B] uppercase">
+                <span className="mt-2 sm:mt-2.5 font-mono-eyebrow text-[10px] sm:text-[11px] font-semibold tracking-[0.2em] text-[#E7A03B] uppercase">
                   Admin Portal Access
                 </span>
               </div>
               
               {/* Welcome back heading */}
-              <h2 className="mt-3.5 sm:mt-4 font-fraunces text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-[#211C15]">
+              <h2 className="mt-3 sm:mt-4 font-fraunces text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-[#211C15]">
                 Welcome back
               </h2>
               <p className="mt-1 max-w-[290px] font-sans text-xs sm:text-[13px] text-slate-500 font-normal leading-relaxed">
@@ -97,7 +96,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@kickat.in"
-                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-4 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
                   />
                 </div>
               </div>
@@ -124,21 +123,19 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-10 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(249,115,22,0.12)]"
+                    className="h-11 sm:h-12 w-full rounded-[12px] border border-slate-200/90 bg-[#FBFDFE] pl-10 pr-11 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/15"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                    <span className="cursor-pointer">
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </span>
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -177,7 +174,7 @@ export default function LoginPage() {
         </div>
 
         {/* RIGHT COLUMN: Brand Story & 2x2 Feature Cards */}
-        <div className="hidden lg:flex w-full flex-col justify-center lg:w-[54%] xl:w-[52%] space-y-4">
+        <div className="hidden lg:flex w-full flex-col justify-center lg:w-[52%] xl:w-[50%] space-y-4">
           <div className="space-y-1.5">
             <p className="font-mono-eyebrow text-[11px] font-medium tracking-[0.2em] text-[#E7A03B] uppercase">
               Why KickAt?
@@ -247,10 +244,9 @@ export default function LoginPage() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between pt-3 pb-1 text-xs text-slate-400 border-t border-orange-100/70 shrink-0 select-none">
+      {/* Footer - Responsive and safe for mobile screens */}
+      <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-center sm:justify-start pt-3 pb-5 sm:pb-2 text-center sm:text-left text-[11px] sm:text-xs text-slate-400 border-t border-orange-100/70 shrink-0 select-none">
         <p>© {new Date().getFullYear()} KickAt Ecommerce Platform. All rights reserved.</p>
-        
       </footer>
     </div>
   );
