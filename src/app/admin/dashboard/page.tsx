@@ -302,7 +302,7 @@ export default function DashboardPage() {
                   <span className="drop-shadow-xs">🪴</span>
                 </div>
               </div>
-              <p className="text-[10.5px] font-extrabold text-slate-600 mt-1.5">FinTrack Workspace</p>
+              <p className="text-[10.5px] font-extrabold text-slate-600 mt-1.5">KickAt Pet HQ</p>
             </div>
 
           </div>

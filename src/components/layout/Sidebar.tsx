@@ -86,20 +86,25 @@ export function Sidebar({
           <Link 
             href="/admin/dashboard" 
             onClick={onClose}
-            className="flex items-center gap-3 group min-w-0"
-            title={isCollapsed ? "FinTrack Dashboard" : undefined}
+            className="flex items-center gap-2.5 group min-w-0"
+            title={isCollapsed ? "KickAt Admin Dashboard" : undefined}
           >
-            {/* 3D Puffy Clay Logo Badge */}
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#635BFF] to-[#7B72F0] text-white shadow-[0_6px_14px_rgba(99,91,255,0.35),inset_0_2px_3px_rgba(255,255,255,0.45),inset_0_-2px_3px_rgba(40,30,140,0.35)] hover:scale-105 active:scale-95 transition-transform">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-none stroke-white stroke-[2.5]" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            {/* 3D Puffy Clay Logo Badge with Pet Paw Emblem */}
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-amber-400 text-white shadow-[0_6px_14px_rgba(234,88,12,0.35),inset_0_2px_3px_rgba(255,255,255,0.5),inset_0_-2px_3px_rgba(154,52,18,0.35)] hover:scale-105 active:scale-95 transition-transform">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-white drop-shadow-xs" viewBox="0 0 24 24">
+                <path d="M12 10.5c1.38 0 2.5-1.12 2.5-2.5S13.38 5.5 12 5.5s-2.5 1.12-2.5 2.5 1.12 2.5 2.5 2.5zm-4.5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm9 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-4.5 2c-2.48 0-4.5 1.57-4.5 3.5 0 1.25.86 2.34 2.16 2.95.74.35 1.57.55 2.34.55.77 0 1.6-.2 2.34-.55 1.3-.61 2.16-1.7 2.16-2.95 0-1.93-2.02-3.5-4.5-3.5z"/>
               </svg>
             </div>
             
-            {/* Brand Title: Always visible on mobile, hidden on desktop collapsed */}
-            <div className={`min-w-0 flex-1 ${isCollapsed ? "lg:hidden block" : "block"}`}>
-              <span className="font-fraunces text-2xl font-bold tracking-tight text-[#2A241E] truncate block">
-                FinTrack
+            {/* KickAt Brand Logo Image & Admin Tag: Always visible on mobile, hidden on desktop collapsed */}
+            <div className={`min-w-0 flex-1 flex items-center gap-2 ${isCollapsed ? "lg:hidden flex" : "flex"}`}>
+              <img 
+                src="/logo-clean.png" 
+                alt="KickAt Pet Commerce" 
+                className="h-7 sm:h-8 w-auto object-contain max-w-[110px]" 
+              />
+              <span className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider rounded-md bg-orange-100 text-orange-700 border border-orange-200/60 font-mono-eyebrow shrink-0">
+                Admin
               </span>
             </div>
           </Link>
