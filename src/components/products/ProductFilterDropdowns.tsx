@@ -118,7 +118,7 @@ export function CategoryFilterDropdown({
   }, [categories, rootCategories, search]);
 
   return (
-    <div ref={dropdownRef} className="relative w-full">
+    <div ref={dropdownRef} className={`relative w-full ${isOpen ? "z-50" : "z-10"}`}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -190,7 +190,9 @@ export function CategoryFilterDropdown({
 
       {/* Popover Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 w-full min-w-[260px] sm:min-w-[290px] bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <>
+        <div className="fixed inset-0 z-40 bg-transparent sm:hidden" onClick={() => setIsOpen(false)} />
+        <div className="absolute top-full left-0 mt-1.5 w-[calc(100vw-3rem)] sm:w-80 max-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Quick Search */}
           {categories.length > 4 && (
             <div className="p-2 border-b border-slate-100 bg-[#FAF7F2]">
@@ -339,7 +341,7 @@ export function CategoryFilterDropdown({
             )}
           </div>
         </div>
-      )}
+      </>)}
     </div>
   );
 }
@@ -399,7 +401,7 @@ export function SpeciesFilterDropdown({ value, onChange, onClear }: SpeciesFilte
   const IconComponent = currentOption.icon;
 
   return (
-    <div ref={dropdownRef} className="relative w-full">
+    <div ref={dropdownRef} className={`relative w-full ${isOpen ? "z-50" : "z-10"}`}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -444,7 +446,9 @@ export function SpeciesFilterDropdown({ value, onChange, onClear }: SpeciesFilte
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 w-full min-w-[200px] bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
+        <>
+          <div className="fixed inset-0 z-40 bg-transparent sm:hidden" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1.5 w-[calc(100vw-3rem)] sm:w-64 max-w-[280px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
           {SPECIES_OPTIONS.map((opt) => {
             const isSelected = value === opt.value;
             const OptIcon = opt.icon;
@@ -471,6 +475,7 @@ export function SpeciesFilterDropdown({ value, onChange, onClear }: SpeciesFilte
             );
           })}
         </div>
+        </>
       )}
     </div>
   );
@@ -527,7 +532,7 @@ export function StockFilterDropdown({ value, onChange, onClear }: StockFilterDro
   const currentOption = STOCK_OPTIONS.find((o) => o.value === value) || STOCK_OPTIONS[0];
 
   return (
-    <div ref={dropdownRef} className="relative w-full">
+    <div ref={dropdownRef} className={`relative w-full ${isOpen ? "z-50" : "z-10"}`}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -576,7 +581,9 @@ export function StockFilterDropdown({ value, onChange, onClear }: StockFilterDro
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 w-full min-w-[200px] bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
+        <>
+          <div className="fixed inset-0 z-40 bg-transparent sm:hidden" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full left-0 mt-1.5 w-[calc(100vw-3rem)] sm:w-60 max-w-[260px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
           {STOCK_OPTIONS.map((opt) => {
             const isSelected = value === opt.value;
             return (
@@ -606,6 +613,7 @@ export function StockFilterDropdown({ value, onChange, onClear }: StockFilterDro
             );
           })}
         </div>
+        </>
       )}
     </div>
   );
@@ -661,7 +669,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
   const currentOption = SORT_OPTIONS.find((o) => o.value === value) || SORT_OPTIONS[0];
 
   return (
-    <div ref={dropdownRef} className="relative w-full">
+    <div ref={dropdownRef} className={`relative w-full ${isOpen ? "z-50" : "z-10"}`}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -680,7 +688,9 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 sm:left-auto mt-1.5 w-full min-w-[200px] bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
+        <>
+          <div className="fixed inset-0 z-40 bg-transparent sm:hidden" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full right-0 mt-1.5 w-[calc(100vw-3rem)] sm:w-60 max-w-[260px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1.5 space-y-0.5 text-xs">
           {SORT_OPTIONS.map((opt) => {
             const isSelected = value === opt.value;
             return (
@@ -703,6 +713,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
             );
           })}
         </div>
+        </>
       )}
     </div>
   );

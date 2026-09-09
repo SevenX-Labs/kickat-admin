@@ -485,7 +485,7 @@ export default function ProductsPage() {
       {/* =========================================================
           3. SEARCH, FILTERS & VIEW MODE CONTROLS
           ========================================================= */}
-      <div className="clay-card p-3.5 sm:p-4 space-y-3">
+      <div className="clay-card p-3.5 sm:p-4 space-y-3 relative z-30">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -516,7 +516,7 @@ export default function ProductsPage() {
           {/* Quick Status Buttons & View Mode Toggle Row */}
           <div className="flex items-center justify-between gap-2 min-w-0 w-full md:w-auto">
             {/* Quick Status Buttons */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1 sm:flex-initial">
               {(["ALL", "ACTIVE", "DRAFT", "INACTIVE"] as const).map((st) => (
                 <button
                   key={st}
@@ -934,7 +934,7 @@ export default function ProductsPage() {
         /* =========================================================
             TABLE VIEW
             ========================================================= */
-        <div className="clay-card overflow-hidden">
+        <div className="clay-card overflow-hidden relative z-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-[#F8F5F1] border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
