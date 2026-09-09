@@ -112,6 +112,17 @@ export default function ProductsPage() {
     setTimeout(() => setToast(null), 3800);
   }, []);
 
+  // Read category query param from URL on initial client load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const catParam = urlParams.get("category") || urlParams.get("categoryId");
+      if (catParam) {
+        setCategoryFilter(catParam);
+      }
+    }
+  }, []);
+
   // Fetch Categories once for filter dropdown
   useEffect(() => {
     AdminCategoryService.getCategories()

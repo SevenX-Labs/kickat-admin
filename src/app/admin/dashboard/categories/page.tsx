@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   FolderTree,
+  Package,
   Layers,
   CheckCircle2,
   AlertCircle,
@@ -40,6 +41,36 @@ import {
 import { AdminCategoryService } from "@/services/adminCategoryService";
 import { AdminUploadService } from "@/services/adminUploadService";
 import { StatCardsSkeleton } from "@/components/ui/Skeleton";
+import Link from "next/link";
+
+
+/**
+ * Calculate total products for a category:
+ * - Subcategory: returns direct productsCount (or _count?.products fallback).
+ * - Root category: returns direct products plus all products across its child subcategories.
+ */
+function getCategoryProductCount(
+  category: AdminCategoryItem,
+  subcategories?: AdminCategoryItem[]
+): number {
+  const direct = category.productsCount ?? category._count?.products ?? 0;
+  if (!subcategories || subcategories.length === 0) {
+    return direct;
+  }
+  const subTotal = subcategories.reduce(
+    (acc, sub) => acc + (sub.productsCount ?? sub._count?.products ?? 0),
+    0
+  );
+  return direct + subTotal;
+}
+
+function formatProductCount(count: number): string {
+  return `${count} ${count === 1 ? "product" : "products"} linked`;
+}
+
+function formatSubcategoryCount(count: number): string {
+  return `${count} ${count === 1 ? "subcategory" : "subcategories"}`;
+}
 
 // Helper to slugify category names
 function slugify(text: string): string {
@@ -256,18 +287,92 @@ export default function CategoriesPage() {
       .sort((a, b) => a.order - b.order);
   }, [categories]);
 
-  // Hierarchical Tree Structure
+  // Hierarchical Tree Structure with full filter support
   const hierarchicalTree = useMemo(() => {
-    return rootCategories.map((root) => {
-      const children = categories
-        .filter((c) => c.parentId === root.id)
-        .sort((a, b) => a.order - b.order);
-      return {
-        ...root,
-        subcategories: children,
-      };
-    });
-  }, [categories, rootCategories]);
+    const q = searchQuery.toLowerCase().trim();
+
+    return rootCategories
+      .map((root) => {
+        const directChildren = categories
+          .filter((c) => c.parentId === root.id)
+          .sort((a, b) => a.order - b.order);
+
+        // Filter children
+        const matchingChildren = directChildren.filter((child) => {
+          if (statusFilter === "ACTIVE" && !child.isActive) return false;
+          if (statusFilter === "INACTIVE" && child.isActive) return false;
+          if (levelFilter === "ROOT") return false;
+          if (q) {
+            const nameMatch = child.name.toLowerCase().includes(q);
+            const slugMatch = child.slug.toLowerCase().includes(q);
+            return nameMatch || slugMatch;
+          }
+          return true;
+        });
+
+        // Does root itself match?
+        let rootMatches = true;
+        if (statusFilter === "ACTIVE" && !root.isActive) rootMatches = false;
+        if (statusFilter === "INACTIVE" && root.isActive) rootMatches = false;
+        if (levelFilter === "SUB") rootMatches = false;
+
+        if (q) {
+          const nameMatch = root.name.toLowerCase().includes(q);
+          const slugMatch = root.slug.toLowerCase().includes(q);
+          rootMatches = rootMatches && (nameMatch || slugMatch);
+        }
+
+        // If levelFilter is SUB, only show root if it has matching children
+        if (levelFilter === "SUB") {
+          return matchingChildren.length > 0
+            ? { ...root, subcategories: matchingChildren }
+            : null;
+        }
+
+        // If levelFilter is ROOT
+        if (levelFilter === "ROOT") {
+          return rootMatches ? { ...root, subcategories: [] } : null;
+        }
+
+        // When search query is active
+        if (q) {
+          if (rootMatches || matchingChildren.length > 0) {
+            return {
+              ...root,
+              subcategories: matchingChildren,
+            };
+          }
+          return null;
+        }
+
+        // When statusFilter is active
+        if (statusFilter !== "ALL") {
+          if (rootMatches || matchingChildren.length > 0) {
+            return {
+              ...root,
+              subcategories: matchingChildren,
+            };
+          }
+          return null;
+        }
+
+        // Default unfiltered
+        return {
+          ...root,
+          subcategories: directChildren,
+        };
+      })
+      .filter((item) => item !== null)
+      .sort((a, b) => {
+        if (sortBy === "order_asc") return a.order - b.order;
+        if (sortBy === "order_desc") return b.order - a.order;
+        if (sortBy === "name_asc") return a.name.localeCompare(b.name);
+        if (sortBy === "name_desc") return b.name.localeCompare(a.name);
+        if (sortBy === "createdAt_desc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (sortBy === "createdAt_asc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return 0;
+      });
+  }, [categories, rootCategories, searchQuery, statusFilter, levelFilter, sortBy]);
 
   // Filtered Categories for Grid & Tree Views
   const filteredCategories = useMemo(() => {
@@ -1056,7 +1161,7 @@ export default function CategoriesPage() {
             </div>
           </div>
         </div>
-      ) : filteredCategories.length === 0 ? (
+      ) : (viewMode === "TREE" ? hierarchicalTree.length === 0 : filteredCategories.length === 0) ? (
         /* No Search / Filter Matches */
         <div className="clay-card p-10 text-center space-y-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mx-auto">
@@ -1131,11 +1236,33 @@ export default function CategoriesPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 font-medium">
-                        <span>{root._count?.products ?? 0} products linked</span>
-                        <span>•</span>
-                        <span className="text-sky-700 font-semibold">
-                          {root.subcategories?.length || 0} subcategories
-                        </span>
+                        {(() => {
+                          const rootProducts = getCategoryProductCount(root, root.subcategories);
+                          const subCount = root.subcategories?.length || 0;
+                          return (
+                            <>
+                              {rootProducts > 0 ? (
+                                <Link
+                                  href={`/admin/dashboard/products?category=${root.subcategories?.[0]?.id || root.id}`}
+                                  className="text-[#FF7A00] hover:text-[#e06c00] font-bold hover:underline inline-flex items-center gap-1"
+                                  title="View products in this category"
+                                >
+                                  <Package className="h-3 w-3 text-[#FF7A00]" />
+                                  <span>{formatProductCount(rootProducts)}</span>
+                                </Link>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-slate-400">
+                                  <Package className="h-3 w-3 text-slate-300" />
+                                  <span>0 products linked</span>
+                                </span>
+                              )}
+                              <span>•</span>
+                              <span className="text-sky-700 font-semibold">
+                                {formatSubcategoryCount(subCount)}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1256,10 +1383,30 @@ export default function CategoriesPage() {
                                     <span className="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
                                       /{sub.slug}
                                     </span>
+                                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/70 uppercase">
+                                      Subcategory
+                                    </span>
                                   </div>
-                                  <span className="text-[10.5px] text-slate-400 font-medium block">
-                                    {sub._count?.products ?? 0} products linked
-                                  </span>
+                                  <div className="mt-0.5">
+                                    {(() => {
+                                      const subProducts = sub.productsCount ?? sub._count?.products ?? 0;
+                                      return subProducts > 0 ? (
+                                        <Link
+                                          href={`/admin/dashboard/products?category=${sub.id}`}
+                                          className="text-[11px] text-[#FF7A00] hover:text-[#e06c00] font-bold hover:underline inline-flex items-center gap-1"
+                                          title="View linked products"
+                                        >
+                                          <Package className="h-3 w-3 text-[#FF7A00]" />
+                                          <span>{formatProductCount(subProducts)}</span>
+                                        </Link>
+                                      ) : (
+                                        <span className="text-[10.5px] text-slate-400 font-medium inline-flex items-center gap-1">
+                                          <Package className="h-3 w-3 text-slate-300" />
+                                          <span>0 products linked</span>
+                                        </span>
+                                      );
+                                    })()}
+                                  </div>
                                 </div>
                               </div>
 
@@ -1436,9 +1583,25 @@ export default function CategoriesPage() {
 
                 {/* Card Bottom Meta & Actions */}
                 <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-slate-500">
-                    {cat._count?.products ?? 0} products
-                  </span>
+                  {(() => {
+                    const catSubs = isRoot ? categories.filter((c) => c.parentId === cat.id) : [];
+                    const count = getCategoryProductCount(cat, catSubs);
+                    return count > 0 ? (
+                      <Link
+                        href={`/admin/dashboard/products?category=${cat.id}`}
+                        className="text-xs font-bold text-[#FF7A00] hover:text-[#e06c00] hover:underline inline-flex items-center gap-1"
+                        title="View linked products"
+                      >
+                        <Package className="h-3.5 w-3.5 text-[#FF7A00]" />
+                        <span>{formatProductCount(count)}</span>
+                      </Link>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-400 inline-flex items-center gap-1">
+                        <Package className="h-3.5 w-3.5 text-slate-300" />
+                        <span>0 products linked</span>
+                      </span>
+                    );
+                  })()}
 
                   <div className="flex items-center gap-1.5">
                     {isRoot && (

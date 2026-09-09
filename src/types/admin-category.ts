@@ -11,7 +11,8 @@ export interface CategorySummary {
 
 export interface CategoryCount {
   products: number;
-  subcategories: number;
+  subcategories?: number;
+  children?: number;
 }
 
 export interface AdminCategoryItem {
@@ -24,6 +25,9 @@ export interface AdminCategoryItem {
   order: number;
   parent?: { id: string; name: string; slug: string } | null;
   subcategories?: AdminCategoryItem[];
+  children?: AdminCategoryItem[];
+  productsCount?: number;
+  subcategoriesCount?: number;
   _count?: CategoryCount;
   createdAt: string;
   updatedAt: string;
