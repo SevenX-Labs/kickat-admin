@@ -36,8 +36,8 @@ export const AdminCategoryService = {
     if (Array.isArray(responseData)) {
       return responseData;
     }
-    if (responseData && Array.isArray((responseData as any).tree)) {
-      return (responseData as any).tree;
+    if (responseData && typeof responseData === "object" && "tree" in responseData && Array.isArray((responseData as { tree?: AdminCategoryItem[] }).tree)) {
+      return (responseData as { tree: AdminCategoryItem[] }).tree;
     }
     return [];
   },
@@ -77,7 +77,7 @@ export const AdminCategoryService = {
    * PATCH /api/v1/admin/categories/:id/status
    */
   async updateStatus(id: string, isActive: boolean): Promise<{ success: boolean; message?: string }> {
-    const res = await apiClient.patch<{ success: boolean; message?: string; data?: any }>(
+    const res = await apiClient.patch<{ success: boolean; message?: string; data?: unknown }>(
       `/admin/categories/${encodeURIComponent(id)}/status`,
       { isActive }
     );

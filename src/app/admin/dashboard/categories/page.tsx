@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   FolderTree,
-  Package,
   Layers,
   CheckCircle2,
   AlertCircle,
@@ -23,12 +22,13 @@ import {
   AlertTriangle,
   MoveUp,
   MoveDown,
-  UploadCloud,
   Folder,
   FolderOpen,
-  Eye,
-  EyeOff,
-  Sparkles,
+  Image as ImageIcon,
+  ImageOff,
+  Undo2,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import {
   AdminCategoryItem,
@@ -50,6 +50,110 @@ function slugify(text: string): string {
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+/**
+ * Robust Category Thumbnail component that gracefully handles missing or broken storage images.
+ * If imageUrl is missing or fails to load from CDN, renders clean placeholder with proper Lucide icon.
+ */
+interface CategoryThumbnailProps {
+  src?: string | null;
+  alt: string;
+  variant?: "root" | "sub";
+  size?: "sm" | "md" | "lg";
+  isExpanded?: boolean;
+}
+
+function CategoryThumbnail({
+  src,
+  alt,
+  variant = "root",
+  size = "md",
+  isExpanded = false,
+}: CategoryThumbnailProps) {
+  const [prevSrc, setPrevSrc] = useState(src);
+  const [loadError, setLoadError] = useState(false);
+
+  if (prevSrc !== src) {
+    setPrevSrc(src);
+    setLoadError(false);
+  }
+
+  const sizeClass = {
+    sm: "h-7 w-7 rounded-lg",
+    md: "h-9 w-9 rounded-xl",
+    lg: "h-12 w-12 rounded-2xl",
+  }[size];
+
+  if (!src || loadError) {
+    if (loadError) {
+      return (
+        <div
+          className={`flex items-center justify-center bg-slate-100 text-slate-400 border border-slate-200/80 shrink-0 ${sizeClass}`}
+          title="Image not found on storage"
+        >
+          <ImageOff className={size === "sm" ? "h-3.5 w-3.5" : size === "md" ? "h-4 w-4" : "h-5 w-5"} />
+        </div>
+      );
+    }
+
+    if (variant === "root") {
+      if (size === "lg") {
+        return (
+          <div
+            className={`flex shrink-0 items-center justify-center text-white font-black text-base shadow-xs bg-gradient-to-br from-amber-500 to-orange-600 ${sizeClass}`}
+          >
+            <Folder className="h-5 w-5" />
+          </div>
+        );
+      }
+      return (
+        <div
+          className={`flex items-center justify-center bg-amber-100 text-amber-800 font-black text-sm shrink-0 ${sizeClass}`}
+        >
+          {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+        </div>
+      );
+    }
+
+    // Subcategory fallback
+    if (size === "lg") {
+      return (
+        <div
+          className={`flex shrink-0 items-center justify-center text-white font-black text-base shadow-xs bg-gradient-to-br from-sky-500 to-indigo-600 ${sizeClass}`}
+        >
+          <Tag className="h-5 w-5" />
+        </div>
+      );
+    }
+    return (
+      <div
+        className={`flex items-center justify-center bg-sky-100 text-sky-800 font-bold text-xs shrink-0 ${sizeClass}`}
+      >
+        <Tag className={size === "sm" ? "h-3 w-3" : "h-4 w-4"} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`overflow-hidden bg-slate-100 border border-slate-200/80 shrink-0 ${sizeClass}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="h-full w-full object-cover"
+        onError={() => setLoadError(true)}
+      />
+    </div>
+  );
+}
+
+/** Explicit form image lifecycle states */
+type FormImageAction =
+  | { kind: "none" }
+  | { kind: "existing"; url: string }
+  | { kind: "removed"; previousUrl: string }
+  | { kind: "new_file"; file: File; previewUrl: string; previousUrl?: string | null }
+  | { kind: "new_url"; url: string; previousUrl?: string | null };
 
 export default function CategoriesPage() {
   // Data States
@@ -75,8 +179,9 @@ export default function CategoriesPage() {
   const [modalParentId, setModalParentId] = useState<string>("");
   const [formName, setFormName] = useState("");
   const [formSlug, setFormSlug] = useState("");
-  const [formImageUrl, setFormImageUrl] = useState("");
-  const [pendingCategoryFile, setPendingCategoryFile] = useState<File | null>(null);
+  const [formImageState, setFormImageState] = useState<FormImageAction>({ kind: "none" });
+  const [modalPreviewError, setModalPreviewError] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [formOrder, setFormOrder] = useState<number>(0);
   const [formIsActive, setFormIsActive] = useState<boolean>(true);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
@@ -140,6 +245,7 @@ export default function CategoriesPage() {
   }, [sortBy, showToast]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCategories(true);
   }, [fetchCategories]);
 
@@ -200,14 +306,14 @@ export default function CategoriesPage() {
 
   // Modal Open Handlers
   const handleOpenAdd = (defaultParentId: string = "") => {
-    if (formImageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageUrl);
+    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageState.previewUrl);
     }
-    setPendingCategoryFile(null);
     setEditingCategory(null);
     setFormName("");
     setFormSlug("");
-    setFormImageUrl("");
+    setFormImageState({ kind: "none" });
+    setModalPreviewError(false);
     setFormOrder(categories.length > 0 ? Math.max(...categories.map((c) => c.order || 0)) + 1 : 1);
     setFormIsActive(true);
     setModalParentId(defaultParentId);
@@ -215,18 +321,18 @@ export default function CategoriesPage() {
     setSlugManuallyEdited(false);
     setImageUploadError(null);
     setModalError(null);
+    setUploadMode("file");
+    setIsLoadingDetails(false);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (cat: AdminCategoryItem) => {
-    if (formImageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageUrl);
+  const handleOpenEdit = async (cat: AdminCategoryItem) => {
+    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageState.previewUrl);
     }
-    setPendingCategoryFile(null);
     setEditingCategory(cat);
     setFormName(cat.name);
     setFormSlug(cat.slug);
-    setFormImageUrl(cat.imageUrl || "");
     setFormOrder(cat.order);
     setFormIsActive(cat.isActive);
     setModalParentId(cat.parentId || "");
@@ -234,7 +340,40 @@ export default function CategoriesPage() {
     setSlugManuallyEdited(true);
     setImageUploadError(null);
     setModalError(null);
+    setUploadMode("file");
+    setModalPreviewError(false);
+
+    if (cat.imageUrl && cat.imageUrl.trim() !== "") {
+      setFormImageState({ kind: "existing", url: cat.imageUrl });
+    } else {
+      setFormImageState({ kind: "none" });
+    }
+
     setIsModalOpen(true);
+    setIsLoadingDetails(true);
+
+    try {
+      const freshCat = await AdminCategoryService.getCategoryById(cat.id);
+      if (freshCat && freshCat.id === cat.id) {
+        setEditingCategory(freshCat);
+        setFormName(freshCat.name);
+        setFormSlug(freshCat.slug);
+        setFormOrder(freshCat.order);
+        setFormIsActive(freshCat.isActive);
+        setModalParentId(freshCat.parentId || "");
+        setIsSubcategoryMode(Boolean(freshCat.parentId));
+
+        if (freshCat.imageUrl && freshCat.imageUrl.trim() !== "") {
+          setFormImageState({ kind: "existing", url: freshCat.imageUrl });
+        } else {
+          setFormImageState({ kind: "none" });
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch fresh category details from API, using list item:", err);
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
   // Name change automatically generates URL slug if not manually edited
@@ -259,13 +398,27 @@ export default function CategoriesPage() {
       return;
     }
 
-    if (formImageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageUrl);
+    const previousUrl =
+      formImageState.kind === "existing"
+        ? formImageState.url
+        : formImageState.kind === "removed"
+        ? formImageState.previousUrl
+        : (formImageState.kind === "new_file" || formImageState.kind === "new_url")
+        ? formImageState.previousUrl || null
+        : null;
+
+    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageState.previewUrl);
     }
 
     const previewUrl = URL.createObjectURL(file);
-    setPendingCategoryFile(file);
-    setFormImageUrl(previewUrl);
+    setFormImageState({
+      kind: "new_file",
+      file,
+      previewUrl,
+      previousUrl,
+    });
+    setModalPreviewError(false);
     setUploadMode("file");
     setImageUploadError(null);
   };
@@ -278,11 +431,57 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleCloseModal = () => {
-    if (formImageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageUrl);
+  const handleRemoveImage = () => {
+    setImageUploadError(null);
+    setModalPreviewError(false);
+    if (formImageState.kind === "existing") {
+      setFormImageState({
+        kind: "removed",
+        previousUrl: formImageState.url,
+      });
+    } else if (formImageState.kind === "new_file") {
+      if (formImageState.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(formImageState.previewUrl);
+      }
+      if (formImageState.previousUrl) {
+        setFormImageState({
+          kind: "removed",
+          previousUrl: formImageState.previousUrl,
+        });
+      } else {
+        setFormImageState({ kind: "none" });
+      }
+    } else if (formImageState.kind === "new_url") {
+      if (formImageState.previousUrl) {
+        setFormImageState({
+          kind: "removed",
+          previousUrl: formImageState.previousUrl,
+        });
+      } else {
+        setFormImageState({ kind: "none" });
+      }
     }
-    setPendingCategoryFile(null);
+  };
+
+  const handleUndoRemoveImage = () => {
+    if (formImageState.kind === "removed") {
+      setFormImageState({
+        kind: "existing",
+        url: formImageState.previousUrl,
+      });
+      setModalPreviewError(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (isUploadingImage || submitting) return;
+    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(formImageState.previewUrl);
+    }
+    setFormImageState({ kind: "none" });
+    setImageUploadError(null);
+    setModalError(null);
+    setModalPreviewError(false);
     setIsModalOpen(false);
   };
 
@@ -297,58 +496,106 @@ export default function CategoriesPage() {
     const finalSlug = formSlug.trim() || slugify(formName);
     const parentId = isSubcategoryMode && modalParentId ? modalParentId : null;
 
-    setSubmitting(true);
     setModalError(null);
+    setImageUploadError(null);
 
-    try {
-      let finalImageUrl: string | null = formImageUrl.trim() || null;
+    // EDIT CATEGORY
+    if (editingCategory) {
+      const updatePayload: UpdateCategoryDto = {
+        name: formName.trim(),
+        slug: finalSlug,
+        parentId,
+        order: Number(formOrder),
+        isActive: formIsActive,
+      };
 
-      // Deferred Upload: Only upload image file when clicking final submit
-      if (pendingCategoryFile) {
+      if (formImageState.kind === "removed") {
+        // Admin clicked Remove: send imageUrl: null to delete old image & clear DB
+        updatePayload.imageUrl = null;
+      } else if (formImageState.kind === "new_file") {
+        // Replacement file: upload file first
         setIsUploadingImage(true);
-        const res = await AdminUploadService.uploadImage(pendingCategoryFile, "categories");
-        finalImageUrl = res.url;
-        if (formImageUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(formImageUrl);
+        let uploadedUrl: string;
+        try {
+          const res = await AdminUploadService.uploadImage(formImageState.file, "categories");
+          uploadedUrl = res.url;
+        } catch {
+          setIsUploadingImage(false);
+          setImageUploadError("Image upload failed. Please try again.");
+          return; // Do NOT proceed to save! Keep existing category untouched!
         }
-        setPendingCategoryFile(null);
-      } else if (formImageUrl.startsWith("blob:")) {
-        finalImageUrl = null;
+        setIsUploadingImage(false);
+        updatePayload.imageUrl = uploadedUrl;
+      } else if (formImageState.kind === "new_url") {
+        updatePayload.imageUrl = formImageState.url.trim() || null;
+      } else if (formImageState.kind === "none") {
+        updatePayload.imageUrl = null;
       }
+      // Note: if formImageState.kind === "existing", imageUrl is omitted from updatePayload.
+      // Backend contract preserves existing category image when imageUrl is omitted.
 
-      if (editingCategory) {
-        const updatePayload: UpdateCategoryDto = {
-          name: formName.trim(),
-          slug: finalSlug,
-          imageUrl: finalImageUrl,
-          parentId,
-          order: Number(formOrder),
-          isActive: formIsActive,
-        };
-
+      setSubmitting(true);
+      try {
         const updated = await AdminCategoryService.updateCategory(editingCategory.id, updatePayload);
-        showToast(`Category "${updated.name}" updated successfully!`);
-      } else {
-        const createPayload: CreateCategoryDto = {
-          name: formName.trim(),
-          slug: finalSlug,
-          imageUrl: finalImageUrl,
-          parentId,
-          order: Number(formOrder),
-          isActive: formIsActive,
-        };
 
-        const created = await AdminCategoryService.createCategory(createPayload);
-        showToast(`Category "${created.name}" created successfully!`);
+        if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(formImageState.previewUrl);
+        }
+
+        showToast(`Category "${updated.name}" updated successfully!`);
+        setIsModalOpen(false);
+        setFormImageState({ kind: "none" });
+        await fetchCategories(false);
+      } catch {
+        setModalError("Couldn't save category changes. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      // CREATE CATEGORY
+      let initialImageUrl: string | null = null;
+
+      if (formImageState.kind === "new_file") {
+        setIsUploadingImage(true);
+        try {
+          const res = await AdminUploadService.uploadImage(formImageState.file, "categories");
+          initialImageUrl = res.url;
+        } catch {
+          setIsUploadingImage(false);
+          setImageUploadError("Image upload failed. Please try again.");
+          return;
+        }
+        setIsUploadingImage(false);
+      } else if (formImageState.kind === "new_url") {
+        initialImageUrl = formImageState.url.trim() || null;
       }
 
-      setIsModalOpen(false);
-      await fetchCategories(false);
-    } catch (err: unknown) {
-      const msg = AdminCategoryService.extractErrorMessage(err, "Failed to save category.");
-      setModalError(msg);
-    } finally {
-      setSubmitting(false);
+      const createPayload: CreateCategoryDto = {
+        name: formName.trim(),
+        slug: finalSlug,
+        imageUrl: initialImageUrl,
+        parentId,
+        order: Number(formOrder),
+        isActive: formIsActive,
+      };
+
+      setSubmitting(true);
+      try {
+        const created = await AdminCategoryService.createCategory(createPayload);
+
+        if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(formImageState.previewUrl);
+        }
+
+        showToast(`Category "${created.name}" created successfully!`);
+        setIsModalOpen(false);
+        setFormImageState({ kind: "none" });
+        await fetchCategories(false);
+      } catch (err: unknown) {
+        setModalError(AdminCategoryService.extractErrorMessage(err, "Failed to create category."));
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -863,20 +1110,13 @@ export default function CategoriesPage() {
                     </button>
 
                     {/* Thumbnail or Initial Avatar */}
-                    {root.imageUrl ? (
-                      <div className="h-9 w-9 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={root.imageUrl}
-                          alt={root.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800 font-black text-sm shrink-0">
-                        {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
-                      </div>
-                    )}
+                    <CategoryThumbnail
+                      src={root.imageUrl}
+                      alt={root.name}
+                      variant="root"
+                      size="md"
+                      isExpanded={isExpanded}
+                    />
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1001,20 +1241,12 @@ export default function CategoriesPage() {
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                 <span className="text-slate-300 text-xs select-none">↳</span>
 
-                                {sub.imageUrl ? (
-                                  <div className="h-7 w-7 rounded-lg overflow-hidden bg-slate-100 border border-slate-200/80 shrink-0">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={sub.imageUrl}
-                                      alt={sub.name}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="h-7 w-7 rounded-lg bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-xs shrink-0">
-                                    <Tag className="h-3 w-3" />
-                                  </div>
-                                )}
+                                <CategoryThumbnail
+                                  src={sub.imageUrl}
+                                  alt={sub.name}
+                                  variant="sub"
+                                  size="sm"
+                                />
 
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -1127,26 +1359,12 @@ export default function CategoriesPage() {
                 <div>
                   <div className="flex items-start justify-between gap-2.5">
                     {/* Visual */}
-                    {cat.imageUrl ? (
-                      <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={cat.imageUrl}
-                          alt={cat.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white font-black text-base shadow-xs ${
-                          isRoot
-                            ? "bg-gradient-to-br from-amber-500 to-orange-600"
-                            : "bg-gradient-to-br from-sky-500 to-indigo-600"
-                        }`}
-                      >
-                        {isRoot ? <Folder className="h-5 w-5" /> : <Tag className="h-5 w-5" />}
-                      </div>
-                    )}
+                    <CategoryThumbnail
+                      src={cat.imageUrl}
+                      alt={cat.name}
+                      variant={isRoot ? "root" : "sub"}
+                      size="lg"
+                    />
 
                     {/* Badges */}
                     <div className="flex flex-col items-end gap-1.5">
@@ -1418,9 +1636,17 @@ export default function CategoriesPage() {
               </div>
 
               {/* Category Image Upload */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-slate-700 font-bold">Category Image</label>
+                  <div className="flex items-center gap-2">
+                    <label className="block text-slate-700 font-bold">Category Image</label>
+                    {isLoadingDetails && (
+                      <span className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 animate-pulse">
+                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                        Syncing...
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[11px] bg-slate-100 p-0.5 rounded-lg">
                     <button
                       type="button"
@@ -1453,139 +1679,255 @@ export default function CategoriesPage() {
                   </div>
                 </div>
 
-                {uploadMode === "file" ? (
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(true);
-                    }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleDrop}
-                    onClick={() => {
-                      if (!formImageUrl && !isUploadingImage) {
-                        fileInputRef.current?.click();
-                      }
-                    }}
-                    className={`relative rounded-2xl border-2 border-dashed p-4 text-center transition-all select-none group ${
-                      !formImageUrl
-                        ? "cursor-pointer hover:border-[#FF7A00] hover:bg-orange-50/30"
-                        : "border-slate-200 bg-[#F8F5F1]"
-                    } ${
-                      dragOver
-                        ? "!border-[#FF7A00] !bg-orange-50/60"
-                        : ""
-                    }`}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/jpg"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          handleFileUpload(e.target.files[0]);
-                        }
-                      }}
-                      className="hidden"
-                    />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/jpg"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleFileUpload(e.target.files[0]);
+                    }
+                  }}
+                  className="hidden"
+                />
 
-                    {formImageUrl ? (
-                      <div className="flex items-center justify-between gap-3 bg-white p-2 rounded-xl border border-slate-200">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={formImageUrl}
-                              alt="Category Preview"
-                              className="h-full w-full object-cover"
-                            />
+                {uploadMode === "file" ? (
+                  <>
+                    {/* State A: Active Image (Existing or Newly Selected File) */}
+                    {(formImageState.kind === "existing" || formImageState.kind === "new_file") && (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2.5 shadow-2xs">
+                        <div className="flex items-center gap-3">
+                          {/* Image preview thumbnail */}
+                          <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center">
+                            {modalPreviewError ? (
+                              <div
+                                className="flex flex-col items-center justify-center text-slate-400"
+                                title="Image not reachable on storage"
+                              >
+                                <ImageOff className="h-6 w-6 text-slate-400" />
+                              </div>
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={
+                                  formImageState.kind === "new_file"
+                                    ? formImageState.previewUrl
+                                    : formImageState.url
+                                }
+                                alt="Category Preview"
+                                className="h-full w-full object-cover"
+                                onError={() => setModalPreviewError(true)}
+                              />
+                            )}
                           </div>
-                          <div className="min-w-0 text-left">
-                            <span className="font-bold text-xs text-slate-800 truncate block">
-                              Photo Attached
-                            </span>
-                            <span className="text-[10px] text-emerald-600 font-semibold block">
-                              Ready for save
-                            </span>
+
+                          {/* Info */}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-slate-800">
+                                {formImageState.kind === "new_file"
+                                  ? "New Image Selected"
+                                  : "Current Image"}
+                              </span>
+                              {formImageState.kind === "new_file" && (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  Ready to upload
+                                </span>
+                              )}
+                              {modalPreviewError && (
+                                <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  Storage file missing
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                              {formImageState.kind === "new_file"
+                                ? formImageState.file.name
+                                : modalPreviewError
+                                ? "File missing from storage bucket. You can replace or remove it."
+                                : "Active category image"}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        {/* Action buttons: Change Image and Remove */}
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploadingImage}
-                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            disabled={isUploadingImage || submitting}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer disabled:opacity-50"
                           >
-                            Replace
+                            <Upload className="h-3.5 w-3.5 text-slate-500" />
+                            <span>Change Image</span>
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              if (formImageUrl.startsWith("blob:")) {
-                                URL.revokeObjectURL(formImageUrl);
-                              }
-                              setPendingCategoryFile(null);
-                              setFormImageUrl("");
-                            }}
-                            className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                            onClick={handleRemoveImage}
+                            disabled={isUploadingImage || submitting}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition cursor-pointer disabled:opacity-50"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                            <span>Remove</span>
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="py-2 space-y-1.5 pointer-events-none">
-                        <div className="flex justify-center">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A00] shadow-2xs group-hover:scale-105 transition-transform">
-                            {isUploadingImage ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <UploadCloud className="h-5 w-5" />
-                            )}
+                    )}
+
+                    {/* State B: Explicitly Removed */}
+                    {formImageState.kind === "removed" && (
+                      <div className="rounded-2xl border-2 border-dashed border-rose-200 bg-rose-50/40 p-4 text-center select-none">
+                        <div className="flex flex-col items-center justify-center py-1 space-y-1.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 shadow-2xs">
+                            <ImageOff className="h-5 w-5" />
+                          </div>
+                          <div className="text-xs font-bold text-rose-800">
+                            No category image (Removed)
+                          </div>
+                          <p className="text-[11px] text-rose-600/80 max-w-xs">
+                            Image is marked for removal and will be deleted from storage when you save.
+                          </p>
+
+                          <div className="flex items-center gap-2 pt-1.5">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isUploadingImage || submitting}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <Upload className="h-3.5 w-3.5" />
+                              <span>Add Image</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleUndoRemoveImage}
+                              disabled={isUploadingImage || submitting}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-600 hover:bg-white border border-transparent hover:border-slate-200 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <Undo2 className="h-3.5 w-3.5" />
+                              <span>Undo</span>
+                            </button>
                           </div>
                         </div>
-                        <div className="text-xs text-slate-700">
-                          <span className="font-bold text-[#FF7A00]">Click to upload</span>{" "}
-                          <span className="text-slate-500">or drag and drop</span>
-                        </div>
-                        <p className="text-[11px] text-slate-400">PNG, JPG, WebP up to 5MB</p>
                       </div>
                     )}
-                  </div>
+
+                    {/* State C: No Image Present */}
+                    {(formImageState.kind === "none" || formImageState.kind === "new_url") && (
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOver(true);
+                        }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={handleDrop}
+                        onClick={() => {
+                          if (!isUploadingImage && !submitting) {
+                            fileInputRef.current?.click();
+                          }
+                        }}
+                        className={`relative rounded-2xl border-2 border-dashed p-4 text-center transition-all select-none cursor-pointer group ${
+                          dragOver
+                            ? "!border-[#FF7A00] !bg-orange-50/60"
+                            : "border-slate-200 bg-[#F8F5F1] hover:border-[#FF7A00] hover:bg-orange-50/30"
+                        }`}
+                      >
+                        <div className="py-2 space-y-1.5 pointer-events-none">
+                          <div className="flex justify-center">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A00] shadow-2xs group-hover:scale-105 transition-transform">
+                              <ImageIcon className="h-5 w-5" />
+                            </div>
+                          </div>
+                          <div className="text-xs font-bold text-slate-800">
+                            No category image
+                          </div>
+                          <p className="text-[11px] text-slate-400">
+                            PNG, JPG, WebP up to 5MB
+                          </p>
+                          <div className="pt-1">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-orange-600 bg-white border border-orange-200 rounded-xl shadow-2xs group-hover:bg-orange-600 group-hover:text-white transition">
+                              <Plus className="h-3.5 w-3.5" />
+                              Add Image
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
+                  /* URL Mode */
                   <div className="space-y-2">
                     <input
                       type="url"
-                      value={formImageUrl}
-                      onChange={(e) => setFormImageUrl(e.target.value)}
+                      value={
+                        formImageState.kind === "new_url"
+                          ? formImageState.url
+                          : formImageState.kind === "existing"
+                          ? formImageState.url
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.trim()) {
+                          const prev =
+                            formImageState.kind === "existing"
+                              ? formImageState.url
+                              : formImageState.kind === "removed"
+                              ? formImageState.previousUrl
+                              : (formImageState.kind === "new_file" || formImageState.kind === "new_url")
+                              ? formImageState.previousUrl || null
+                              : null;
+                          setFormImageState({ kind: "new_url", url: val, previousUrl: prev });
+                        } else {
+                          handleRemoveImage();
+                        }
+                      }}
                       placeholder="https://example.com/category-image.jpg"
                       className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 p-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#FF7A00]"
                     />
-                    {formImageUrl && (
-                      <div className="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200">
-                        <div className="h-8 w-8 rounded-lg overflow-hidden bg-slate-100 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={formImageUrl}
-                            alt="URL Preview"
-                            className="h-full w-full object-cover"
-                          />
+
+                    {(formImageState.kind === "new_url" || formImageState.kind === "existing") && (
+                      <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white border border-slate-200">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
+                            {modalPreviewError ? (
+                              <ImageOff className="h-4 w-4 text-slate-400" />
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={formImageState.url}
+                                alt="URL Preview"
+                                className="h-full w-full object-cover"
+                                onError={() => setModalPreviewError(true)}
+                              />
+                            )}
+                          </div>
+                          <span className="text-xs text-slate-600 truncate font-mono text-[11px]">
+                            {formImageState.url}
+                          </span>
                         </div>
-                        <span className="text-xs text-slate-600 truncate flex-1 font-mono text-[11px]">
-                          {formImageUrl}
-                        </span>
                         <button
                           type="button"
-                          onClick={() => setFormImageUrl("")}
-                          className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                          onClick={handleRemoveImage}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                          title="Remove image"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     )}
                   </div>
                 )}
 
+                {/* Upload Status Alert */}
+                {isUploadingImage && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#FF7A00]" />
+                    <span>Uploading image...</span>
+                  </div>
+                )}
+
+                {/* Error Message */}
                 {imageUploadError && (
                   <p className="text-[10.5px] font-medium text-rose-500 flex items-center gap-1 mt-1">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -1646,9 +1988,17 @@ export default function CategoriesPage() {
                   className="clay-btn-orange inline-flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {(submitting || isUploadingImage) && (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   )}
-                  <span>{editingCategory ? "Save Changes" : "Create Category"}</span>
+                  <span>
+                    {isUploadingImage
+                      ? "Uploading image..."
+                      : submitting
+                      ? "Saving..."
+                      : editingCategory
+                      ? "Save Changes"
+                      : "Create Category"}
+                  </span>
                 </button>
               </div>
             </form>
