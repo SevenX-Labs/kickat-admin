@@ -513,46 +513,49 @@ export default function ProductsPage() {
             )}
           </div>
 
-          {/* Quick Status Buttons */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-            {(["ALL", "ACTIVE", "DRAFT", "INACTIVE"] as const).map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setStatusFilter(st);
-                  handleFilterChange();
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                  statusFilter === st
-                    ? "bg-[#FF7A00] text-white shadow-xs"
-                    : "clay-button text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {st === "ALL" ? "All Status" : st}
-              </button>
-            ))}
-          </div>
+          {/* Quick Status Buttons & View Mode Toggle Row */}
+          <div className="flex items-center justify-between gap-2 min-w-0 w-full md:w-auto">
+            {/* Quick Status Buttons */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+              {(["ALL", "ACTIVE", "DRAFT", "INACTIVE"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => {
+                    setStatusFilter(st);
+                    handleFilterChange();
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer shrink-0 ${
+                    statusFilter === st
+                      ? "bg-[#FF7A00] text-white shadow-xs"
+                      : "clay-button text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {st === "ALL" ? "All Status" : st}
+                </button>
+              ))}
+            </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 border border-slate-200/80 p-1 rounded-xl bg-[#F8F5F1] shrink-0 self-end md:self-auto">
-            <button
-              onClick={() => setViewMode("GRID")}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === "GRID" ? "bg-white text-orange-600 shadow-xs" : "text-slate-400 hover:text-slate-700"
-              }`}
-              title="Grid View"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("TABLE")}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === "TABLE" ? "bg-white text-orange-600 shadow-xs" : "text-slate-400 hover:text-slate-700"
-              }`}
-              title="Table View"
-            >
-              <List className="h-4 w-4" />
-            </button>
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 border border-slate-200/80 p-1 rounded-xl bg-[#F8F5F1] shrink-0">
+              <button
+                onClick={() => setViewMode("GRID")}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === "GRID" ? "bg-white text-orange-600 shadow-xs" : "text-slate-400 hover:text-slate-700"
+                }`}
+                title="Grid View"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("TABLE")}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === "TABLE" ? "bg-white text-orange-600 shadow-xs" : "text-slate-400 hover:text-slate-700"
+                }`}
+                title="Table View"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -790,7 +793,7 @@ export default function ProductsPage() {
                     </div>
 
                     {/* Stock Alert Badge */}
-                    <div className="absolute bottom-2.5 left-2.5">
+                    <div className="absolute bottom-2.5 left-2.5 max-w-[55%]">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs flex items-center gap-1 ${
                           p.stock === 0
@@ -821,7 +824,7 @@ export default function ProductsPage() {
 
                     {/* Species Badge */}
                     {p.petSpecies && (
-                      <div className="absolute bottom-2.5 right-2.5">
+                      <div className="absolute bottom-2.5 right-2.5 max-w-[42%]">
                         <span className="text-xs bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-lg font-bold text-slate-700 shadow-xs flex items-center gap-1">
                           {renderSpeciesIcon(p.petSpecies, "h-3.5 w-3.5 text-orange-600")}
                           <span>{p.petSpecies}</span>
