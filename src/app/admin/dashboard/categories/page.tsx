@@ -30,6 +30,7 @@ import {
   Undo2,
   Upload,
   Loader2,
+  MoreVertical,
 } from "lucide-react";
 import {
   AdminCategoryItem,
@@ -40,7 +41,7 @@ import {
 } from "@/types/admin-category";
 import { AdminCategoryService } from "@/services/adminCategoryService";
 import { AdminUploadService } from "@/services/adminUploadService";
-import { StatCardsSkeleton } from "@/components/ui/Skeleton";
+import { StatCardsSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 
 
@@ -231,6 +232,9 @@ export default function CategoriesPage() {
   const [deletePermanent, setDeletePermanent] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [integrityAlert, setIntegrityAlert] = useState<{ title: string; message: string } | null>(null);
+
+  // Active More Menu in mobile cards
+  const [activeMenuCategoryId, setActiveMenuCategoryId] = useState<string | null>(null);
 
   // Status toggle in-flight tracking
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
@@ -854,18 +858,18 @@ export default function CategoriesPage() {
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
-              Categories & Hierarchy
+              Categories &amp; Hierarchy
             </h1>
             {refreshing && (
               <RefreshCw className="h-4 w-4 text-[#FF7A00] animate-spin shrink-0" />
             )}
           </div>
-          <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Organize root collections and nested subcategories for intuitive storefront navigation.
+          <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5 line-clamp-2">
+            Organize root collections and nested subcategories for your storefront.
           </p>
         </div>
 
@@ -873,16 +877,16 @@ export default function CategoriesPage() {
           <button
             onClick={() => fetchCategories(false)}
             disabled={refreshing}
-            className="clay-button flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer active:scale-95 disabled:opacity-50"
+            className="clay-button h-9 w-9 sm:w-auto p-2 sm:px-3 sm:py-2 text-xs font-bold text-slate-700 hover:text-[#FF7A00] transition cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
             title="Refresh categories"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[#FF7A00]" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <button
             onClick={() => handleOpenAdd()}
-            className="clay-btn-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+            className="clay-btn-orange inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>New Category</span>
@@ -892,103 +896,149 @@ export default function CategoriesPage() {
 
       {/* Metric Cards */}
       {loading ? (
-        <StatCardsSkeleton count={4} />
+        <>
+          {/* Mobile High-Density Metric Strip Skeleton (md:hidden) */}
+          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Total</span>
+              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
+            </div>
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Root</span>
+              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
+            </div>
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Sub</span>
+              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
+            </div>
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Live</span>
+              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
+            </div>
+          </div>
+          {/* Desktop Metric Cards Skeleton */}
+          <div className="hidden md:block">
+            <StatCardsSkeleton count={4} />
+          </div>
+        </>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
-          {/* Total Categories */}
-          <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A00]">
-              <FolderTree className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Total
-              </span>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+        <>
+          {/* Mobile High-Density Metric Strip (md:hidden, saves ~130px vertical scroll) */}
+          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Total</span>
+              <span className="font-fraunces text-base font-bold text-slate-800 leading-tight mt-0.5 block">
                 {summary ? summary.totalCategories : categories.length}
-              </p>
-              <span className="text-[10px] text-slate-500 font-medium truncate block">
-                Catalog index
               </span>
             </div>
-          </div>
-
-          {/* Root Collections */}
-          <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
-              <Layers className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Root Collections
-              </span>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Root</span>
+              <span className="font-fraunces text-base font-bold text-amber-800 leading-tight mt-0.5 block">
                 {summary ? summary.rootCategoriesCount : rootCategories.length}
-              </p>
-              <span className="text-[10px] text-amber-700 font-medium truncate block">
-                Top-level navigation
               </span>
             </div>
-          </div>
-
-          {/* Subcategories */}
-          <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-800">
-              <GitFork className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Subcategories
-              </span>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Sub</span>
+              <span className="font-fraunces text-base font-bold text-sky-800 leading-tight mt-0.5 block">
                 {summary
                   ? summary.subcategoriesCount ??
                     summary.subCategoriesCount ??
                     summary.totalCategories - summary.rootCategoriesCount
                   : categories.filter((c) => c.parentId).length}
-              </p>
-              <span className="text-[10px] text-sky-700 font-medium truncate block">
-                Product leaf targets
+              </span>
+            </div>
+            <div className="flex-1 px-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Live</span>
+              <span className="font-fraunces text-base font-bold text-emerald-600 leading-tight mt-0.5 block">
+                {summary ? summary.activeCount : categories.filter((c) => c.isActive).length}
               </span>
             </div>
           </div>
 
-          {/* Active Live */}
-          <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <CheckCircle2 className="h-5 w-5" />
+          {/* Desktop 4 Stat Cards (hidden md:grid) */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
+            {/* Total Categories */}
+            <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A00]">
+                <FolderTree className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total</span>
+                <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+                  {summary ? summary.totalCategories : categories.length}
+                </p>
+                <span className="text-[10px] text-slate-500 font-medium truncate block">Catalog index</span>
+              </div>
             </div>
-            <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Live in Store
-              </span>
-              <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-tight">
-                {summary ? summary.activeCount : categories.filter((c) => c.isActive).length}
-              </p>
-              <span className="text-[10px] text-slate-400 font-medium truncate block">
-                {summary ? summary.inactiveCount : categories.filter((c) => !c.isActive).length} drafts
-              </span>
+
+            {/* Root Collections */}
+            <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                <Layers className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Root Collections</span>
+                <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+                  {summary ? summary.rootCategoriesCount : rootCategories.length}
+                </p>
+                <span className="text-[10px] text-amber-700 font-medium truncate block">Top-level navigation</span>
+              </div>
+            </div>
+
+            {/* Subcategories */}
+            <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-800">
+                <GitFork className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Subcategories</span>
+                <p className="text-xl sm:text-2xl font-black text-[#2A241E] leading-tight">
+                  {summary
+                    ? summary.subcategoriesCount ??
+                      summary.subCategoriesCount ??
+                      summary.totalCategories - summary.rootCategoriesCount
+                    : categories.filter((c) => c.parentId).length}
+                </p>
+                <span className="text-[10px] text-sky-700 font-medium truncate block">Product leaf targets</span>
+              </div>
+            </div>
+
+            {/* Active Live */}
+            <div className="clay-card p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Live in Store</span>
+                <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-tight">
+                  {summary ? summary.activeCount : categories.filter((c) => c.isActive).length}
+                </p>
+                <span className="text-[10px] text-slate-400 font-medium truncate block">
+                  {summary ? summary.inactiveCount : categories.filter((c) => !c.isActive).length} drafts
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Control Toolbar */}
-      <div className="clay-card p-3 sm:p-4 space-y-2.5 min-w-0">
+      <div className="clay-card p-2.5 sm:p-4 space-y-2 min-w-0">
         {/* Search Bar */}
         <div className="relative w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search categories by name, slug, or parent..."
-            className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2.5 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition"
+            className="w-full h-10 sm:h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-8.5 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+              title="Clear search"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -996,10 +1046,10 @@ export default function CategoriesPage() {
         </div>
 
         {/* Controls Row: Status tabs & View Switcher on left, Sort on right */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 pt-0.5">
           {/* Status Segmented Pill & View Mode */}
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-1 border border-slate-200/70">
+          <div className="flex items-center justify-between sm:justify-start gap-1.5">
+            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
               {(
                 [
                   { key: "ALL", label: "All" },
@@ -1022,23 +1072,23 @@ export default function CategoriesPage() {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-1 border border-slate-200/70">
+            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
               <button
                 onClick={() => setViewMode("TREE")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   viewMode === "TREE"
                     ? "bg-white text-[#2A241E] shadow-2xs"
                     : "text-slate-500 hover:text-slate-800"
                 }`}
                 title="Hierarchy Tree View"
               >
-                <ListTree className="h-3.5 w-3.5" />
+                <ListTree className="h-3.5 w-3.5 text-orange-600" />
                 <span className="hidden sm:inline">Tree</span>
               </button>
 
               <button
                 onClick={() => setViewMode("GRID")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   viewMode === "GRID"
                     ? "bg-white text-[#2A241E] shadow-2xs"
                     : "text-slate-500 hover:text-slate-800"
@@ -1056,7 +1106,7 @@ export default function CategoriesPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as AdminCategorySortEnum)}
-              className="w-full sm:w-auto rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 pl-3 pr-7 text-xs font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
+              className="w-full sm:w-auto rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 pl-2.5 pr-7 text-xs font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
             >
               <option value="order_asc">Display Order (Asc)</option>
               <option value="order_desc">Display Order (Desc)</option>
@@ -1065,35 +1115,37 @@ export default function CategoriesPage() {
               <option value="createdAt_desc">Newest First</option>
               <option value="createdAt_asc">Oldest First</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
         {/* Tree mode controls: Expand/Collapse All + Level filter */}
-        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 flex-wrap gap-2">
+        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-100 flex-wrap gap-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Level:
             </span>
-            {(
-              [
-                { key: "ALL", label: "All" },
-                { key: "ROOT", label: "Roots Only" },
-                { key: "SUB", label: "Subcategories" },
-              ] as const
-            ).map((lv) => (
-              <button
-                key={lv.key}
-                onClick={() => setLevelFilter(lv.key)}
-                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition cursor-pointer ${
-                  levelFilter === lv.key
-                    ? "bg-[#2A241E] text-white"
-                    : "bg-[#F8F5F1] text-slate-600 hover:bg-slate-200/70"
-                }`}
-              >
-                {lv.label}
-              </button>
-            ))}
+            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
+              {(
+                [
+                  { key: "ALL", label: "All" },
+                  { key: "ROOT", label: "Roots" },
+                  { key: "SUB", label: "Subcategories" },
+                ] as const
+              ).map((lv) => (
+                <button
+                  key={lv.key}
+                  onClick={() => setLevelFilter(lv.key)}
+                  className={`px-2 py-0.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                    levelFilter === lv.key
+                      ? "bg-white text-[#2A241E] shadow-2xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {lv.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {viewMode === "TREE" && hierarchicalTree.length > 0 && (
@@ -1114,7 +1166,27 @@ export default function CategoriesPage() {
       </div>
 
       {/* Main Content Area */}
-      {categories.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2.5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="clay-card p-3 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <Skeleton className="h-4 w-4 rounded shrink-0" />
+                <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <Skeleton className="h-3.5 w-1/3 rounded-md" />
+                  <Skeleton className="h-2.5 w-1/2 rounded-md" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Skeleton className="h-6 w-14 rounded-full" />
+                <Skeleton className="h-7 w-12 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : categories.length === 0 ? (
         /* Empty State */
         <div className="clay-card p-10 sm:p-14 text-center space-y-5 max-w-lg mx-auto">
           <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-orange-100 text-[#FF7A00] mx-auto shadow-xs">
@@ -1186,115 +1258,119 @@ export default function CategoriesPage() {
         </div>
       ) : viewMode === "TREE" ? (
         /* HIERARCHY TREE VIEW */
-        <div className="space-y-3.5">
+        <div className="space-y-3">
           {hierarchicalTree.map((root) => {
             const isExpanded = expandedNodes.has(root.id);
             const hasSubs = root.subcategories && root.subcategories.length > 0;
             const isStatusToggling = statusTogglingId === root.id;
             const isReordering = reorderingId === root.id;
+            const rootProducts = getCategoryProductCount(root, root.subcategories);
+            const subCount = root.subcategories ? root.subcategories.length : 0;
 
             return (
               <div
                 key={root.id}
-                className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 space-y-3 shadow-xs transition-all hover:border-slate-300"
+                className="clay-card p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all space-y-2.5"
               >
-                {/* Root Node Header Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-                  {/* Left: Expander + Root Info */}
-                  <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+                {/* ROOT CATEGORY ROW */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  {/* Left: Expand Chevron + Thumbnail + Category Name & Metadata */}
+                  <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
+                    {/* Expand/Collapse Chevron Button */}
                     <button
                       onClick={() => toggleNode(root.id)}
-                      className="clay-button flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:text-orange-600 transition shrink-0 cursor-pointer mt-0.5 sm:mt-0"
-                      title={isExpanded ? "Collapse branch" : "Expand branch"}
+                      aria-label={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                      className="p-1.5 -ml-1 text-slate-400 hover:text-slate-800 transition cursor-pointer mt-0.5 shrink-0"
                     >
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                          isExpanded ? "rotate-0 text-orange-600" : "-rotate-90 text-slate-400"
+                        }`}
+                      />
                     </button>
 
-                    {/* Thumbnail or Initial Avatar */}
-                    <CategoryThumbnail
-                      src={root.imageUrl}
-                      alt={root.name}
-                      variant="root"
-                      size="md"
-                      isExpanded={isExpanded}
-                    />
+                    {/* Root Thumbnail */}
+                    <div className="shrink-0">
+                      <CategoryThumbnail
+                        src={root.imageUrl}
+                        alt={root.name}
+                        variant="root"
+                        size="md"
+                        isExpanded={isExpanded}
+                      />
+                    </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-bold text-sm text-[#2A241E] leading-tight truncate max-w-[150px] sm:max-w-none">
-                          {root.name}
-                        </h4>
-                        <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
-                          /{root.slug}
-                        </span>
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 uppercase">
-                          Root Collection
-                        </span>
+                    {/* Name + Badges + Metadata */}
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h3 className="font-fraunces text-sm sm:text-base font-bold text-[#2A241E] truncate hover:text-[#FF7A00] transition">
+                            {root.name}
+                          </h3>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200/60 uppercase shrink-0">
+                            Root
+                          </span>
+                        </div>
+
+                        {/* Status Toggle Pill (Tap to toggle) */}
+                        <button
+                          onClick={(e) => handleToggleStatus(root, e)}
+                          disabled={isStatusToggling}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all cursor-pointer flex items-center gap-1 shrink-0 border ${
+                            root.isActive
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                              : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
+                          }`}
+                          title="Click to toggle visibility"
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              root.isActive ? "bg-emerald-500" : "bg-slate-400"
+                            }`}
+                          />
+                          <span>{root.isActive ? "Live" : "Draft"}</span>
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-1 font-medium flex-wrap">
-                        {(() => {
-                          const rootProducts = getCategoryProductCount(root, root.subcategories);
-                          const subCount = root.subcategories?.length || 0;
-                          return (
-                            <>
-                              {rootProducts > 0 ? (
-                                <Link
-                                  href={`/admin/dashboard/products?category=${root.subcategories?.[0]?.id || root.id}`}
-                                  className="text-[#FF7A00] hover:text-[#e06c00] font-bold hover:underline inline-flex items-center gap-1"
-                                  title="View products in this category"
-                                >
-                                  <Package className="h-3 w-3 text-[#FF7A00]" />
-                                  <span>{formatProductCount(rootProducts)}</span>
-                                </Link>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-slate-400">
-                                  <Package className="h-3 w-3 text-slate-300" />
-                                  <span>0 products linked</span>
-                                </span>
-                              )}
-                              <span>•</span>
-                              <span className="text-sky-700 font-semibold">
-                                {formatSubcategoryCount(subCount)}
-                              </span>
-                            </>
-                          );
-                        })()}
+
+                      {/* Slug */}
+                      <div className="text-[11px] font-mono text-slate-400 truncate">
+                        /{root.slug}
+                      </div>
+
+                      {/* Product & Subcategory Counts */}
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium pt-0.5">
+                        {rootProducts > 0 ? (
+                          <Link
+                            href={`/admin/dashboard/products?category=${root.subcategories?.[0]?.id || root.id}`}
+                            className="text-[#FF7A00] hover:text-[#e06c00] font-semibold hover:underline inline-flex items-center gap-1"
+                            title="View linked products"
+                          >
+                            <Package className="h-3 w-3 text-[#FF7A00]" />
+                            <span>{rootProducts} {rootProducts === 1 ? "product" : "products"}</span>
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-slate-400">
+                            <Package className="h-3 w-3 text-slate-300" />
+                            <span>0 products</span>
+                          </span>
+                        )}
+                        <span className="text-slate-300">•</span>
+                        <span className="text-sky-700 font-semibold">
+                          {subCount} {subCount === 1 ? "subcategory" : "subcategories"}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Status Toggle, Order, Actions */}
-                  <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
-                    {/* Live / Draft Toggle Switch */}
-                    <button
-                      onClick={(e) => handleToggleStatus(root, e)}
-                      disabled={isStatusToggling}
-                      className={`px-2.5 py-1 text-[10.5px] font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
-                        root.isActive
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                          : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
-                      }`}
-                      title="Click to toggle store visibility"
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          root.isActive ? "bg-emerald-500" : "bg-slate-400"
-                        }`}
-                      />
-                      <span>{root.isActive ? "Live" : "Draft"}</span>
-                    </button>
-
-                    {/* Sequence Order */}
+                  {/* Actions: Sequence Order + Edit + More */}
+                  <div className="flex items-center justify-between sm:justify-end gap-2 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                    {/* Sequence Order Controls */}
                     <div className="flex items-center gap-1 text-xs font-mono text-slate-500 bg-[#FAF7F2] px-2 py-1 rounded-lg border border-slate-200/70">
                       <span className="font-bold text-slate-700">#{root.order}</span>
                       <button
                         onClick={(e) => handleMoveOrder(root, "UP", e)}
                         disabled={isReordering}
-                        className="hover:text-orange-600 transition p-0.5 cursor-pointer"
+                        className="hover:text-orange-600 transition p-0.5 cursor-pointer disabled:opacity-30"
                         title="Move Up"
                       >
                         <MoveUp className="h-3 w-3" />
@@ -1302,48 +1378,113 @@ export default function CategoriesPage() {
                       <button
                         onClick={(e) => handleMoveOrder(root, "DOWN", e)}
                         disabled={isReordering}
-                        className="hover:text-orange-600 transition p-0.5 cursor-pointer"
+                        className="hover:text-orange-600 transition p-0.5 cursor-pointer disabled:opacity-30"
                         title="Move Down"
                       >
                         <MoveDown className="h-3 w-3" />
                       </button>
                     </div>
 
-                    {/* Add Subcategory under this Root */}
-                    <button
-                      onClick={() => handleOpenAdd(root.id)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200/80 transition cursor-pointer"
-                      title="Add child subcategory under this root"
-                    >
-                      <Plus className="h-3 w-3 stroke-[2.5]" />
-                      <span className="hidden md:inline">Subcategory</span>
-                    </button>
+                    {/* Desktop Inline Actions */}
+                    <div className="hidden sm:flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenAdd(root.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200/80 transition cursor-pointer"
+                        title="Add child subcategory under this root"
+                      >
+                        <Plus className="h-3 w-3 stroke-[2.5]" />
+                        <span>Subcategory</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(root)}
+                        className="clay-button p-2 text-slate-600 hover:text-orange-600 rounded-lg transition cursor-pointer"
+                        title="Edit Category"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeleteTarget(root);
+                          setDeletePermanent(true);
+                        }}
+                        className="clay-button p-2 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
 
-                    {/* Edit */}
-                    <button
-                      onClick={() => handleOpenEdit(root)}
-                      className="clay-button p-2 text-slate-600 hover:text-orange-600 rounded-lg transition cursor-pointer"
-                      title="Edit Category"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
+                    {/* Mobile Actions Cluster */}
+                    <div className="flex sm:hidden items-center gap-1 relative">
+                      <button
+                        onClick={() => handleOpenEdit(root)}
+                        className="clay-button h-8 w-8 text-slate-600 hover:text-orange-600 rounded-lg transition flex items-center justify-center cursor-pointer"
+                        title="Edit Category"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
 
-                    {/* Delete */}
-                    <button
-                      onClick={() => setDeleteTarget(root)}
-                      className="clay-button p-2 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenuCategoryId(activeMenuCategoryId === root.id ? null : root.id)}
+                        className="clay-button h-8 w-8 text-slate-500 hover:text-slate-800 rounded-lg transition flex items-center justify-center cursor-pointer"
+                        title="More actions"
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Mobile More Menu Popover */}
+                      {activeMenuCategoryId === root.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setActiveMenuCategoryId(null)} />
+                          <div className="absolute right-0 bottom-full mb-1.5 w-40 bg-white rounded-xl shadow-xl border border-slate-200/90 z-50 p-1 space-y-0.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuCategoryId(null);
+                                handleOpenAdd(root.id);
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-left font-semibold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5 text-orange-500" />
+                              <span>Add Subcategory</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuCategoryId(null);
+                                handleOpenEdit(root);
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                              <span>Edit Details</span>
+                            </button>
+                            <div className="h-px bg-slate-100 my-0.5" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuCategoryId(null);
+                                setDeleteTarget(root);
+                                setDeletePermanent(true);
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-left font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Subcategories Container */}
+                {/* SUBCATEGORIES CONTAINER (Un-nested lightweight rows with connector line) */}
                 {isExpanded && (
-                  <div className="pl-2.5 sm:pl-7 pt-2 border-l-2 border-orange-200 ml-1.5 sm:ml-3.5 space-y-2">
+                  <div className="ml-3 sm:ml-5 pl-3 sm:pl-4 border-l-2 border-orange-200/80 pt-1 space-y-1.5 relative">
                     {!hasSubs ? (
-                      <div className="py-2.5 px-3 rounded-xl bg-[#FAF7F2] border border-dashed border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+                      <div className="py-2 px-3 rounded-xl bg-[#FAF7F2] border border-dashed border-slate-200 text-xs text-slate-500 flex items-center justify-between">
                         <span>No subcategories created yet under &ldquo;{root.name}&rdquo;.</span>
                         <button
                           onClick={() => handleOpenAdd(root.id)}
@@ -1358,125 +1499,99 @@ export default function CategoriesPage() {
                         {root.subcategories.map((sub) => {
                           const isSubStatusToggling = statusTogglingId === sub.id;
                           const isSubReordering = reorderingId === sub.id;
+                          const subProducts = sub.productsCount ?? sub._count?.products ?? 0;
 
                           return (
                             <div
                               key={sub.id}
-                              className="rounded-xl bg-[#FAF7F2] border border-slate-200/70 p-2 sm:p-2.5 shadow-2xs hover:border-orange-300 transition-all space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3"
+                              className="p-2 sm:p-2.5 rounded-xl bg-[#FAF7F2]/70 hover:bg-[#FAF7F2] border border-slate-200/60 transition-all relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 before:content-[''] before:absolute before:-left-3 sm:before:-left-4 before:top-4 before:w-3 sm:before:w-4 before:h-px before:bg-orange-200/80"
                             >
                               {/* Sub Info */}
-                              <div className="flex items-start sm:items-center justify-between sm:justify-start gap-2 min-w-0 flex-1">
-                                <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
-                                  <span className="text-slate-300 text-xs select-none mt-1 sm:mt-0 shrink-0">↳</span>
-
+                              <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
+                                {/* Sub Thumbnail */}
+                                <div className="shrink-0">
                                   <CategoryThumbnail
                                     src={sub.imageUrl}
                                     alt={sub.name}
                                     variant="sub"
                                     size="sm"
                                   />
-
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="font-bold text-xs text-[#2A241E] truncate max-w-[140px] sm:max-w-none">
-                                        {sub.name}
-                                      </span>
-                                      <span className="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                        /{sub.slug}
-                                      </span>
-                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/70 uppercase">
-                                        Subcategory
-                                      </span>
-                                    </div>
-                                    <div className="mt-0.5">
-                                      {(() => {
-                                        const subProducts = sub.productsCount ?? sub._count?.products ?? 0;
-                                        return subProducts > 0 ? (
-                                          <Link
-                                            href={`/admin/dashboard/products?category=${sub.id}`}
-                                            className="text-[11px] text-[#FF7A00] hover:text-[#e06c00] font-bold hover:underline inline-flex items-center gap-1"
-                                            title="View linked products"
-                                          >
-                                            <Package className="h-3 w-3 text-[#FF7A00]" />
-                                            <span>{formatProductCount(subProducts)}</span>
-                                          </Link>
-                                        ) : (
-                                          <span className="text-[10.5px] text-slate-400 font-medium inline-flex items-center gap-1">
-                                            <Package className="h-3 w-3 text-slate-300" />
-                                            <span>0 products linked</span>
-                                          </span>
-                                        );
-                                      })()}
-                                    </div>
-                                  </div>
                                 </div>
 
-                                {/* Mobile Live Toggle (top right on mobile) */}
-                                <div className="sm:hidden shrink-0">
-                                  <button
-                                    onClick={(e) => handleToggleStatus(sub, e)}
-                                    disabled={isSubStatusToggling}
-                                    className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition cursor-pointer flex items-center gap-1 ${
-                                      sub.isActive
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                        : "bg-slate-200 text-slate-600 border border-slate-300"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`h-1.5 w-1.5 rounded-full ${
-                                        sub.isActive ? "bg-emerald-500" : "bg-slate-400"
+                                {/* Title & Metadata */}
+                                <div className="min-w-0 flex-1 space-y-0.5">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="font-semibold text-xs sm:text-sm text-[#2A241E] truncate hover:text-orange-600">
+                                        {sub.name}
+                                      </span>
+                                      <span className="text-[9px] font-mono text-slate-400 truncate">
+                                        /{sub.slug}
+                                      </span>
+                                    </div>
+
+                                    {/* Mobile Status Toggle */}
+                                    <button
+                                      onClick={(e) => handleToggleStatus(sub, e)}
+                                      disabled={isSubStatusToggling}
+                                      className={`px-1.5 py-0.5 text-[9.5px] font-bold rounded-full transition-all cursor-pointer flex items-center gap-1 shrink-0 border ${
+                                        sub.isActive
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-slate-100 text-slate-500 border-slate-200"
                                       }`}
-                                    />
-                                    <span>{sub.isActive ? "Live" : "Draft"}</span>
-                                  </button>
+                                      title="Toggle visibility"
+                                    >
+                                      <span
+                                        className={`h-1.5 w-1.5 rounded-full ${
+                                          sub.isActive ? "bg-emerald-500" : "bg-slate-400"
+                                        }`}
+                                      />
+                                      <span>{sub.isActive ? "Live" : "Draft"}</span>
+                                    </button>
+                                  </div>
+
+                                  {/* Linked products */}
+                                  <div className="text-[10.5px] text-slate-500">
+                                    {subProducts > 0 ? (
+                                      <Link
+                                        href={`/admin/dashboard/products?category=${sub.id}`}
+                                        className="text-orange-600 hover:underline font-semibold inline-flex items-center gap-1"
+                                      >
+                                        <Package className="h-2.5 w-2.5 text-orange-500" />
+                                        <span>{subProducts} {subProducts === 1 ? "product" : "products"}</span>
+                                      </Link>
+                                    ) : (
+                                      <span className="text-slate-400">0 products</span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Actions Row: On mobile, bottom strip; on desktop, inline */}
-                              <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 shrink-0">
-                                {/* Desktop Live Toggle (hidden on mobile) */}
-                                <div className="hidden sm:block">
+                              {/* Sub Actions */}
+                              <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/50 shrink-0">
+                                {/* Order */}
+                                <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                  <span>#{sub.order}</span>
                                   <button
-                                    onClick={(e) => handleToggleStatus(sub, e)}
-                                    disabled={isSubStatusToggling}
-                                    className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition cursor-pointer flex items-center gap-1 ${
-                                      sub.isActive
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                        : "bg-slate-200 text-slate-600 border border-slate-300"
-                                    }`}
+                                    onClick={(e) => handleMoveOrder(sub, "UP", e)}
+                                    disabled={isSubReordering}
+                                    className="hover:text-orange-600 transition p-0.5 cursor-pointer disabled:opacity-30"
+                                    title="Move Up"
                                   >
-                                    <span
-                                      className={`h-1.5 w-1.5 rounded-full ${
-                                        sub.isActive ? "bg-emerald-500" : "bg-slate-400"
-                                      }`}
-                                    />
-                                    <span>{sub.isActive ? "Live" : "Draft"}</span>
+                                    <MoveUp className="h-2.5 w-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleMoveOrder(sub, "DOWN", e)}
+                                    disabled={isSubReordering}
+                                    className="hover:text-orange-600 transition p-0.5 cursor-pointer disabled:opacity-30"
+                                    title="Move Down"
+                                  >
+                                    <MoveDown className="h-2.5 w-2.5" />
                                   </button>
                                 </div>
 
-                                <div className="flex items-center gap-1.5">
-                                  {/* Sequence */}
-                                  <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                    <span>#{sub.order}</span>
-                                    <button
-                                      onClick={(e) => handleMoveOrder(sub, "UP", e)}
-                                      disabled={isSubReordering}
-                                      className="hover:text-orange-600 transition p-0.5 cursor-pointer"
-                                      title="Move Up"
-                                    >
-                                      <MoveUp className="h-2.5 w-2.5" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleMoveOrder(sub, "DOWN", e)}
-                                      disabled={isSubReordering}
-                                      className="hover:text-orange-600 transition p-0.5 cursor-pointer"
-                                      title="Move Down"
-                                    >
-                                      <MoveDown className="h-2.5 w-2.5" />
-                                    </button>
-                                  </div>
-
-                                  {/* Edit */}
+                                {/* Desktop edit & delete */}
+                                <div className="hidden sm:flex items-center gap-1">
                                   <button
                                     onClick={() => handleOpenEdit(sub)}
                                     className="p-1 px-2 text-slate-600 hover:text-orange-600 bg-white rounded-lg border border-slate-200/80 transition cursor-pointer flex items-center gap-1 text-[11px] font-medium"
@@ -1485,29 +1600,82 @@ export default function CategoriesPage() {
                                     <Edit2 className="h-3 w-3" />
                                     <span>Edit</span>
                                   </button>
-
-                                  {/* Delete */}
                                   <button
-                                    onClick={() => setDeleteTarget(sub)}
+                                    onClick={() => {
+                                      setDeleteTarget(sub);
+                                      setDeletePermanent(true);
+                                    }}
                                     className="p-1.5 text-slate-400 hover:text-rose-600 bg-white rounded-lg border border-slate-200/80 transition cursor-pointer"
                                     title="Delete Subcategory"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
                                 </div>
+
+                                {/* Mobile edit & more menu */}
+                                <div className="flex sm:hidden items-center gap-1 relative">
+                                  <button
+                                    onClick={() => handleOpenEdit(sub)}
+                                    className="p-1.5 bg-white border border-slate-200/80 rounded-lg text-slate-600 hover:text-orange-600 cursor-pointer"
+                                    title="Edit Subcategory"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveMenuCategoryId(activeMenuCategoryId === sub.id ? null : sub.id)}
+                                    className="p-1.5 bg-white border border-slate-200/80 rounded-lg text-slate-500 hover:text-slate-800 cursor-pointer"
+                                    title="More actions"
+                                  >
+                                    <MoreVertical className="h-3 w-3" />
+                                  </button>
+
+                                  {/* Sub More Menu */}
+                                  {activeMenuCategoryId === sub.id && (
+                                    <>
+                                      <div className="fixed inset-0 z-40" onClick={() => setActiveMenuCategoryId(null)} />
+                                      <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-slate-200/90 z-50 p-1 space-y-0.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveMenuCategoryId(null);
+                                            handleOpenEdit(sub);
+                                          }}
+                                          className="w-full px-2.5 py-1.5 rounded-lg text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition cursor-pointer"
+                                        >
+                                          <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                                          <span>Edit Details</span>
+                                        </button>
+                                        <div className="h-px bg-slate-100 my-0.5" />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveMenuCategoryId(null);
+                                            setDeleteTarget(sub);
+                                            setDeletePermanent(true);
+                                          }}
+                                          className="w-full px-2.5 py-1.5 rounded-lg text-left font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition cursor-pointer"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                          <span>Delete</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
                         })}
 
-                        {/* Dashed Add Subcategory shortcut card */}
+                        {/* Dashed Add Subcategory shortcut button */}
                         <button
                           type="button"
                           onClick={() => handleOpenAdd(root.id)}
-                          className="w-full py-2 px-3 rounded-xl border border-dashed border-orange-300/80 bg-orange-50/40 text-orange-700 hover:bg-orange-50 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="w-full py-1.5 px-3 rounded-xl border border-dashed border-orange-300/70 text-orange-600 hover:bg-orange-50/50 text-xs font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          <span>Add Subcategory under {root.name}</span>
+                          <span>Add subcategory under {root.name}</span>
                         </button>
                       </>
                     )}
