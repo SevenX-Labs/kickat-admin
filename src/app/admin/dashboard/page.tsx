@@ -11,7 +11,12 @@ import {
   AlertCircle,
   Sliders,
   X,
-  Check
+  Check,
+  TrendingUp,
+  TrendingDown,
+  PieChart,
+  Lightbulb,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -36,13 +41,14 @@ const PERIOD_LABELS: Record<DashboardPeriod, string> = {
   custom: "Custom Range",
 };
 
+// Curated brand color system for charts: Brand Orange gradient hues + Dark Navy for high-contrast category slices
 const CATEGORY_COLORS = [
-  { stroke: "#6D62FE", bg: "bg-[#6D62FE]" },
-  { stroke: "#4EBA79", bg: "bg-[#4EBA79]" },
-  { stroke: "#F7B731", bg: "bg-[#F7B731]" },
-  { stroke: "#F26674", bg: "bg-[#F26674]" },
-  { stroke: "#45AAF2", bg: "bg-[#45AAF2]" },
-  { stroke: "#A55EEA", bg: "bg-[#A55EEA]" },
+  { stroke: "#F97316", bg: "bg-[#F97316]" }, // Brand Orange Primary
+  { stroke: "#1E293B", bg: "bg-[#1E293B]" }, // Dark Navy
+  { stroke: "#EA580C", bg: "bg-[#EA580C]" }, // Deep Rust Orange
+  { stroke: "#475569", bg: "bg-[#475569]" }, // Slate Navy
+  { stroke: "#FB923C", bg: "bg-[#FB923C]" }, // Warm Amber Orange
+  { stroke: "#94A3B8", bg: "bg-[#94A3B8]" }, // Neutral Slate
 ];
 
 function formatIndianCurrency(amount: number): string {
@@ -68,12 +74,12 @@ function getStatusBadgeStyle(status: OrderStatus): { label: string; className: s
     case "DELIVERED":
       return { label: "Delivered", className: "bg-emerald-50 text-emerald-700 border border-emerald-200/50" };
     case "SHIPPED":
-      return { label: "Shipped", className: "bg-indigo-50 text-indigo-700 border border-indigo-200/50" };
+      return { label: "Shipped", className: "bg-slate-100 text-slate-800 border border-slate-200/60" };
     case "OUT_FOR_DELIVERY":
-      return { label: "Out for Delivery", className: "bg-purple-50 text-purple-700 border border-purple-200/50" };
+      return { label: "Out for Delivery", className: "bg-orange-50 text-orange-800 border border-orange-200/50" };
     case "PROCESSING":
     case "PACKED":
-      return { label: status === "PACKED" ? "Packed" : "Processing", className: "bg-sky-50 text-sky-700 border border-sky-200/50" };
+      return { label: status === "PACKED" ? "Packed" : "Processing", className: "bg-amber-50 text-amber-800 border border-amber-200/50" };
     case "PLACED":
     case "PENDING":
       return { label: status === "PLACED" ? "Placed" : "Pending", className: "bg-orange-50 text-orange-700 border border-orange-200/50" };
@@ -231,18 +237,18 @@ export default function DashboardPage() {
   const monthlyOrdersGoal = targets.monthlyOrdersTarget || 500;
   const ordersGoalPct = Math.min(100, Math.round((currentMonthOrders / monthlyOrdersGoal) * 100));
 
-  // Dynamic Insight Text
+  // Dynamic Insight Text (Single-line sentence without duplicate tagline)
   const pendingCount = summary?.pendingOrders ?? 0;
   const stockAlertsCount = summary?.totalInventoryAlerts ?? 0;
   let insightHeadline = "Store Health Healthy";
-  let insightDesc = "Cat nutrition & organic treats demand is trending upwards. Keep bestsellers stocked! 🚀";
+  let insightDesc = "All systems running smoothly. Cat nutrition & organic treats demand is trending upwards. Keep bestsellers stocked! 🚀";
 
   if (pendingCount > 0) {
     insightHeadline = `${pendingCount} Orders Awaiting Fulfillment`;
-    insightDesc = "Pack and dispatch pending customer orders quickly to maintain high store satisfaction ratings.";
+    insightDesc = "Pack and dispatch pending customer orders promptly to maintain high customer satisfaction.";
   } else if (stockAlertsCount > 0) {
-    insightHeadline = `${stockAlertsCount} Inventory Alerts`;
-    insightDesc = `${summary?.outOfStockProducts ?? 0} items are out of stock and ${summary?.lowStockProducts ?? 0} items are running low. Restock now!`;
+    insightHeadline = `${stockAlertsCount} Inventory Warnings`;
+    insightDesc = `${summary?.outOfStockProducts ?? 0} items are out of stock and ${summary?.lowStockProducts ?? 0} items are running low. Replenish inventory now to avoid missed sales.`;
   }
 
   // Circle circumference for r=38
@@ -250,42 +256,46 @@ export default function DashboardPage() {
   let accumulatedPercent = 0;
 
   return (
-    <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 no-scrollbar animate-fade-in">
+    <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 max-w-full overflow-hidden no-scrollbar animate-fade-in">
       
       {/* =========================================================
-          CONTROL BAR: Active Period Display & Quick Actions
+          CONTROL BAR: Active Period Display & Quick Actions (Tight mobile grouping)
           ========================================================= */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/70 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[#E8DFC0]/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dashboard Filter:</span>
-          <span className="text-xs font-extrabold text-[#2A241E] bg-[#F5EFE9] px-2.5 py-1 rounded-lg border border-[#E8DFC0]/60">
+      <div className="flex flex-row items-center justify-between gap-2.5 bg-white/80 backdrop-blur-md px-3.5 sm:px-4 py-2.5 rounded-2xl border border-[#E8DFC0]/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+        {/* Left: Filter label + active pill */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">Filter:</span>
+          <span className="text-xs font-extrabold text-[#2A241E] bg-[#F5EFE9] px-2.5 py-1 rounded-lg border border-[#E8DFC0]/60 truncate">
             {PERIOD_LABELS[period]}
           </span>
           {isRefreshing && (
-            <span className="text-[11px] font-semibold text-orange-600 flex items-center gap-1">
+            <span className="text-[11px] font-semibold text-orange-600 flex items-center gap-1 shrink-0 ml-1">
               <RotateCcw className="h-3 w-3 animate-spin" />
-              Updating...
+              <span className="hidden sm:inline">Updating...</span>
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Right: Controls (Refresh + Dropdown, 44px min tap targets) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Refresh Button */}
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="clay-button flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="clay-button flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-orange-600 transition active:scale-95 disabled:opacity-50 cursor-pointer min-h-[44px]"
+            aria-label="Refresh dashboard metrics"
             title="Refresh dashboard metrics"
           >
             <RotateCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden xs:inline">Refresh</span>
           </button>
 
           {/* Period Selector Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setPeriodDropdownOpen((prev) => !prev)}
-              className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 select-none hover:bg-slate-50 transition active:scale-95 cursor-pointer"
+              className="clay-button flex items-center justify-between gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 select-none hover:bg-slate-50 transition active:scale-95 cursor-pointer min-h-[44px]"
+              aria-label="Select dashboard time period"
             >
               <span>{PERIOD_LABELS[period]}</span>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
@@ -297,7 +307,7 @@ export default function DashboardPage() {
                   <button
                     key={p}
                     onClick={() => handleSelectPeriod(p)}
-                    className={`w-full text-left px-3.5 py-2 hover:bg-orange-50 hover:text-orange-600 transition flex items-center justify-between ${
+                    className={`w-full text-left px-3.5 py-2.5 min-h-[40px] hover:bg-orange-50 hover:text-orange-600 transition flex items-center justify-between cursor-pointer ${
                       period === p ? "bg-orange-50/70 text-orange-600 font-bold" : "text-slate-700"
                     }`}
                   >
@@ -320,7 +330,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => fetchDashboardData(period, true)}
-            className="text-[11px] font-bold text-rose-800 underline hover:no-underline shrink-0"
+            className="text-[11px] font-bold text-rose-800 underline hover:no-underline shrink-0 p-2 min-h-[44px] flex items-center"
           >
             Retry
           </button>
@@ -328,15 +338,131 @@ export default function DashboardPage() {
       )}
 
       {/* =========================================================
-          1. TOP ROW: 4 E-COMMERCE 3D CLAY STAT CARDS
-          - Total Revenue
-          - Total Orders
-          - Total Customers
-          - Stock Alerts & Inventory Warnings
+          1. TOP ROW: 4 E-COMMERCE STAT CARDS
+          - Mobile (375px): High-Density 2x2 Grid (md:hidden)
+          - Desktop: 4-Column Row (hidden md:grid)
+          - Color System: All decorative icon circles unified to BRAND ORANGE & DARK NAVY.
+            Green and Red are reserved EXCLUSIVELY for status indicators.
           ========================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
+
+      {/* MOBILE 2x2 HIGH-DENSITY METRIC GRID (md:hidden) */}
+      <div className="grid grid-cols-2 gap-2.5 md:hidden w-full min-w-0">
         
-        {/* Card 1: Total / Period Revenue */}
+        {/* Mobile Card 1: Revenue (Brand Orange Icon) */}
+        <div className="clay-card p-3 min-h-[96px] flex flex-col justify-between transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              {period === "all" ? "Total Revenue" : "Revenue"}
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_3px_8px_rgba(249,115,22,0.30)]">
+              <IndianRupee className="h-3.5 w-3.5 stroke-[2.4]" />
+            </div>
+          </div>
+          <div className="my-1">
+            <p className="font-fraunces text-base font-black text-[#2A241E] truncate">
+              ₹{formatIndianCurrency(summary?.periodMetrics?.revenue ?? summary?.totalRevenue ?? 0)}
+            </p>
+          </div>
+          <div className="flex items-center text-[10px] font-bold truncate">
+            {(growth?.revenuePercentage ?? 0) >= 0 ? (
+              <span className="text-[#20BF6B] flex items-center gap-0.5 font-extrabold">
+                <TrendingUp className="h-3 w-3 inline" /> +{growth?.revenuePercentage ?? 0}%
+              </span>
+            ) : (
+              <span className="text-rose-600 flex items-center gap-0.5 font-extrabold">
+                <TrendingDown className="h-3 w-3 inline" /> {growth?.revenuePercentage ?? 0}%
+              </span>
+            )}
+            <span className="text-slate-400 font-medium ml-1 text-[9.5px]">vs prev</span>
+          </div>
+        </div>
+
+        {/* Mobile Card 2: Orders (Brand Orange Icon) */}
+        <div className="clay-card p-3 min-h-[96px] flex flex-col justify-between transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              {period === "all" ? "Total Orders" : "Orders"}
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_3px_8px_rgba(249,115,22,0.30)]">
+              <ShoppingBag className="h-3.5 w-3.5 stroke-[2.3]" />
+            </div>
+          </div>
+          <div className="my-1">
+            <p className="font-fraunces text-base font-black text-[#2A241E] truncate">
+              {(summary?.periodMetrics?.orders ?? summary?.totalOrders ?? 0).toLocaleString("en-IN")}
+            </p>
+          </div>
+          <div className="flex items-center text-[10px] font-bold truncate">
+            {(growth?.ordersPercentage ?? 0) >= 0 ? (
+              <span className="text-[#20BF6B] flex items-center gap-0.5 font-extrabold">
+                <TrendingUp className="h-3 w-3 inline" /> +{growth?.ordersPercentage ?? 0}%
+              </span>
+            ) : (
+              <span className="text-rose-600 flex items-center gap-0.5 font-extrabold">
+                <TrendingDown className="h-3 w-3 inline" /> {growth?.ordersPercentage ?? 0}%
+              </span>
+            )}
+            <span className="text-slate-400 font-medium ml-1 text-[9.5px]">vs prev</span>
+          </div>
+        </div>
+
+        {/* Mobile Card 3: Customers (Dark Navy Icon, Status Green Text) */}
+        <div className="clay-card p-3 min-h-[96px] flex flex-col justify-between transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Customers
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#334155] via-[#1E293B] to-[#0F172A] text-white shadow-[0_3px_8px_rgba(30,41,59,0.30)]">
+              <Users className="h-3.5 w-3.5 stroke-[2.3]" />
+            </div>
+          </div>
+          <div className="my-1">
+            <p className="font-fraunces text-base font-black text-[#2A241E] truncate">
+              {(summary?.totalCustomers ?? 0).toLocaleString("en-IN")}
+            </p>
+          </div>
+          <div className="flex items-center text-[10px] font-bold text-[#20BF6B] truncate">
+            <span className="bg-[#20BF6B]/10 px-1 py-0.5 rounded font-extrabold">
+              +{summary?.periodMetrics?.newCustomers ?? 0} new
+            </span>
+            <span className="text-slate-400 font-medium ml-1 text-[9.5px]">this period</span>
+          </div>
+        </div>
+
+        {/* Mobile Card 4: Inventory Alerts (Brand Orange Icon, Status Red Badge) */}
+        <div className="clay-card p-3 min-h-[96px] flex flex-col justify-between transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Stock Alerts
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_3px_8px_rgba(249,115,22,0.30)]">
+              <Package className="h-3.5 w-3.5 stroke-[2.3]" />
+            </div>
+          </div>
+          <div className="my-1">
+            <p className="font-fraunces text-base font-black text-[#2A241E] truncate">
+              {(summary?.totalInventoryAlerts ?? 0).toLocaleString("en-IN")}
+            </p>
+          </div>
+          <div className="flex items-center text-[10px] font-bold truncate">
+            {(summary?.outOfStockProducts ?? 0) > 0 ? (
+              <span className="text-rose-600 bg-rose-50 px-1 py-0.5 rounded font-extrabold truncate">
+                {summary?.outOfStockProducts ?? 0} out of stock
+              </span>
+            ) : (
+              <span className="text-[#20BF6B] bg-[#20BF6B]/10 px-1 py-0.5 rounded font-extrabold truncate">
+                Healthy stock
+              </span>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* DESKTOP 4-COLUMN METRIC GRID (hidden md:grid) */}
+      <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
+        
+        {/* Desktop Card 1: Total / Period Revenue (Brand Orange Icon) */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -344,7 +470,7 @@ export default function DashboardPage() {
             </span>
             <Link
               href="/admin/dashboard/analytics"
-              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              className="text-slate-300 hover:text-slate-600 transition p-1.5 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="View Revenue Analytics"
             >
               <MoreVertical className="h-4 w-4" />
@@ -371,14 +497,14 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Proper 3D Royal Purple Clay Rupee Icon */}
-            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B72F0] via-[#635BFF] to-[#4F46E5] text-white shadow-[0_6px_16px_rgba(99,91,255,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+            {/* Proper 3D Brand Orange Clay Rupee Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
               <IndianRupee className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.4]" />
             </div>
           </div>
         </div>
 
-        {/* Card 2: Total / Period Orders */}
+        {/* Desktop Card 2: Total / Period Orders (Brand Orange Icon) */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -386,7 +512,7 @@ export default function DashboardPage() {
             </span>
             <Link
               href="/admin/dashboard/orders"
-              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              className="text-slate-300 hover:text-slate-600 transition p-1.5 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="View Orders"
             >
               <MoreVertical className="h-4 w-4" />
@@ -413,20 +539,20 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Proper 3D Sunset Orange Clay Shopping Bag Icon */}
+            {/* Proper 3D Brand Orange Clay Shopping Bag Icon */}
             <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
               <ShoppingBag className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
-        {/* Card 3: Total Customers */}
+        {/* Desktop Card 3: Total Customers (Dark Navy Icon, Status Green Text) */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Customers</span>
             <Link
               href="/admin/dashboard/customers"
-              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              className="text-slate-300 hover:text-slate-600 transition p-1.5 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="View Customers"
             >
               <MoreVertical className="h-4 w-4" />
@@ -447,20 +573,20 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Proper 3D Emerald Clay Customers Icon */}
-            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#34D399] via-[#10B981] to-[#059669] text-white shadow-[0_6px_16px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+            {/* Proper 3D Dark Navy Clay Customers Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#334155] via-[#1E293B] to-[#0F172A] text-white shadow-[0_6px_16px_rgba(30,41,59,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
               <Users className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
 
-        {/* Card 4: Inventory & Fulfillment Alerts */}
+        {/* Desktop Card 4: Inventory & Fulfillment Alerts (Brand Orange Icon) */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inventory Alerts</span>
             <Link
               href="/admin/dashboard/products"
-              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              className="text-slate-300 hover:text-slate-600 transition p-1.5 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Manage Products"
             >
               <MoreVertical className="h-4 w-4" />
@@ -484,13 +610,13 @@ export default function DashboardPage() {
                   </span>
                 )}
                 <span className="text-[10.5px] text-slate-400 font-medium">
-                  • {summary?.pendingOrders ?? 0} pending orders
+                  • {summary?.pendingOrders ?? 0} pending
                 </span>
               </div>
             </div>
 
-            {/* Proper 3D Cerulean Blue Clay Products Icon */}
-            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+            {/* Proper 3D Brand Orange Clay Products Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-[0_6px_16px_rgba(249,115,22,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
               <Package className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
@@ -514,7 +640,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/admin/dashboard/categories"
-              className="clay-button px-3 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer"
+              className="clay-button px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer min-h-[40px] flex items-center"
             >
               Categories
             </Link>
@@ -522,11 +648,11 @@ export default function DashboardPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-5">
             
-            {/* 3D Multi-Color Tactile Clay Donut Chart */}
+            {/* 3D Multi-Color Tactile Clay Donut Chart (Brand Palette) */}
             <div className="relative flex items-center justify-center shrink-0">
-              <svg className="w-44 h-44 sm:w-48 sm:h-48 transform -rotate-90 drop-shadow-[0_10px_20px_rgba(195,180,165,0.3)]" viewBox="0 0 100 100">
-                {/* Background ring */}
-                <circle cx="50" cy="50" r="38" stroke="#EAE4DC" strokeWidth="15" fill="none" />
+              <svg className="w-40 h-40 sm:w-48 sm:h-48 transform -rotate-90 drop-shadow-[0_8px_16px_rgba(195,180,165,0.25)]" viewBox="0 0 100 100">
+                {/* Background base track */}
+                <circle cx="50" cy="50" r="38" stroke="#E5E7EB" strokeWidth="14" fill="none" />
                 
                 {/* Dynamic Category Slices */}
                 {topCategories.length > 0 ? (
@@ -545,7 +671,7 @@ export default function DashboardPage() {
                         cy="50"
                         r="38"
                         stroke={color.stroke}
-                        strokeWidth="15"
+                        strokeWidth="14"
                         fill="none"
                         strokeDasharray={`${dashLength} ${spaceLength}`}
                         strokeDashoffset={strokeOffset}
@@ -555,14 +681,15 @@ export default function DashboardPage() {
                     );
                   })
                 ) : (
+                  /* Intentional, muted empty-state ring */
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
-                    stroke="#EAE4DC"
-                    strokeWidth="15"
+                    stroke="#D6D3CD"
+                    strokeWidth="14"
                     fill="none"
-                    strokeDasharray="8 8"
+                    strokeDasharray="6 6"
                   />
                 )}
               </svg>
@@ -603,15 +730,20 @@ export default function DashboardPage() {
                   );
                 })
               ) : (
-                <div className="p-3 bg-[#F9F6F2] rounded-xl border border-[#E8DFC0]/40 text-center space-y-1">
-                  <p className="text-xs font-bold text-slate-700">No Sales Recorded Yet</p>
-                  <p className="text-[11px] text-slate-400 leading-tight">
-                    When customers place orders, category volume and revenue percentages will be rendered automatically.
-                  </p>
-                  <div className="pt-1.5">
+                <div className="p-3.5 bg-[#FBF9F6] rounded-2xl border border-[#E8DFC0]/40 text-center space-y-2 flex flex-col items-center justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-[#EA580C] border border-orange-200/60 shadow-[0_2px_6px_rgba(249,115,22,0.12)]">
+                    <PieChart className="h-5 w-5 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">No Sales Recorded Yet</p>
+                    <p className="text-[10.5px] text-slate-500 leading-tight max-w-[200px] mt-0.5">
+                      When customers place orders, category contribution shares will appear automatically.
+                    </p>
+                  </div>
+                  <div className="pt-0.5">
                     <Link
                       href="/admin/dashboard/products"
-                      className="text-[11px] font-extrabold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-0.5"
+                      className="text-xs font-bold text-[#EA580C] hover:text-[#C2410C] inline-flex items-center gap-1 min-h-[44px]"
                     >
                       View Catalog Products →
                     </Link>
@@ -634,7 +766,7 @@ export default function DashboardPage() {
             </div>
             <Link 
               href="/admin/dashboard/orders" 
-              className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer"
+              className="clay-button px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer min-h-[40px] flex items-center"
             >
               View All
             </Link>
@@ -648,14 +780,13 @@ export default function DashboardPage() {
                 recentOrders.map((ord, idx) => {
                   const badge = getStatusBadgeStyle(ord.orderStatus);
                   const emojis = ["🐕", "🐈", "🦴", "🐾"];
-                  const badgeStyles = ["clay-badge-amber", "clay-badge-purple", "clay-badge-green", "clay-badge-coral"];
                   const iconEmoji = emojis[idx % emojis.length];
-                  const badgeCls = badgeStyles[idx % badgeStyles.length];
 
                   return (
                     <div key={ord.id} className="flex items-center justify-between p-1.5 rounded-2xl hover:bg-[#F9F6F2] transition">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`${badgeCls} flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl`}>
+                        {/* Unified Brand Orange Mini Clay Badge */}
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C]">
                           {iconEmoji}
                         </div>
                         <div className="min-w-0">
@@ -683,32 +814,41 @@ export default function DashboardPage() {
                   );
                 })
               ) : (
-                <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-white/60 border border-[#E8DFC0]/40 space-y-1.5">
-                  <span className="text-2xl select-none">🛍️</span>
-                  <p className="text-xs font-bold text-slate-700">No Orders Placed Yet</p>
-                  <p className="text-[10.5px] text-slate-400 max-w-[200px] leading-tight">
-                    Customer checkouts will appear here instantly with live order details.
-                  </p>
-                  <Link
-                    href="/admin/dashboard/orders"
-                    className="mt-1 text-[11px] font-extrabold text-orange-600 hover:underline"
-                  >
-                    Open Orders Hub →
-                  </Link>
+                <div className="p-3.5 bg-[#FBF9F6] rounded-2xl border border-[#E8DFC0]/40 text-center space-y-2 flex flex-col items-center justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-[#EA580C] border border-orange-200/60 shadow-[0_2px_6px_rgba(249,115,22,0.12)]">
+                    <ShoppingBag className="h-5 w-5 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">No Orders Placed Yet</p>
+                    <p className="text-[10.5px] text-slate-500 max-w-[220px] leading-tight mt-0.5">
+                      Customer checkouts will stream here instantly with live fulfillment data.
+                    </p>
+                  </div>
+                  <div className="pt-0.5">
+                    <Link
+                      href="/admin/dashboard/orders"
+                      className="text-xs font-bold text-[#EA580C] hover:text-[#C2410C] inline-flex items-center gap-1 min-h-[44px]"
+                    >
+                      Open Orders Hub →
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 3D Clay Desk Scene (5 Cols) */}
+            {/* Store Identity Badge (5 Cols) with clear header label */}
             <div className="md:col-span-5 flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-3xl bg-[#F5EFE9] border border-[#E8DFC0]/50 shadow-[inset_2px_2px_5px_rgba(195,180,165,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.9)] text-center relative overflow-hidden">
+              <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider font-mono-eyebrow mb-1">
+                Store Identity
+              </span>
               <div className="relative select-none transform hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#FF7A00] via-[#F97316] to-[#EAA03B] flex items-center justify-center text-2xl sm:text-3xl shadow-[0_6px_14px_rgba(249,115,22,0.35),inset_0_2px_3px_rgba(255,255,255,0.5)]">
+                <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-gradient-to-tr from-[#FF7A00] via-[#F97316] to-[#EAA03B] flex items-center justify-center text-2xl shadow-[0_6px_14px_rgba(249,115,22,0.35),inset_0_2px_3px_rgba(255,255,255,0.5)]">
                   🐾
                 </div>
               </div>
               
-              <div className="w-full mt-2.5 pt-2 border-t-4 border-[#C7955F] rounded-t-xl bg-[#E8C296] shadow-[inset_0_2px_4px_rgba(255,255,255,0.6),0_3px_6px_rgba(0,0,0,0.08)] p-1.5">
-                <div className="flex items-center justify-center gap-2.5 text-base">
+              <div className="w-full mt-2 pt-1.5 border-t-4 border-[#C7955F] rounded-t-xl bg-[#E8C296] shadow-[inset_0_2px_4px_rgba(255,255,255,0.6),0_3px_6px_rgba(0,0,0,0.08)] p-1">
+                <div className="flex items-center justify-center gap-2.5 text-sm">
                   <span className="drop-shadow-xs">🐶</span>
                   <span className="drop-shadow-xs">📦</span>
                   <span className="drop-shadow-xs">🐱</span>
@@ -738,23 +878,24 @@ export default function DashboardPage() {
                 Progress for {targets.month} {targets.year} against ecommerce KPIs
               </p>
             </div>
+            {/* Target Settings Button with Brand Orange Icon and min 44px touch target */}
             <button
               onClick={handleOpenTargetModal}
-              className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer select-none"
+              className="clay-button flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer select-none min-h-[44px]"
               title="Configure Monthly Sales Targets"
             >
-              <Sliders className="h-3.5 w-3.5 text-indigo-500" />
+              <Sliders className="h-3.5 w-3.5 text-[#EA580C]" />
               <span>Target Settings</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             
-            {/* Goal 1: Monthly Revenue Target */}
+            {/* Goal 1: Monthly Revenue Target (Unified Brand Orange Icon & Progress Fill) */}
             <div className="clay-inset p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-center gap-2.5">
-                <div className="clay-badge-purple flex h-10 w-10 shrink-0 items-center justify-center text-lg text-white shadow-xs">
-                  💰
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center text-white rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] shadow-[0_4px_10px_rgba(249,115,22,0.30)]">
+                  <IndianRupee className="h-5 w-5 stroke-[2.4]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Revenue Goal</h3>
@@ -762,25 +903,25 @@ export default function DashboardPage() {
                     <span className="font-bold text-slate-700">
                       ₹{formatIndianCurrency(currentMonthRevenue)} / ₹{formatIndianCurrency(monthlyRevenueGoal)}
                     </span>
-                    <span className="font-extrabold text-indigo-700">{revenueGoalPct}%</span>
+                    <span className="font-extrabold text-[#EA580C]">{revenueGoalPct}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Recessed Clay Progress Track */}
+              {/* Recessed Clay Progress Track with Unified Orange Fill */}
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
-                  className="clay-badge-purple h-full rounded-full transition-all duration-500" 
+                  className="bg-gradient-to-r from-[#FF8C38] via-[#F97316] to-[#EA580C] h-full rounded-full transition-all duration-500 shadow-[0_2px_6px_rgba(249,115,22,0.4)]" 
                   style={{ width: `${Math.max(4, revenueGoalPct)}%` }} 
                 />
               </div>
             </div>
 
-            {/* Goal 2: Monthly Orders Target */}
+            {/* Goal 2: Monthly Orders Target (Unified Dark Navy Icon & Brand Orange Progress Fill) */}
             <div className="clay-inset p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-center gap-2.5">
-                <div className="clay-badge-green flex h-10 w-10 shrink-0 items-center justify-center text-lg text-white shadow-xs">
-                  🛍️
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center text-white rounded-2xl bg-gradient-to-br from-[#334155] via-[#1E293B] to-[#0F172A] shadow-[0_4px_10px_rgba(30,41,59,0.30)]">
+                  <ShoppingBag className="h-5 w-5 stroke-[2.3]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Orders Goal</h3>
@@ -788,15 +929,15 @@ export default function DashboardPage() {
                     <span className="font-bold text-slate-700">
                       {currentMonthOrders.toLocaleString("en-IN")} / {monthlyOrdersGoal.toLocaleString("en-IN")}
                     </span>
-                    <span className="font-extrabold text-emerald-700">{ordersGoalPct}%</span>
+                    <span className="font-extrabold text-[#EA580C]">{ordersGoalPct}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Recessed Clay Progress Track */}
+              {/* Recessed Clay Progress Track with Unified Orange Fill */}
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
-                  className="clay-badge-green h-full rounded-full transition-all duration-500" 
+                  className="bg-gradient-to-r from-[#FF8C38] via-[#F97316] to-[#EA580C] h-full rounded-full transition-all duration-500 shadow-[0_2px_6px_rgba(249,115,22,0.4)]" 
                   style={{ width: `${Math.max(4, ordersGoalPct)}%` }} 
                 />
               </div>
@@ -805,27 +946,31 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Store Growth Insight (5 Cols) */}
+        {/* Store Growth Insight (5 Cols)
+            - Background: green-tinted clay-tip-card (reserved for healthy status)
+            - Icon: Brand Orange lightbulb (no competing yellow)
+            - Paw Badge: Brand Orange (no competing blue)
+            - Bug Fix: Message appears exactly ONCE (duplicate line removed)
+        */}
         <div className="clay-tip-card p-4 sm:p-5 lg:p-6 lg:col-span-5 flex flex-col justify-between relative overflow-hidden min-w-0">
           <div className="flex items-start gap-3.5 z-10">
-            <div className="clay-badge-amber flex h-11 w-11 shrink-0 items-center justify-center text-xl text-white shadow-xs">
-              💡
+            {/* Brand Orange Lightbulb Icon */}
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center text-white rounded-2xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] shadow-[0_4px_10px_rgba(249,115,22,0.30)]">
+              <Lightbulb className="h-5 w-5 stroke-[2.3]" />
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-extrabold text-[#1E3B1B]">{insightHeadline}</h3>
               <p className="text-xs text-[#3E5C38] leading-relaxed font-semibold">
                 {insightDesc}
               </p>
-              <p className="text-xs font-bold text-[#1E3B1B] pt-0.5">
-                Keep bestsellers stocked! 🚀
-              </p>
             </div>
           </div>
 
+          {/* Unified Brand Orange Paw Badge */}
           <div className="pt-3 flex justify-end z-10 select-none">
             <Link
               href="/admin/dashboard/products"
-              className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-lg hover:scale-105 transition"
+              className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-base bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-xs hover:scale-105 transition min-h-[36px] min-w-[36px]"
               title="Manage Products & Inventory"
             >
               🐾
@@ -844,8 +989,8 @@ export default function DashboardPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="clay-badge-purple flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl">
-                  🎯
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center text-white shadow-xs rounded-xl bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C]">
+                  <Target className="h-4.5 w-4.5 stroke-[2.3]" />
                 </div>
                 <div>
                   <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
@@ -858,7 +1003,8 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsTargetModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -884,7 +1030,7 @@ export default function DashboardPage() {
                     value={targetRevenueInput}
                     onChange={(e) => setTargetRevenueInput(Number(e.target.value) || 0)}
                     required
-                    className="clay-inset w-full pl-8 pr-3 py-2 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                    className="clay-inset w-full pl-8 pr-3 py-2.5 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 min-h-[44px]"
                     placeholder="e.g. 2000000"
                   />
                 </div>
@@ -902,9 +1048,9 @@ export default function DashboardPage() {
                       type="button"
                       key={p.val}
                       onClick={() => setTargetRevenueInput(p.val)}
-                      className={`px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer min-h-[36px] flex items-center ${
                         targetRevenueInput === p.val
-                          ? "bg-indigo-600 text-white shadow-xs"
+                          ? "bg-[#EA580C] text-white shadow-xs"
                           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
@@ -923,7 +1069,9 @@ export default function DashboardPage() {
                   </span>
                 </label>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3 text-slate-400 font-bold text-sm">🛍️</span>
+                  <span className="absolute left-3 text-slate-400 font-bold text-sm flex items-center pointer-events-none">
+                    <ShoppingBag className="h-3.5 w-3.5 text-slate-400 stroke-[2.3]" />
+                  </span>
                   <input
                     type="number"
                     min={1}
@@ -931,7 +1079,7 @@ export default function DashboardPage() {
                     value={targetOrdersInput}
                     onChange={(e) => setTargetOrdersInput(Number(e.target.value) || 0)}
                     required
-                    className="clay-inset w-full pl-9 pr-3 py-2 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                    className="clay-inset w-full pl-9 pr-3 py-2.5 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 min-h-[44px]"
                     placeholder="e.g. 500"
                   />
                 </div>
@@ -949,9 +1097,9 @@ export default function DashboardPage() {
                       type="button"
                       key={p.val}
                       onClick={() => setTargetOrdersInput(p.val)}
-                      className={`px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer min-h-[36px] flex items-center ${
                         targetOrdersInput === p.val
-                          ? "bg-emerald-600 text-white shadow-xs"
+                          ? "bg-[#EA580C] text-white shadow-xs"
                           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
@@ -975,14 +1123,14 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => setIsTargetModalOpen(false)}
                   disabled={isSavingTargets}
-                  className="clay-button px-4 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer transition disabled:opacity-50"
+                  className="clay-button px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer transition disabled:opacity-50 min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingTargets}
-                  className="clay-button px-4 py-1.5 text-xs font-extrabold bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                  className="clay-button px-4 py-2 text-xs font-extrabold bg-gradient-to-r from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white hover:opacity-95 shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 min-h-[44px]"
                 >
                   {isSavingTargets ? (
                     <>

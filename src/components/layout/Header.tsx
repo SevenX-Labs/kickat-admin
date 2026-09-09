@@ -88,7 +88,7 @@ export function Header({
         <div className="flex items-center gap-2">
           <Link 
             href="/admin/dashboard/profile"
-            className="relative flex h-10 w-10 sm:h-11 sm:w-11 rounded-full items-center justify-center bg-gradient-to-tr from-[#635BFF] via-[#7B72F0] to-[#9A91FB] text-white font-bold text-sm shadow-[0_4px_10px_rgba(99,91,255,0.30)] hover:scale-105 transition-transform overflow-hidden"
+            className="relative flex h-10 w-10 sm:h-11 sm:w-11 rounded-full items-center justify-center bg-gradient-to-tr from-[#EA580C] via-[#F97316] to-[#FB923C] text-white font-bold text-sm shadow-[0_4px_10px_rgba(249,115,22,0.30)] hover:scale-105 transition-transform overflow-hidden"
             title="Admin Profile"
           >
             <span className="select-none text-lg sm:text-xl">👦</span>
