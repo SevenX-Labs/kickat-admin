@@ -1023,16 +1023,16 @@ export default function CategoriesPage() {
       )}
 
       {/* Control Toolbar */}
-      <div className="clay-card p-2.5 sm:p-4 space-y-2 min-w-0">
-        {/* Search Bar */}
+      <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0">
+        {/* Row 1: Search Bar */}
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search categories by name, slug, or parent..."
-            className="w-full h-10 sm:h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-8.5 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition"
+            placeholder="Search categories by name, slug, parent..."
+            className="w-full h-9.5 sm:h-10 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-8.5 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition"
           />
           {searchQuery && (
             <button
@@ -1045,109 +1045,113 @@ export default function CategoriesPage() {
           )}
         </div>
 
-        {/* Controls Row: Status tabs & View Switcher on left, Sort on right */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 pt-0.5">
-          {/* Status Segmented Pill & View Mode */}
-          <div className="flex items-center justify-between sm:justify-start gap-1.5">
-            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
-              {(
-                [
-                  { key: "ALL", label: "All" },
-                  { key: "ACTIVE", label: "Live" },
-                  { key: "INACTIVE", label: "Draft" },
-                ] as const
-              ).map((st) => (
-                <button
-                  key={st.key}
-                  onClick={() => setStatusFilter(st.key)}
-                  className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    statusFilter === st.key
-                      ? "bg-white text-[#2A241E] shadow-2xs"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {st.label}
-                </button>
-              ))}
+        {/* Row 2: Status tabs + Sort + View Mode (All on 1 single line!) */}
+        <div className="flex items-center justify-between gap-1.5 pt-0.5">
+          {/* Status Filter Segmented Control */}
+          <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70 shrink-0">
+            {(
+              [
+                { key: "ALL", label: "All" },
+                { key: "ACTIVE", label: "Live" },
+                { key: "INACTIVE", label: "Draft" },
+              ] as const
+            ).map((st) => (
+              <button
+                key={st.key}
+                onClick={() => setStatusFilter(st.key)}
+                className={`px-2 sm:px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                  statusFilter === st.key
+                    ? "bg-white text-[#2A241E] shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Right cluster: Compact Sort + View Toggle */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Compact Sort Select */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as AdminCategorySortEnum)}
+                className="w-auto max-w-[125px] sm:max-w-[155px] rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1 pl-2 pr-6 text-[11px] font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none truncate"
+              >
+                <option value="order_asc">Order (Asc)</option>
+                <option value="order_desc">Order (Desc)</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="createdAt_desc">Newest First</option>
+                <option value="createdAt_asc">Oldest First</option>
+              </select>
+              <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
             </div>
 
             {/* View Mode Toggle */}
             <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
               <button
                 onClick={() => setViewMode("TREE")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`p-1 sm:px-2 sm:py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
                   viewMode === "TREE"
-                    ? "bg-white text-[#2A241E] shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
+                    ? "bg-white text-orange-600 shadow-2xs font-bold"
+                    : "text-slate-400 hover:text-slate-700"
                 }`}
                 title="Hierarchy Tree View"
               >
-                <ListTree className="h-3.5 w-3.5 text-orange-600" />
-                <span className="hidden sm:inline">Tree</span>
+                <ListTree className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline text-xs">Tree</span>
               </button>
 
               <button
                 onClick={() => setViewMode("GRID")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`p-1 sm:px-2 sm:py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
                   viewMode === "GRID"
-                    ? "bg-white text-[#2A241E] shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
+                    ? "bg-white text-orange-600 shadow-2xs font-bold"
+                    : "text-slate-400 hover:text-slate-700"
                 }`}
                 title="Grid Cards View"
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Grid</span>
+                <span className="hidden sm:inline text-xs">Grid</span>
               </button>
             </div>
           </div>
-
-          {/* Sort Dropdown */}
-          <div className="relative w-full sm:w-auto">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as AdminCategorySortEnum)}
-              className="w-full sm:w-auto rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 pl-2.5 pr-7 text-xs font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
-            >
-              <option value="order_asc">Display Order (Asc)</option>
-              <option value="order_desc">Display Order (Desc)</option>
-              <option value="name_asc">Name (A-Z)</option>
-              <option value="name_desc">Name (Z-A)</option>
-              <option value="createdAt_desc">Newest First</option>
-              <option value="createdAt_asc">Oldest First</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
         </div>
 
-        {/* Tree mode controls: Expand/Collapse All + Level filter */}
-        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-100 flex-wrap gap-1.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        {/* Row 3: Level filter + Expand/Collapse All (Single horizontal line, no wrapping!) */}
+        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-100/90 gap-2">
+          {/* Level Filter Segmented Control */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
               Level:
             </span>
-            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
+            <div className="flex items-center rounded-lg bg-[#F8F5F1] p-0.5 border border-slate-200/70">
               {(
                 [
                   { key: "ALL", label: "All" },
                   { key: "ROOT", label: "Roots" },
-                  { key: "SUB", label: "Subcategories" },
+                  { key: "SUB", label: "Subcategories", mobileLabel: "Subs" },
                 ] as const
               ).map((lv) => (
                 <button
                   key={lv.key}
                   onClick={() => setLevelFilter(lv.key)}
-                  className={`px-2 py-0.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition-all cursor-pointer ${
                     levelFilter === lv.key
                       ? "bg-white text-[#2A241E] shadow-2xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  {lv.label}
+                  <span className={lv.key === "SUB" ? "hidden sm:inline" : ""}>{lv.label}</span>
+                  {lv.key === "SUB" && <span className="sm:hidden">Subs</span>}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Expand / Collapse All */}
           {viewMode === "TREE" && hierarchicalTree.length > 0 && (
             <button
               onClick={() => {
@@ -1157,14 +1161,13 @@ export default function CategoriesPage() {
                   setExpandedNodes(new Set(categories.map((c) => c.id)));
                 }
               }}
-              className="text-xs font-semibold text-orange-600 hover:underline cursor-pointer ml-auto"
+              className="text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer shrink-0 ml-auto"
             >
               {expandedNodes.size > 0 ? "Collapse All" : "Expand All"}
             </button>
           )}
         </div>
       </div>
-
       {/* Main Content Area */}
       {loading ? (
         <div className="space-y-2.5">
