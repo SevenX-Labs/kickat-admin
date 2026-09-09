@@ -123,10 +123,10 @@ export function CategoryFilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full rounded-xl border py-2 px-2.5 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
+        className={`w-full h-[38px] rounded-xl border px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
           value !== "ALL"
-            ? "bg-orange-50/80 border-orange-300 text-orange-950 font-semibold shadow-2xs ring-1 ring-orange-200/50"
-            : "bg-[#F8F5F1] hover:bg-[#F2ECE4] border-slate-200/70 text-slate-700"
+            ? "bg-orange-50/90 border-orange-300 text-orange-950 font-bold shadow-2xs ring-1 ring-orange-200/50"
+            : "bg-white hover:bg-[#FAF7F2] border-slate-200/80 text-slate-700 font-medium"
         } focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]`}
       >
         <div className="flex items-center gap-1.5 min-w-0 truncate">
@@ -405,10 +405,10 @@ export function SpeciesFilterDropdown({ value, onChange, onClear }: SpeciesFilte
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full rounded-xl border py-2 px-2.5 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
+        className={`w-full h-[38px] rounded-xl border px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
           value !== "ALL"
-            ? "bg-orange-50/80 border-orange-300 text-orange-950 font-semibold shadow-2xs ring-1 ring-orange-200/50"
-            : "bg-[#F8F5F1] hover:bg-[#F2ECE4] border-slate-200/70 text-slate-700"
+            ? "bg-orange-50/90 border-orange-300 text-orange-950 font-bold shadow-2xs ring-1 ring-orange-200/50"
+            : "bg-white hover:bg-[#FAF7F2] border-slate-200/80 text-slate-700 font-medium"
         } focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]`}
       >
         <div className="flex items-center gap-1.5 min-w-0 truncate">
@@ -536,10 +536,10 @@ export function StockFilterDropdown({ value, onChange, onClear }: StockFilterDro
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full rounded-xl border py-2 px-2.5 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
+        className={`w-full h-[38px] rounded-xl border px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer ${
           value !== "ALL"
-            ? "bg-orange-50/80 border-orange-300 text-orange-950 font-semibold shadow-2xs ring-1 ring-orange-200/50"
-            : "bg-[#F8F5F1] hover:bg-[#F2ECE4] border-slate-200/70 text-slate-700"
+            ? "bg-orange-50/90 border-orange-300 text-orange-950 font-bold shadow-2xs ring-1 ring-orange-200/50"
+            : "bg-white hover:bg-[#FAF7F2] border-slate-200/80 text-slate-700 font-medium"
         } focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]`}
       >
         <div className="flex items-center gap-1.5 min-w-0 truncate">
@@ -673,7 +673,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full rounded-xl border border-slate-200/70 bg-[#F8F5F1] hover:bg-[#F2ECE4] py-2 px-2.5 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]"
+        className="w-full h-[38px] rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]"
       >
         <div className="flex items-center gap-1.5 min-w-0 truncate">
           <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
