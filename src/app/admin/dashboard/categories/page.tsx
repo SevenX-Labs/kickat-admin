@@ -31,6 +31,8 @@ import {
   Upload,
   Loader2,
   MoreVertical,
+  ArrowUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   AdminCategoryItem,
@@ -238,6 +240,27 @@ export default function CategoriesPage() {
 
   // Status toggle in-flight tracking
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+
+  // Mobile enhancements state
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showMobileMoreFilters, setShowMobileMoreFilters] = useState(false);
+  const [mobileItemsLimit, setMobileItemsLimit] = useState(12);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (typeof window !== "undefined") {
+        setShowScrollTop(window.scrollY > 280);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   // Toast Notification
@@ -897,24 +920,17 @@ export default function CategoriesPage() {
       {/* Metric Cards */}
       {loading ? (
         <>
-          {/* Mobile High-Density Metric Strip Skeleton (md:hidden) */}
-          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Total</span>
-              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Root</span>
-              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Sub</span>
-              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Live</span>
-              <Skeleton className="h-5 w-8 mx-auto mt-1 rounded" />
-            </div>
+          {/* Mobile 2x2 Metric Grid Skeleton (md:hidden) */}
+          <div className="grid grid-cols-2 gap-2 md:hidden">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="clay-card p-3 space-y-2 min-h-[72px]">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-4 w-4 rounded-md" />
+                </div>
+                <Skeleton className="h-6 w-12 rounded" />
+              </div>
+            ))}
           </div>
           {/* Desktop Metric Cards Skeleton */}
           <div className="hidden md:block">
@@ -923,36 +939,94 @@ export default function CategoriesPage() {
         </>
       ) : (
         <>
-          {/* Mobile High-Density Metric Strip (md:hidden, saves ~130px vertical scroll) */}
-          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Total</span>
-              <span className="font-fraunces text-base font-bold text-slate-800 leading-tight mt-0.5 block">
+          {/* Mobile High-Density 2x2 Metric Grid (md:hidden, tap-to-filter, high contrast) */}
+          <div className="grid grid-cols-2 gap-2 md:hidden">
+            {/* Total */}
+            <button
+              onClick={() => {
+                setStatusFilter("ALL");
+                setLevelFilter("ALL");
+              }}
+              className="clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px]"
+            >
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Total
+                </span>
+                <FolderTree className="h-4 w-4 text-[#FF7A00]" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-slate-900 mt-1">
                 {summary ? summary.totalCategories : categories.length}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Root</span>
-              <span className="font-fraunces text-base font-bold text-amber-800 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-slate-500 font-medium truncate block">All collections</span>
+            </button>
+
+            {/* Root Collections */}
+            <button
+              onClick={() => {
+                setLevelFilter(levelFilter === "ROOT" ? "ALL" : "ROOT");
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                levelFilter === "ROOT" ? "ring-2 ring-amber-500 bg-amber-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-amber-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Root Collections
+                </span>
+                <Layers className="h-4 w-4 text-amber-700" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-amber-800 mt-1">
                 {summary ? summary.rootCategoriesCount : rootCategories.length}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Sub</span>
-              <span className="font-fraunces text-base font-bold text-sky-800 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-amber-700/80 font-medium truncate block">Top-level headers</span>
+            </button>
+
+            {/* Subcategories */}
+            <button
+              onClick={() => {
+                setLevelFilter(levelFilter === "SUB" ? "ALL" : "SUB");
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                levelFilter === "SUB" ? "ring-2 ring-sky-500 bg-sky-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-sky-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Subcategories
+                </span>
+                <GitFork className="h-4 w-4 text-sky-700" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-sky-800 mt-1">
                 {summary
                   ? summary.subcategoriesCount ??
                     summary.subCategoriesCount ??
                     summary.totalCategories - summary.rootCategoriesCount
                   : categories.filter((c) => c.parentId).length}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Live</span>
-              <span className="font-fraunces text-base font-bold text-emerald-600 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-sky-700/80 font-medium truncate block">Leaf targets</span>
+            </button>
+
+            {/* Live in Store */}
+            <button
+              onClick={() => {
+                setStatusFilter(statusFilter === "ACTIVE" ? "ALL" : "ACTIVE");
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                statusFilter === "ACTIVE" ? "ring-2 ring-emerald-500 bg-emerald-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-emerald-600">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Live in Store
+                </span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-emerald-600 mt-1">
                 {summary ? summary.activeCount : categories.filter((c) => c.isActive).length}
-              </span>
-            </div>
+              </p>
+              <span className="text-[10px] text-emerald-700/80 font-medium truncate block">Active storefront</span>
+            </button>
           </div>
 
           {/* Desktop 4 Stat Cards (hidden md:grid) */}
@@ -1022,150 +1096,166 @@ export default function CategoriesPage() {
         </>
       )}
 
-      {/* Control Toolbar */}
-      <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0">
-        {/* Row 1: Search Bar */}
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search categories by name, slug, parent..."
-            className="w-full h-9.5 sm:h-10 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-8.5 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-              title="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Row 2: Status tabs + Sort + View Mode (All on 1 single line!) */}
-        <div className="flex items-center justify-between gap-1.5 pt-0.5">
-          {/* Status Filter Segmented Control */}
-          <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70 shrink-0">
-            {(
-              [
-                { key: "ALL", label: "All" },
-                { key: "ACTIVE", label: "Live" },
-                { key: "INACTIVE", label: "Draft" },
-              ] as const
-            ).map((st) => (
+      {/* Control Toolbar (Sticky on Mobile, with clean tap targets) */}
+      <div className="sticky top-0 z-30 bg-[#FAF4EC]/95 backdrop-blur-md -mx-4 px-4 pt-1.5 pb-2.5 border-b border-orange-100/60 md:static md:bg-transparent md:p-0 md:border-0 md:m-0 space-y-2">
+        <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0">
+          {/* Row 1: Search Bar with 44px height and graceful ellipsis */}
+          <div className="relative w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search categories by name, slug..."
+              className="w-full h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-9 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition truncate"
+            />
+            {searchQuery && (
               <button
-                key={st.key}
-                onClick={() => setStatusFilter(st.key)}
-                className={`px-2 sm:px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                  statusFilter === st.key
-                    ? "bg-white text-[#2A241E] shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
+                onClick={() => setSearchQuery("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 h-9 w-9 flex items-center justify-center cursor-pointer"
+                title="Clear search"
               >
-                {st.label}
+                <X className="h-4 w-4" />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Right cluster: Compact Sort + View Toggle */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Compact Sort Select */}
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as AdminCategorySortEnum)}
-                className="w-auto max-w-[125px] sm:max-w-[155px] rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1 pl-2 pr-6 text-[11px] font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none truncate"
-              >
-                <option value="order_asc">Order (Asc)</option>
-                <option value="order_desc">Order (Desc)</option>
-                <option value="name_asc">Name (A-Z)</option>
-                <option value="name_desc">Name (Z-A)</option>
-                <option value="createdAt_desc">Newest First</option>
-                <option value="createdAt_asc">Oldest First</option>
-              </select>
-              <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
-              <button
-                onClick={() => setViewMode("TREE")}
-                className={`p-1 sm:px-2 sm:py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewMode === "TREE"
-                    ? "bg-white text-orange-600 shadow-2xs font-bold"
-                    : "text-slate-400 hover:text-slate-700"
-                }`}
-                title="Hierarchy Tree View"
-              >
-                <ListTree className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline text-xs">Tree</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode("GRID")}
-                className={`p-1 sm:px-2 sm:py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewMode === "GRID"
-                    ? "bg-white text-orange-600 shadow-2xs font-bold"
-                    : "text-slate-400 hover:text-slate-700"
-                }`}
-                title="Grid Cards View"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline text-xs">Grid</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 3: Level filter + Expand/Collapse All (Single horizontal line, no wrapping!) */}
-        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-100/90 gap-2">
-          {/* Level Filter Segmented Control */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-              Level:
-            </span>
-            <div className="flex items-center rounded-lg bg-[#F8F5F1] p-0.5 border border-slate-200/70">
+          {/* Row 2: Status tabs + Sort + View Mode + Mobile More Filters toggle */}
+          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+            {/* Status Filter Segmented Control */}
+            <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70 shrink-0">
               {(
                 [
                   { key: "ALL", label: "All" },
-                  { key: "ROOT", label: "Roots" },
-                  { key: "SUB", label: "Subcategories", mobileLabel: "Subs" },
+                  { key: "ACTIVE", label: "Live" },
+                  { key: "INACTIVE", label: "Draft" },
                 ] as const
-              ).map((lv) => (
+              ).map((st) => (
                 <button
-                  key={lv.key}
-                  onClick={() => setLevelFilter(lv.key)}
-                  className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition-all cursor-pointer ${
-                    levelFilter === lv.key
+                  key={st.key}
+                  onClick={() => setStatusFilter(st.key)}
+                  className={`min-h-[38px] px-2.5 sm:px-3 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                    statusFilter === st.key
                       ? "bg-white text-[#2A241E] shadow-2xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  <span className={lv.key === "SUB" ? "hidden sm:inline" : ""}>{lv.label}</span>
-                  {lv.key === "SUB" && <span className="sm:hidden">Subs</span>}
+                  {st.label}
                 </button>
               ))}
             </div>
+
+            {/* Right cluster: Compact Sort + Mobile Filter Toggle + View Mode */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Mobile More Filters Toggle */}
+              <button
+                onClick={() => setShowMobileMoreFilters(!showMobileMoreFilters)}
+                className={`md:hidden min-h-[38px] min-w-[38px] rounded-lg border text-[11px] font-bold transition flex items-center justify-center cursor-pointer ${
+                  showMobileMoreFilters || levelFilter !== "ALL"
+                    ? "bg-orange-50 text-orange-700 border-orange-200"
+                    : "bg-[#F8F5F1] text-slate-600 border-slate-200/70"
+                }`}
+                title="Toggle level filters"
+                aria-label="Toggle level filters"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
+
+              {/* Compact Sort Select */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as AdminCategorySortEnum)}
+                  className="min-h-[38px] w-auto max-w-[120px] sm:max-w-[155px] rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1 pl-2 pr-6 text-[11px] font-bold text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none truncate"
+                >
+                  <option value="order_asc">Order (Asc)</option>
+                  <option value="order_desc">Order (Desc)</option>
+                  <option value="name_asc">Name (A-Z)</option>
+                  <option value="name_desc">Name (Z-A)</option>
+                  <option value="createdAt_desc">Newest First</option>
+                  <option value="createdAt_asc">Oldest First</option>
+                </select>
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+              </div>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center rounded-xl bg-[#F8F5F1] p-0.5 border border-slate-200/70">
+                <button
+                  onClick={() => setViewMode("TREE")}
+                  className={`min-h-[38px] min-w-[38px] sm:px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${
+                    viewMode === "TREE"
+                      ? "bg-white text-orange-600 shadow-2xs font-bold"
+                      : "text-slate-400 hover:text-slate-700"
+                  }`}
+                  title="Hierarchy Tree View"
+                >
+                  <ListTree className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs">Tree</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode("GRID")}
+                  className={`min-h-[38px] min-w-[38px] sm:px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${
+                    viewMode === "GRID"
+                      ? "bg-white text-orange-600 shadow-2xs font-bold"
+                      : "text-slate-400 hover:text-slate-700"
+                  }`}
+                  title="Grid Cards View"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs">Grid</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Expand / Collapse All */}
-          {viewMode === "TREE" && hierarchicalTree.length > 0 && (
-            <button
-              onClick={() => {
-                if (expandedNodes.size > 0) {
-                  setExpandedNodes(new Set());
-                } else {
-                  setExpandedNodes(new Set(categories.map((c) => c.id)));
-                }
-              }}
-              className="text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer shrink-0 ml-auto"
-            >
-              {expandedNodes.size > 0 ? "Collapse All" : "Expand All"}
-            </button>
-          )}
+          {/* Row 3: Level filter + Expand/Collapse All (Tucked behind toggle on mobile, visible on desktop) */}
+          <div className={`${showMobileMoreFilters ? "flex" : "hidden"} md:flex items-center justify-between text-xs pt-1.5 border-t border-slate-100/90 gap-2 animate-fade-in`}>
+            {/* Level Filter Segmented Control */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+                Level:
+              </span>
+              <div className="flex items-center rounded-lg bg-[#F8F5F1] p-0.5 border border-slate-200/70">
+                {(
+                  [
+                    { key: "ALL", label: "All" },
+                    { key: "ROOT", label: "Roots" },
+                    { key: "SUB", label: "Subcategories", mobileLabel: "Subs" },
+                  ] as const
+                ).map((lv) => (
+                  <button
+                    key={lv.key}
+                    onClick={() => setLevelFilter(lv.key)}
+                    className={`min-h-[32px] px-2.5 py-1 text-[10.5px] font-bold rounded-md transition-all cursor-pointer ${
+                      levelFilter === lv.key
+                        ? "bg-white text-[#2A241E] shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span className={lv.key === "SUB" ? "hidden sm:inline" : ""}>{lv.label}</span>
+                    {lv.key === "SUB" && <span className="sm:hidden">Subs</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Expand / Collapse All */}
+            {viewMode === "TREE" && hierarchicalTree.length > 0 && (
+              <button
+                onClick={() => {
+                  if (expandedNodes.size > 0) {
+                    setExpandedNodes(new Set());
+                  } else {
+                    setExpandedNodes(new Set(categories.map((c) => c.id)));
+                  }
+                }}
+                className="text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer shrink-0 ml-auto min-h-[32px] flex items-center"
+              >
+                {expandedNodes.size > 0 ? "Collapse All" : "Expand All"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {/* Main Content Area */}
@@ -1279,11 +1369,11 @@ export default function CategoriesPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   {/* Left: Expand Chevron + Thumbnail + Category Name & Metadata */}
                   <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-                    {/* Expand/Collapse Chevron Button */}
+                    {/* Expand/Collapse Chevron Button with 44px tap area */}
                     <button
                       onClick={() => toggleNode(root.id)}
                       aria-label={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
-                      className="p-1.5 -ml-1 text-slate-400 hover:text-slate-800 transition cursor-pointer mt-0.5 shrink-0"
+                      className="min-h-[44px] min-w-[44px] -ml-2 -mt-1 flex items-center justify-center text-slate-400 hover:text-slate-800 transition cursor-pointer shrink-0"
                     >
                       <ChevronDown
                         className={`h-4 w-4 transition-transform duration-200 ${
@@ -1417,23 +1507,23 @@ export default function CategoriesPage() {
                       </button>
                     </div>
 
-                    {/* Mobile Actions Cluster */}
-                    <div className="flex sm:hidden items-center gap-1 relative">
+                    {/* Mobile Actions Cluster with min 40px touch targets */}
+                    <div className="flex sm:hidden items-center gap-1.5 relative">
                       <button
                         onClick={() => handleOpenEdit(root)}
-                        className="clay-button h-8 w-8 text-slate-600 hover:text-orange-600 rounded-lg transition flex items-center justify-center cursor-pointer"
+                        className="clay-button min-h-[40px] min-w-[40px] text-slate-600 hover:text-orange-600 rounded-xl transition flex items-center justify-center cursor-pointer"
                         title="Edit Category"
                       >
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <Edit2 className="h-4 w-4" />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setActiveMenuCategoryId(activeMenuCategoryId === root.id ? null : root.id)}
-                        className="clay-button h-8 w-8 text-slate-500 hover:text-slate-800 rounded-lg transition flex items-center justify-center cursor-pointer"
+                        className="clay-button min-h-[40px] min-w-[40px] text-slate-500 hover:text-slate-800 rounded-xl transition flex items-center justify-center cursor-pointer"
                         title="More actions"
                       >
-                        <MoreVertical className="h-3.5 w-3.5" />
+                        <MoreVertical className="h-4 w-4" />
                       </button>
 
                       {/* Mobile More Menu Popover */}
@@ -1687,6 +1777,22 @@ export default function CategoriesPage() {
               </div>
             );
           })}
+
+          {/* Mobile Scale: Load More Categories Button */}
+          {hierarchicalTree.length > mobileItemsLimit && (
+            <div className="pt-2 flex flex-col items-center justify-center gap-1.5 sm:hidden">
+              <button
+                onClick={() => setMobileItemsLimit((prev) => prev + 12)}
+                className="clay-button w-full py-2.5 text-xs font-bold text-slate-700 hover:text-orange-600 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Show More Categories ({hierarchicalTree.length - mobileItemsLimit} remaining)</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              <p className="text-[10.5px] text-slate-400 font-medium">
+                Showing {Math.min(mobileItemsLimit, hierarchicalTree.length)} of {hierarchicalTree.length} root collections
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         /* GRID CARDS VIEW */
@@ -2465,6 +2571,29 @@ export default function CategoriesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* =========================================================
+          FLOATING ACTION BUTTONS ON MOBILE (+ New Category & Scroll Top)
+          ========================================================= */}
+      <button
+        onClick={() => handleOpenAdd()}
+        className="fixed bottom-5 left-4 z-30 clay-btn-orange flex items-center gap-1.5 px-4 py-3 rounded-full text-white shadow-2xl md:hidden text-xs font-bold transition-all active:scale-95 cursor-pointer"
+        title="Add new category"
+      >
+        <Plus className="h-4 w-4 stroke-[2.5]" />
+        <span>New Category</span>
+      </button>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-5 right-4 z-30 h-11 w-11 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer"
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
       )}
     </div>
   );

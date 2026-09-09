@@ -37,6 +37,7 @@ import {
   Rabbit,
   PawPrint,
   IndianRupee,
+  ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -112,6 +113,25 @@ export default function ProductsPage() {
 
   // Mobile overflow action menu product ID
   const [activeMenuProductId, setActiveMenuProductId] = useState<string | null>(null);
+
+  // Floating scroll-to-top state
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (typeof window !== "undefined") {
+        setShowScrollTop(window.scrollY > 280);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   // Active filter count
   const activeFiltersCount =
@@ -400,9 +420,6 @@ export default function ProductsPage() {
           ========================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold text-orange-600 block mb-0.5">
-            Good morning! 👋
-          </span>
           <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
             Products &amp; Inventory
           </h1>
@@ -440,32 +457,95 @@ export default function ProductsPage() {
         <StatCardsSkeleton />
       ) : (
         <>
-          {/* Mobile High-Density Metric Strip (md:hidden, saves ~130px vertical space) */}
-          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Products</span>
-              <span className="font-fraunces text-base font-bold text-slate-800 leading-tight mt-0.5 block">
+          {/* Mobile High-Density 2x2 Metric Grid (md:hidden, large tap targets, high contrast) */}
+          <div className="grid grid-cols-2 gap-2 md:hidden">
+            {/* Total Products */}
+            <button
+              onClick={() => {
+                setStatusFilter("ALL");
+                setStockFilter("ALL");
+                setPage(1);
+              }}
+              className="clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px]"
+            >
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Total Products
+                </span>
+                <Package className="h-4 w-4 text-indigo-500" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-slate-900 mt-1">
                 {summary?.totalProducts ?? products.length}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider block truncate">Active</span>
-              <span className="font-fraunces text-base font-bold text-emerald-600 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-slate-500 font-medium truncate block">In store catalog</span>
+            </button>
+
+            {/* Active Products */}
+            <button
+              onClick={() => {
+                setStatusFilter("ACTIVE");
+                setStockFilter("ALL");
+                setPage(1);
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                statusFilter === "ACTIVE" ? "ring-2 ring-emerald-500 bg-emerald-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-emerald-600">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Active
+                </span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-emerald-600 mt-1">
                 {summary?.activeCount ?? 0}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider block truncate">Low</span>
-              <span className="font-fraunces text-base font-bold text-amber-600 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-emerald-700/80 font-medium truncate block">Live on storefront</span>
+            </button>
+
+            {/* Low Stock */}
+            <button
+              onClick={() => {
+                setStockFilter(stockFilter === "LOW_STOCK" ? "ALL" : "LOW_STOCK");
+                setPage(1);
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                stockFilter === "LOW_STOCK" ? "ring-2 ring-amber-500 bg-amber-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-amber-600">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Low Stock
+                </span>
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-amber-600 mt-1">
                 {summary?.lowStockCount ?? 0}
-              </span>
-            </div>
-            <div className="flex-1 px-1">
-              <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider block truncate">Out</span>
-              <span className="font-fraunces text-base font-bold text-rose-600 leading-tight mt-0.5 block">
+              </p>
+              <span className="text-[10px] text-amber-700/80 font-medium truncate block">&lt; 10 units left</span>
+            </button>
+
+            {/* Out of Stock */}
+            <button
+              onClick={() => {
+                setStockFilter(stockFilter === "OUT_OF_STOCK" ? "ALL" : "OUT_OF_STOCK");
+                setPage(1);
+              }}
+              className={`clay-card p-3 text-left transition active:scale-95 cursor-pointer min-h-[72px] ${
+                stockFilter === "OUT_OF_STOCK" ? "ring-2 ring-rose-500 bg-rose-50/20" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between text-rose-600">
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow">
+                  Out of Stock
+                </span>
+                <XCircle className="h-4 w-4 text-rose-500" />
+              </div>
+              <p className="font-fraunces text-xl font-bold text-rose-600 mt-1">
                 {summary?.outOfStockCount ?? 0}
-              </span>
-            </div>
+              </p>
+              <span className="text-[10px] text-rose-700/80 font-medium truncate block">Restock needed</span>
+            </button>
           </div>
 
           {/* Desktop Summary Cards (hidden md:grid) */}
@@ -682,9 +762,9 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* MOBILE COMPACT TOOLBAR (md:hidden, highly optimized for vertical space) */}
-      <div className="clay-card p-3 space-y-2.5 relative z-30 md:hidden">
-        {/* Full-width Search Input */}
+      {/* MOBILE COMPACT STICKY TOOLBAR (md:hidden, sticky top for fast scanning) */}
+      <div className="sticky top-0 z-30 bg-[#FAF4EC]/95 backdrop-blur-md -mx-4 px-4 pt-1.5 pb-2.5 border-b border-orange-100/60 md:hidden space-y-2">
+        {/* Full-width Search Input with 44px min touch height and graceful ellipsis */}
         <div className="relative w-full">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
@@ -694,8 +774,8 @@ export default function ProductsPage() {
               setSearch(e.target.value);
               handleFilterChange();
             }}
-            placeholder="Search products..."
-            className="w-full h-10 sm:h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/80 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 transition"
+            placeholder="Search products by name, SKU..."
+            className="w-full h-11 rounded-xl bg-white border border-slate-200/80 pl-9 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-orange-500/20 shadow-xs transition truncate"
           />
           {search && (
             <button
@@ -703,31 +783,31 @@ export default function ProductsPage() {
                 setSearch("");
                 handleFilterChange();
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 h-9 w-9 flex items-center justify-center cursor-pointer"
               title="Clear search"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
         {/* Mobile Action Controls Strip: Filters Drawer Trigger + Sort + View */}
-        <div className="flex items-center justify-between gap-1.5 pt-0.5 text-xs">
+        <div className="flex items-center justify-between gap-1.5 text-xs">
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Filters Bottom Sheet Trigger */}
             <button
               type="button"
               onClick={() => setMobileFilterDrawerOpen(true)}
-              className={`px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer border ${
                 activeFiltersCount > 0
                   ? "bg-orange-50 text-orange-950 border-orange-300 shadow-2xs"
                   : "clay-button text-slate-700"
               }`}
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-orange-600" />
+              <SlidersHorizontal className="h-4 w-4 text-orange-600" />
               <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span className="h-4.5 min-w-[18px] px-1 rounded-full bg-[#FF7A00] text-white text-[10px] font-extrabold flex items-center justify-center">
+                <span className="h-5 min-w-[20px] px-1 rounded-full bg-[#FF7A00] text-white text-[10px] font-extrabold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -738,7 +818,7 @@ export default function ProductsPage() {
               <button
                 type="button"
                 onClick={handleClearAllFilters}
-                className="text-xs text-orange-600 hover:text-orange-800 font-bold hover:underline cursor-pointer px-1"
+                className="min-h-[44px] px-2 text-xs text-orange-600 hover:text-orange-800 font-bold hover:underline cursor-pointer flex items-center"
               >
                 Clear
               </button>
@@ -757,25 +837,27 @@ export default function ProductsPage() {
               />
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-0.5 border border-slate-200/80 p-0.5 rounded-xl bg-[#F8F5F1] shrink-0">
+            {/* View Mode Toggle with 44px touch targets */}
+            <div className="flex items-center gap-0.5 border border-slate-200/80 p-0.5 rounded-xl bg-white shrink-0">
               <button
                 onClick={() => setViewMode("GRID")}
-                className={`p-1.5 rounded-lg transition cursor-pointer ${
-                  viewMode === "GRID" ? "bg-white text-orange-600 shadow-2xs" : "text-slate-400 hover:text-slate-700"
+                className={`min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg transition cursor-pointer ${
+                  viewMode === "GRID" ? "bg-orange-50 text-orange-600 shadow-2xs" : "text-slate-400 hover:text-slate-700"
                 }`}
                 title="Grid View"
+                aria-label="Grid View"
               >
-                <LayoutGrid className="h-3.5 w-3.5" />
+                <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode("TABLE")}
-                className={`p-1.5 rounded-lg transition cursor-pointer ${
-                  viewMode === "TABLE" ? "bg-white text-orange-600 shadow-2xs" : "text-slate-400 hover:text-slate-700"
+                className={`min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg transition cursor-pointer ${
+                  viewMode === "TABLE" ? "bg-orange-50 text-orange-600 shadow-2xs" : "text-slate-400 hover:text-slate-700"
                 }`}
                 title="List View"
+                aria-label="List View"
               >
-                <List className="h-3.5 w-3.5" />
+                <List className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -925,10 +1007,10 @@ export default function ProductsPage() {
       )}
 
       {/* =========================================================
-          4. BULK ACTIONS BAR (When items are selected)
+          4. BULK ACTIONS BAR (Fixed at bottom on mobile for thumb reach)
           ========================================================= */}
       {selectedIds.size > 0 && (
-        <div className="sticky top-3 z-30 flex items-center justify-between p-2.5 sm:p-3.5 rounded-2xl bg-[#2A241E] text-white shadow-xl animate-slide-in-down">
+        <div className="fixed bottom-4 left-3 right-3 z-40 sm:sticky sm:top-3 sm:bottom-auto flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-[#2A241E] text-white shadow-2xl animate-slide-in-down border border-slate-700">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <input
               type="checkbox"
@@ -1078,24 +1160,155 @@ export default function ProductsPage() {
             )}
           </div>
 
-          <div className="space-y-2.5 md:hidden">
-            {products.map((p) => {
-              const isSelected = selectedIds.has(p.id);
-              const hasVariants = p.variants && p.variants.length > 0;
-              const primaryImg = p.imageUrl || p.images?.[0];
-              const discountPct =
-                p.discountPrice && p.discountPrice < p.price
-                  ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
-                  : null;
-              const cleanSku = p.variants?.[0]?.sku || (p as any).sku || p.id.slice(0, 8);
+          {viewMode === "GRID" ? (
+            /* =========================================================
+                MOBILE 2-COLUMN GRID VIEW (md:hidden, image-forward cards)
+                ========================================================= */
+            <div className="grid grid-cols-2 gap-2.5 md:hidden">
+              {products.map((p) => {
+                const isSelected = selectedIds.has(p.id);
+                const primaryImg = p.imageUrl || p.images?.[0];
+                const isLow = p.stock > 0 && p.stock <= 10;
+                const isOut = p.stock <= 0;
+                const discountPct =
+                  p.discountPrice && p.discountPrice < p.price
+                    ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
+                    : null;
 
-              return (
-                <div
-                  key={p.id}
-                  className={`clay-card p-3 rounded-2xl flex items-start gap-2.5 relative transition hover:border-slate-300 ${
-                    isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
-                  }`}
-                >
+                return (
+                  <div
+                    key={p.id}
+                    className={`clay-card p-2.5 rounded-2xl flex flex-col justify-between relative transition hover:border-slate-300 ${
+                      isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
+                    }`}
+                  >
+                    {/* Top Image Container */}
+                    <div className="relative aspect-square w-full rounded-xl bg-[#FAF7F2] border border-slate-200/70 p-2 flex items-center justify-center overflow-hidden mb-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(p.id)}
+                        className="absolute top-2 left-2 z-10 h-4 w-4 rounded accent-[#FF7A00] cursor-pointer bg-white/90 shadow-xs"
+                      />
+
+                      <span
+                        className={`absolute top-2 right-2 z-10 text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider border flex items-center gap-1 ${
+                          p.status === "ACTIVE"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/90"
+                            : p.status === "DRAFT"
+                            ? "bg-amber-50 text-amber-700 border-amber-200/90"
+                            : "bg-slate-100 text-slate-600 border-slate-200/90"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            p.status === "ACTIVE"
+                              ? "bg-emerald-500"
+                              : p.status === "DRAFT"
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
+                        {p.status}
+                      </span>
+
+                      {primaryImg ? (
+                        <img
+                          src={primaryImg}
+                          alt={p.name}
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            (e.currentTarget as any).src = "";
+                            e.currentTarget.className = "hidden";
+                          }}
+                        />
+                      ) : (
+                        renderSpeciesIcon(p.petSpecies, "h-8 w-8 text-orange-400")
+                      )}
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="space-y-1.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-fraunces text-xs font-bold text-slate-900 leading-snug line-clamp-2 hover:text-[#FF7A00] transition">
+                          <Link href={`/admin/dashboard/products/${p.id}`}>{p.name}</Link>
+                        </h3>
+
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                          {p.category?.name || "General"}
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                        <div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-fraunces text-xs font-bold text-[#2A241E]">
+                              ₹{(p.discountPrice ?? p.price).toLocaleString("en-IN")}
+                            </span>
+                            {discountPct && (
+                              <span className="text-[8.5px] font-bold text-emerald-600">
+                                {discountPct}% off
+                              </span>
+                            )}
+                          </div>
+
+                          <span
+                            className={`text-[9.5px] font-bold flex items-center gap-1 ${
+                              isOut
+                                ? "text-rose-600"
+                                : isLow
+                                ? "text-amber-600"
+                                : "text-emerald-600"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                isOut
+                                  ? "bg-rose-500"
+                                  : isLow
+                                  ? "bg-amber-500"
+                                  : "bg-emerald-500"
+                              }`}
+                            />
+                            {isOut ? "Out" : `${p.stock} in stock`}
+                          </span>
+                        </div>
+
+                        <Link
+                          href={`/admin/dashboard/products/${p.id}`}
+                          className="clay-button min-h-[38px] min-w-[38px] flex items-center justify-center rounded-lg text-slate-600 hover:text-orange-600 transition"
+                          title="Edit Product"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* =========================================================
+                MOBILE COMPACT LIST ROWS (md:hidden, scannable data rows)
+                ========================================================= */
+            <div className="space-y-2.5 md:hidden">
+              {products.map((p) => {
+                const isSelected = selectedIds.has(p.id);
+                const hasVariants = p.variants && p.variants.length > 0;
+                const primaryImg = p.imageUrl || p.images?.[0];
+                const discountPct =
+                  p.discountPrice && p.discountPrice < p.price
+                    ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
+                    : null;
+                const cleanSku = p.variants?.[0]?.sku || (p as any).sku || p.id.slice(0, 8);
+
+                return (
+                  <div
+                    key={p.id}
+                    className={`clay-card p-3 rounded-2xl flex items-start gap-2.5 relative transition hover:border-slate-300 ${
+                      isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
+                    }`}
+                  >
                   {/* Checkbox */}
                   <input
                     type="checkbox"
@@ -1302,7 +1515,8 @@ export default function ProductsPage() {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           {/* =========================================================
               DESKTOP GRID CARDS VIEW (hidden md:grid)
@@ -1935,6 +2149,31 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* =========================================================
+          FLOATING ACTION BUTTONS ON MOBILE (Bottom FAB + Scroll-Top)
+          ========================================================= */}
+      {selectedIds.size === 0 && (
+        <Link
+          href="/admin/dashboard/products/create"
+          className="fixed bottom-5 left-4 z-30 clay-btn-orange flex items-center gap-1.5 px-4 py-3 rounded-full text-white shadow-2xl md:hidden text-xs font-bold transition-all active:scale-95 cursor-pointer"
+          title="Add new product"
+        >
+          <Plus className="h-4 w-4 stroke-[2.5]" />
+          <span>Add Product</span>
+        </Link>
+      )}
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-5 right-4 z-30 h-11 w-11 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer"
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
       )}
     </div>
   );
