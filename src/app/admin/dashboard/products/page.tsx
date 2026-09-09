@@ -398,30 +398,34 @@ export default function ProductsPage() {
       {/* =========================================================
           1. HEADER & PRIMARY ACTIONS
           ========================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-fraunces text-2xl sm:text-3xl font-bold tracking-tight text-[#2A241E]">
+          <span className="text-xs font-bold text-orange-600 block mb-0.5">
+            Good morning! 👋
+          </span>
+          <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
             Products &amp; Inventory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 line-clamp-2">
             Manage your store catalog, real-time stock levels, multi-variants, and image galleries.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => fetchProducts(false)}
             disabled={refreshing || loading}
             aria-label="Refresh catalog"
-            className="clay-button p-2.5 rounded-xl text-slate-600 hover:text-[#FF7A00] transition flex items-center gap-2 text-xs font-bold cursor-pointer disabled:opacity-50"
+            title="Refresh catalog"
+            className="clay-button p-2.5 rounded-xl text-slate-600 hover:text-[#FF7A00] transition flex items-center justify-center cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin text-[#FF7A00]" : ""}`} />
-            <span className="hidden md:inline">Refresh</span>
+            <span className="hidden md:inline font-bold text-xs ml-1.5">Refresh</span>
           </button>
 
           <Link
             href="/admin/dashboard/products/create"
-            className="clay-btn-orange inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white rounded-xl shadow-md cursor-pointer hover:brightness-105 active:scale-95 transition-all"
+            className="clay-btn-orange inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white rounded-xl shadow-md cursor-pointer hover:brightness-105 active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Add Product</span>
@@ -437,7 +441,7 @@ export default function ProductsPage() {
       ) : (
         <>
           {/* Mobile High-Density Metric Strip (md:hidden, saves ~130px vertical space) */}
-          <div className="clay-card p-2.5 flex items-center justify-between divide-x divide-slate-100 text-center text-xs md:hidden shadow-xs">
+          <div className="clay-card p-2.5 grid grid-cols-4 divide-x divide-slate-100/80 text-center text-xs md:hidden shadow-xs">
             <div className="flex-1 px-1">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate">Products</span>
               <span className="font-fraunces text-base font-bold text-slate-800 leading-tight mt-0.5 block">
@@ -690,8 +694,8 @@ export default function ProductsPage() {
               setSearch(e.target.value);
               handleFilterChange();
             }}
-            placeholder="Search products by title, SKU, slug..."
-            className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 transition"
+            placeholder="Search products..."
+            className="w-full h-10 sm:h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/80 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 transition"
           />
           {search && (
             <button
@@ -709,12 +713,12 @@ export default function ProductsPage() {
 
         {/* Mobile Action Controls Strip: Filters Drawer Trigger + Sort + View */}
         <div className="flex items-center justify-between gap-1.5 pt-0.5 text-xs">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Filters Bottom Sheet Trigger */}
             <button
               type="button"
               onClick={() => setMobileFilterDrawerOpen(true)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              className={`px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer border ${
                 activeFiltersCount > 0
                   ? "bg-orange-50 text-orange-950 border-orange-300 shadow-2xs"
                   : "clay-button text-slate-700"
@@ -743,7 +747,7 @@ export default function ProductsPage() {
 
           <div className="flex items-center gap-1.5">
             {/* Sort Dropdown */}
-            <div className="w-32">
+            <div className="w-36 max-w-[155px]">
               <SortDropdown
                 value={sortBy}
                 onChange={(val) => {
@@ -1059,8 +1063,21 @@ export default function ProductsPage() {
         <>
           {/* =========================================================
               MOBILE HIGH-DENSITY COMPACT PRODUCT ROWS (md:hidden)
-              Optimized to comfortably scroll 200+ products (~90-110px per row)
+              Optimized to comfortably scroll 200+ products (~100-120px per card)
               ========================================================= */}
+          {/* Mobile Catalog Counter */}
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1 py-0.5 md:hidden">
+            <span>
+              Showing <strong className="text-slate-800 font-semibold">{products.length}</strong> of{" "}
+              <strong className="text-slate-800 font-semibold">{pagination.total}</strong> products
+            </span>
+            {activeFiltersCount > 0 && (
+              <span className="text-[10px] text-orange-700 font-bold bg-orange-100/80 px-2 py-0.5 rounded-md border border-orange-200">
+                Filtered
+              </span>
+            )}
+          </div>
+
           <div className="space-y-2.5 md:hidden">
             {products.map((p) => {
               const isSelected = selectedIds.has(p.id);
@@ -1070,6 +1087,7 @@ export default function ProductsPage() {
                 p.discountPrice && p.discountPrice < p.price
                   ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
                   : null;
+              const cleanSku = p.variants?.[0]?.sku || (p as any).sku || p.id.slice(0, 8);
 
               return (
                 <div
@@ -1105,65 +1123,81 @@ export default function ProductsPage() {
 
                   {/* Right Content */}
                   <div className="flex-1 min-w-0 space-y-1">
-                    {/* Title & Status */}
-                    <div className="flex items-start justify-between gap-1.5">
-                      <h3 className="font-fraunces text-sm font-bold text-slate-900 leading-snug line-clamp-1 hover:text-[#FF7A00] transition">
-                        <Link href={`/admin/dashboard/products/${p.id}`}>{p.name}</Link>
-                      </h3>
+                    {/* Title (Full width, line-clamp-2 so it never disappears or cuts off prematurely) */}
+                    <h3 className="font-fraunces text-sm font-bold text-slate-900 leading-snug line-clamp-2 hover:text-[#FF7A00] transition">
+                      <Link href={`/admin/dashboard/products/${p.id}`}>{p.name}</Link>
+                    </h3>
 
-                      {/* Compact Status Pill */}
+                    {/* SKU Line (Clean, no slug appended) */}
+                    <div className="text-[11px] font-mono text-slate-400 truncate">
+                      SKU: {cleanSku}
+                    </div>
+
+                    {/* Metadata Line & Decoupled Status Badge */}
+                    <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate min-w-0">
+                        <span className="font-semibold text-slate-700 truncate max-w-[110px]">
+                          {p.category?.name || "Uncategorized"}
+                        </span>
+                        {p.petSpecies && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="flex items-center gap-0.5 text-slate-600 shrink-0">
+                              {renderSpeciesIcon(p.petSpecies, "h-2.5 w-2.5 text-orange-600")}
+                              <span>{p.petSpecies}</span>
+                            </span>
+                          </>
+                        )}
+                        {hasVariants && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="shrink-0">{p.variants.length} var</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Decoupled Status Pill with Status Dot */}
                       <span
-                        className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider shrink-0 border ${
+                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0 border flex items-center gap-1 ${
                           p.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
                             : p.status === "DRAFT"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
+                            ? "bg-amber-50 text-amber-700 border-amber-200/80"
+                            : "bg-slate-100 text-slate-600 border-slate-200/80"
                         }`}
                       >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            p.status === "ACTIVE"
+                              ? "bg-emerald-500"
+                              : p.status === "DRAFT"
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
                         {p.status}
                       </span>
                     </div>
 
-                    {/* SKU & Slug Line */}
-                    <div className="text-[10.5px] font-mono text-slate-400 truncate">
-                      SKU: {p.variants?.[0]?.sku || p.id.slice(0, 8)} • /{p.slug}
-                    </div>
-
-                    {/* Metadata Line */}
-                    <div className="flex items-center gap-1 text-[10.5px] text-slate-500 font-medium truncate">
-                      <span className="font-semibold text-slate-700 truncate max-w-[100px]">
-                        {p.category?.name || "Uncategorized"}
-                      </span>
-                      {p.petSpecies && (
-                        <>
-                          <span className="text-slate-300">•</span>
-                          <span className="flex items-center gap-0.5 text-slate-600">
-                            {renderSpeciesIcon(p.petSpecies, "h-2.5 w-2.5 text-orange-600")}
-                            <span>{p.petSpecies}</span>
-                          </span>
-                        </>
-                      )}
-                      {hasVariants && (
-                        <>
-                          <span className="text-slate-300">•</span>
-                          <span>{p.variants.length} variant{p.variants.length > 1 ? "s" : ""}</span>
-                        </>
-                      )}
-                    </div>
-
                     {/* Bottom Line: Price + Stock + Actions */}
-                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100">
-                      {/* Price & Stock */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-baseline gap-1">
+                    <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100/90">
+                      {/* Price & Stock Health */}
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <div className="flex items-baseline gap-1 shrink-0">
                           <span className="font-fraunces text-sm font-bold text-[#2A241E]">
                             ₹{(p.discountPrice ?? p.price).toLocaleString("en-IN")}
                           </span>
                           {p.discountPrice && p.discountPrice < p.price && (
-                            <span className="text-[10px] text-slate-400 line-through">
-                              ₹{p.price.toLocaleString("en-IN")}
-                            </span>
+                            <>
+                              <span className="text-[10px] text-slate-400 line-through">
+                                ₹{p.price.toLocaleString("en-IN")}
+                              </span>
+                              {discountPct && (
+                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">
+                                  {discountPct}% off
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
 
@@ -1199,7 +1233,7 @@ export default function ProductsPage() {
                         {/* Edit Icon */}
                         <Link
                           href={`/admin/dashboard/products/${p.id}`}
-                          className="clay-button p-1.5 text-slate-600 hover:text-[#FF7A00] rounded-lg transition"
+                          className="clay-button h-8 w-8 text-slate-600 hover:text-[#FF7A00] rounded-lg transition flex items-center justify-center cursor-pointer"
                           title="Edit Product"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -1211,7 +1245,7 @@ export default function ProductsPage() {
                           onClick={() =>
                             setActiveMenuProductId(activeMenuProductId === p.id ? null : p.id)
                           }
-                          className="clay-button p-1.5 text-slate-500 hover:text-slate-800 rounded-lg transition cursor-pointer"
+                          className="clay-button h-8 w-8 text-slate-500 hover:text-slate-800 rounded-lg transition flex items-center justify-center cursor-pointer"
                           title="More actions"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
