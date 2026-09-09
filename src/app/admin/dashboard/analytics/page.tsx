@@ -8,17 +8,18 @@ import {
   ShoppingBag,
   Users,
   TrendingUp,
-  Share2,
-  Search,
-  MessageCircle,
   RefreshCw,
   Download,
   Package,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Layers,
+  Lightbulb,
+  BarChart3
 } from "lucide-react";
 import { AdminAnalyticsService } from "@/services/adminAnalyticsService";
 import { AdminProductService } from "@/services/adminProductService";
+import { AdminCategoryService } from "@/services/adminCategoryService";
 import { 
   CombinedAnalyticsState, 
   AnalyticsGroupBy, 
@@ -27,6 +28,7 @@ import {
   TopProductItem 
 } from "@/types/admin-analytics";
 import { AdminProductItem } from "@/types/admin-product";
+import { AdminCategoryItem } from "@/types/admin-category";
 
 type Timeframe = "Daily" | "Weekly" | "Monthly";
 type DateRangeOption = "7d" | "30d" | "90d" | "1y";
@@ -48,7 +50,7 @@ export default function AnalyticsPage() {
   const [timeframe, setTimeframe] = useState<Timeframe>("Weekly");
   const [dateRangeKey, setDateRangeKey] = useState<DateRangeOption>("30d");
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"products" | "channels">("products");
+  const [bottomTab, setBottomTab] = useState<"products" | "categories">("products");
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,8 +64,9 @@ export default function AnalyticsPage() {
     products: null,
   });
 
-  // Fallback real catalog products when no items have been sold yet in date range
+  // Fallback real catalog products and categories when no items have been sold yet in date range
   const [catalogProducts, setCatalogProducts] = useState<AdminProductItem[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<AdminCategoryItem[]>([]);
 
   // Map timeframe to API groupBy enum
   const groupByParam = useMemo<AnalyticsGroupBy>(() => {
@@ -101,7 +104,7 @@ export default function AnalyticsPage() {
     setError(null);
 
     try {
-      const [analyticsData, productsRes] = await Promise.allSettled([
+      const [analyticsData, productsRes, categoriesRes] = await Promise.allSettled([
         AdminAnalyticsService.getAllAnalytics(
           {
             dateFrom: dateRangeStrings.dateFrom,
@@ -115,6 +118,7 @@ export default function AnalyticsPage() {
           }
         ),
         AdminProductService.getProducts({ limit: 4 }),
+        AdminCategoryService.getCategories(),
       ]);
 
       if (analyticsData.status === "fulfilled") {
@@ -123,6 +127,10 @@ export default function AnalyticsPage() {
 
       if (productsRes.status === "fulfilled" && productsRes.value?.data?.products) {
         setCatalogProducts(productsRes.value.data.products);
+      }
+
+      if (categoriesRes.status === "fulfilled" && categoriesRes.value?.data?.categories) {
+        setCatalogCategories(categoriesRes.value.data.categories.slice(0, 4));
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "Failed to load live analytics.";
@@ -335,6 +343,12 @@ export default function AnalyticsPage() {
   const soldProductsList = useMemo<TopProductItem[]>(() => {
     const items = analytics.products?.topSellingProducts || analytics.products?.topProducts || [];
     return items.filter((p) => (p.unitsSold || 0) > 0 || (p.revenueGenerated || p.revenue || 0) > 0);
+  }, [analytics.products]);
+
+  // Real category performance from database analytics (Zero dummy data)
+  const soldCategoriesList = useMemo(() => {
+    const items = analytics.products?.topSellingCategories || [];
+    return items.filter((c) => (c.unitsSold || 0) > 0 || (c.revenue || 0) > 0);
   }, [analytics.products]);
 
   // Real inventory health counts (using nullish coalescing to protect real 0s)
@@ -803,24 +817,24 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E] truncate">
-                {bottomTab === "products" ? "Top Performing Products" : "Traffic Acquisition Channels"}
+                {bottomTab === "products" ? "Top Performing Products" : "Category Sales Breakdown"}
               </h2>
               <div className="clay-inset p-0.5 hidden sm:flex items-center gap-0.5 text-[11px]">
                 <button
                   onClick={() => setBottomTab("products")}
-                  className={`px-2.5 py-1 font-bold rounded-md transition ${
+                  className={`px-2.5 py-1 font-bold rounded-md transition cursor-pointer ${
                     bottomTab === "products" ? "bg-white text-orange-600 shadow-xs" : "text-slate-500"
                   }`}
                 >
                   Products
                 </button>
                 <button
-                  onClick={() => setBottomTab("channels")}
-                  className={`px-2.5 py-1 font-bold rounded-md transition ${
-                    bottomTab === "channels" ? "bg-white text-orange-600 shadow-xs" : "text-slate-500"
+                  onClick={() => setBottomTab("categories")}
+                  className={`px-2.5 py-1 font-bold rounded-md transition cursor-pointer ${
+                    bottomTab === "categories" ? "bg-white text-orange-600 shadow-xs" : "text-slate-500"
                   }`}
                 >
-                  Channels
+                  Categories
                 </button>
               </div>
             </div>
@@ -902,34 +916,71 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 2: Traffic Channels View */}
-          {bottomTab === "channels" && (
+          {/* TAB 2: Real Category Breakdown View (Zero Dummy Data) */}
+          {bottomTab === "categories" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {[
-                { channel: "Direct Web Store", sessions: "18,400", pct: "43%", growth: "+14.2%", icon: ShoppingBag, bg: "bg-orange-500" },
-                { channel: "Instagram & Socials", sessions: "12,250", pct: "28%", growth: "+22.5%", icon: Share2, bg: "bg-slate-800" },
-                { channel: "Google Search (SEO)", sessions: "8,300", pct: "19%", growth: "+8.7%", icon: Search, bg: "bg-slate-600" },
-                { channel: "Email & WhatsApp", sessions: "4,200", pct: "10%", growth: "+5.1%", icon: MessageCircle, bg: "bg-amber-500" },
-              ].map((ch, idx) => {
-                const Icon = ch.icon;
-                return (
+              {soldCategoriesList.length > 0 ? (
+                // Real sold categories from analytics
+                soldCategoriesList.map((cat, idx) => (
                   <div key={idx} className="clay-inset p-3 sm:p-3.5 flex items-center justify-between min-w-0">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      <div className={`${ch.bg} flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]`}>
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <div className="bg-gradient-to-br from-orange-500 to-amber-500 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] font-bold text-xs">
+                        #{idx + 1}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-xs font-extrabold text-slate-800 truncate">{ch.channel}</h3>
-                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">{ch.sessions} sessions</p>
+                        <h3 className="text-xs font-extrabold text-slate-800 truncate" title={cat.name}>
+                          {cat.name}
+                        </h3>
+                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
+                          {cat.unitsSold} units sold
+                        </p>
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-2">
-                      <span className="text-xs font-extrabold text-[#2A241E]">{ch.pct}</span>
-                      <p className="text-[10px] font-bold text-emerald-600">{ch.growth}</p>
+                      <span className="text-xs font-extrabold text-[#2A241E]">
+                        ₹{Number(cat.revenue || 0).toLocaleString("en-IN")}
+                      </span>
+                      <p className="text-[10px] font-bold text-emerald-600">
+                        {cat.percentage}% share
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : catalogCategories.length > 0 ? (
+                // Real store catalog categories when no sales recorded yet
+                catalogCategories.map((cat, idx) => (
+                  <div key={idx} className="clay-inset p-3 sm:p-3.5 flex items-center justify-between min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="bg-gradient-to-br from-slate-700 to-slate-800 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] font-bold text-xs">
+                        #{idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-extrabold text-slate-800 truncate" title={cat.name}>
+                          {cat.name}
+                        </h3>
+                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
+                          Catalog Category • 0 orders yet
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-extrabold text-[#2A241E]">
+                        ₹0
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        0% share
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // Empty categories notice
+                <div className="col-span-full clay-inset p-6 text-center space-y-1.5">
+                  <Layers className="h-6 w-6 text-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700">No Categories Created Yet</p>
+                  <p className="text-[11px] text-slate-400">Create store categories to start tracking categorical sales volume.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -937,8 +988,8 @@ export default function AnalyticsPage() {
         {/* Smart Tip Card & Real Inventory Health (5 Cols) */}
         <div className="clay-tip-card p-4 sm:p-6 lg:col-span-5 flex flex-col justify-between relative overflow-hidden min-w-0 space-y-4">
           <div className="flex items-start gap-3.5 sm:gap-4 z-10">
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-xl sm:text-2xl text-white shadow-[0_2px_4px_rgba(0,0,0,0.08)]">
-              💡
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_2px_4px_rgba(0,0,0,0.08)]">
+              <Lightbulb className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.2]" />
             </div>
             <div className="space-y-1 min-w-0 flex-1">
               <h3 className="text-sm font-extrabold text-[#1E3B1B]">{dynamicGrowthTip.heading}</h3>
@@ -975,8 +1026,8 @@ export default function AnalyticsPage() {
 
           <div className="pt-1 flex items-center justify-between z-10 select-none text-[11px] font-bold text-[#3E5C38]">
             <span>Automated Telemetry Sync</span>
-            <div className="clay-button flex h-9 w-9 sm:h-10 sm:w-10 rounded-full items-center justify-center text-lg sm:text-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-              📊
+            <div className="clay-button flex h-9 w-9 sm:h-10 sm:w-10 rounded-full items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-[#3E5C38]" />
             </div>
           </div>
         </div>
