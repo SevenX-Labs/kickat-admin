@@ -6,67 +6,324 @@ import {
   IndianRupee,
   ShoppingBag,
   Package,
-  Users
+  Users,
+  RotateCcw,
+  AlertCircle,
+  ArrowUpRight,
+  TrendingUp,
+  CheckCircle2,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
+import AdminDashboardService from "@/services/adminDashboardService";
+import {
+  DashboardPeriod,
+  UnifiedDashboardData,
+  OrderStatus,
+} from "@/types/admin-dashboard";
+
+const PERIOD_LABELS: Record<DashboardPeriod, string> = {
+  today: "Today",
+  this_week: "This Week",
+  "7d": "Last 7 Days",
+  this_month: "This Month",
+  "30d": "Last 30 Days",
+  this_year: "This Year",
+  "12m": "Last 12 Months",
+  all: "All Time",
+  custom: "Custom Range",
+};
+
+const CATEGORY_COLORS = [
+  { stroke: "#6D62FE", bg: "bg-[#6D62FE]" },
+  { stroke: "#4EBA79", bg: "bg-[#4EBA79]" },
+  { stroke: "#F7B731", bg: "bg-[#F7B731]" },
+  { stroke: "#F26674", bg: "bg-[#F26674]" },
+  { stroke: "#45AAF2", bg: "bg-[#45AAF2]" },
+  { stroke: "#A55EEA", bg: "bg-[#A55EEA]" },
+];
+
+function formatIndianCurrency(amount: number): string {
+  if (isNaN(amount) || amount === 0) return "0";
+  if (amount >= 10000000) {
+    return `${(amount / 10000000).toFixed(2)}Cr`;
+  }
+  if (amount >= 100000) {
+    return `${(amount / 100000).toFixed(2)}L`;
+  }
+  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(amount);
+}
+
+function formatFullRupees(amount: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(amount ?? 0);
+}
+
+function formatRelativeTime(dateStr: string): string {
+  try {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "Recently";
+  }
+}
+
+function getStatusBadgeStyle(status: OrderStatus): { label: string; className: string } {
+  switch (status) {
+    case "DELIVERED":
+      return { label: "Delivered", className: "bg-emerald-50 text-emerald-700 border border-emerald-200/50" };
+    case "SHIPPED":
+      return { label: "Shipped", className: "bg-indigo-50 text-indigo-700 border border-indigo-200/50" };
+    case "OUT_FOR_DELIVERY":
+      return { label: "Out for Delivery", className: "bg-purple-50 text-purple-700 border border-purple-200/50" };
+    case "PROCESSING":
+    case "PACKED":
+      return { label: status === "PACKED" ? "Packed" : "Processing", className: "bg-sky-50 text-sky-700 border border-sky-200/50" };
+    case "PLACED":
+    case "PENDING":
+      return { label: status === "PLACED" ? "Placed" : "Pending", className: "bg-orange-50 text-orange-700 border border-orange-200/50" };
+    case "CANCELLED":
+    case "RETURNED":
+      return { label: status === "CANCELLED" ? "Cancelled" : "Returned", className: "bg-rose-50 text-rose-700 border border-rose-200/50" };
+    case "RETURN_INITIATED":
+      return { label: "Return Initiated", className: "bg-amber-50 text-amber-700 border border-amber-200/50" };
+    default:
+      return { label: status, className: "bg-slate-50 text-slate-700 border border-slate-200/50" };
+  }
+}
 
 export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState("This Month");
+  const [period, setPeriod] = useState<DashboardPeriod>("this_month");
+  const [data, setData] = useState<UnifiedDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Initial mount skeleton loader
-    const timer = setTimeout(() => {
+  const fetchDashboardData = useCallback(async (selectedPeriod: DashboardPeriod, showLoader = true) => {
+    if (showLoader) setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await AdminDashboardService.getUnifiedDashboard({
+        period: selectedPeriod,
+        recentOrdersLimit: 5,
+        topCategoriesLimit: 5,
+        lowStockThreshold: 10,
+      });
+
+      if (res.data) {
+        setData(res.data);
+      }
+    } catch (err: unknown) {
+      console.error("Failed to load dashboard metrics:", err);
+      const msg = AdminDashboardService.extractErrorMessage(
+        err,
+        "Failed to load dashboard metrics. Please check network connection."
+      );
+      setError(msg);
+    } finally {
       setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+      setIsRefreshing(false);
+    }
   }, []);
 
-  const handleToggleTimeRange = () => {
-    setIsLoading(true);
-    setTimeRange(prev => prev === "This Month" ? "Last Month" : "This Month");
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 450);
+  useEffect(() => {
+    fetchDashboardData(period, true);
+  }, [fetchDashboardData, period]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setPeriodDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    fetchDashboardData(period, false);
   };
 
-  if (isLoading) {
+  const handleSelectPeriod = (newPeriod: DashboardPeriod) => {
+    setPeriod(newPeriod);
+    setPeriodDropdownOpen(false);
+  };
+
+  if (isLoading && !data) {
     return <DashboardSkeleton />;
   }
+
+  const summary = data?.summary;
+  const growth = summary?.periodMetrics?.growth;
+  const topCategories = data?.topCategories?.categories ?? [];
+  const totalCategoryRevenue = data?.topCategories?.totalRevenue ?? 0;
+  const recentOrders = data?.recentOrders?.orders ?? [];
+
+  // Monthly goals calculation
+  const currentMonthRevenue = summary?.periodMetrics?.revenue ?? summary?.todayRevenue ?? 0;
+  const monthlyRevenueGoal = 2000000; // ₹20.00 Lakh
+  const revenueGoalPct = Math.min(100, Math.round((currentMonthRevenue / monthlyRevenueGoal) * 100));
+
+  const currentMonthOrders = summary?.periodMetrics?.orders ?? summary?.totalOrders ?? 0;
+  const monthlyOrdersGoal = 500;
+  const ordersGoalPct = Math.min(100, Math.round((currentMonthOrders / monthlyOrdersGoal) * 100));
+
+  // Dynamic Insight Text
+  const pendingCount = summary?.pendingOrders ?? 0;
+  const stockAlertsCount = summary?.totalInventoryAlerts ?? 0;
+  let insightHeadline = "Store Health Healthy";
+  let insightDesc = "Cat nutrition & organic treats demand is trending upwards. Keep bestsellers stocked! 🚀";
+
+  if (pendingCount > 0) {
+    insightHeadline = `${pendingCount} Orders Awaiting Fulfillment`;
+    insightDesc = "Pack and dispatch pending customer orders quickly to maintain high store satisfaction ratings.";
+  } else if (stockAlertsCount > 0) {
+    insightHeadline = `${stockAlertsCount} Inventory Alerts`;
+    insightDesc = `${summary?.outOfStockProducts ?? 0} items are out of stock and ${summary?.lowStockProducts ?? 0} items are running low. Restock now!`;
+  }
+
+  // Circle circumference for r=38
+  const CIRCUMFERENCE = 238.761;
+  let accumulatedPercent = 0;
 
   return (
     <div className="space-y-4 sm:space-y-5 pb-6 w-full min-w-0 no-scrollbar animate-fade-in">
       
       {/* =========================================================
+          CONTROL BAR: Active Period Display & Quick Actions
+          ========================================================= */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/70 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[#E8DFC0]/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dashboard Filter:</span>
+          <span className="text-xs font-extrabold text-[#2A241E] bg-[#F5EFE9] px-2.5 py-1 rounded-lg border border-[#E8DFC0]/60">
+            {PERIOD_LABELS[period]}
+          </span>
+          {isRefreshing && (
+            <span className="text-[11px] font-semibold text-orange-600 flex items-center gap-1">
+              <RotateCcw className="h-3 w-3 animate-spin" />
+              Updating...
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Refresh Button */}
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="clay-button flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Refresh dashboard metrics"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          {/* Period Selector Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setPeriodDropdownOpen((prev) => !prev)}
+              className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 select-none hover:bg-slate-50 transition active:scale-95 cursor-pointer"
+            >
+              <span>{PERIOD_LABELS[period]}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            </button>
+
+            {periodDropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 animate-fade-in text-xs font-semibold">
+                {(["today", "7d", "this_week", "this_month", "30d", "this_year", "all"] as DashboardPeriod[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => handleSelectPeriod(p)}
+                    className={`w-full text-left px-3.5 py-2 hover:bg-orange-50 hover:text-orange-600 transition flex items-center justify-between ${
+                      period === p ? "bg-orange-50/70 text-orange-600 font-bold" : "text-slate-700"
+                    }`}
+                  >
+                    <span>{PERIOD_LABELS[p]}</span>
+                    {period === p && <span className="text-orange-600 text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Non-blocking Error Toast if present */}
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center justify-between gap-2 animate-fade-in">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+            <span className="truncate">{error}</span>
+          </div>
+          <button
+            onClick={() => fetchDashboardData(period, true)}
+            className="text-[11px] font-bold text-rose-800 underline hover:no-underline shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* =========================================================
           1. TOP ROW: 4 E-COMMERCE 3D CLAY STAT CARDS
           - Total Revenue
           - Total Orders
-          - Total Products
           - Total Customers
+          - Stock Alerts & Inventory Warnings
           ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
         
-        {/* Card 1: Total Revenue */}
+        {/* Card 1: Total / Period Revenue */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
-          {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Revenue</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {period === "all" ? "Total Revenue" : `${PERIOD_LABELS[period]} Revenue`}
+            </span>
+            <Link
+              href="/admin/dashboard/analytics"
+              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              aria-label="View Revenue Analytics"
+            >
               <MoreVertical className="h-4 w-4" />
-            </button>
+            </Link>
           </div>
 
-          {/* Main Row: Full Value & Proper 3D Clay Rupee Icon */}
           <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
-                ₹14,85,680
+                ₹{formatFullRupees(summary?.periodMetrics?.revenue ?? summary?.totalRevenue ?? 0)}
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 14.2%</span>
-                <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
+              
+              <div className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                {(growth?.revenuePercentage ?? 0) >= 0 ? (
+                  <span className="bg-[#20BF6B]/10 text-[#20BF6B] px-1.5 py-0.5 rounded-md font-extrabold">
+                    ↑ {growth?.revenuePercentage ?? 0}%
+                  </span>
+                ) : (
+                  <span className="bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded-md font-extrabold">
+                    ↓ {Math.abs(growth?.revenuePercentage ?? 0)}%
+                  </span>
+                )}
+                <span className="text-[10.5px] text-slate-400 font-medium">vs prev period</span>
               </div>
             </div>
 
@@ -77,25 +334,38 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Total Orders */}
+        {/* Card 2: Total / Period Orders */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
-          {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Orders</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {period === "all" ? "Total Orders" : `${PERIOD_LABELS[period]} Orders`}
+            </span>
+            <Link
+              href="/admin/dashboard/orders"
+              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              aria-label="View Orders"
+            >
               <MoreVertical className="h-4 w-4" />
-            </button>
+            </Link>
           </div>
 
-          {/* Main Row: Full Value & Proper 3D Clay Shopping Bag Icon */}
           <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
-                3,842
+                {(summary?.periodMetrics?.orders ?? summary?.totalOrders ?? 0).toLocaleString("en-IN")}
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 8.3%</span>
-                <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
+
+              <div className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                {(growth?.ordersPercentage ?? 0) >= 0 ? (
+                  <span className="bg-[#20BF6B]/10 text-[#20BF6B] px-1.5 py-0.5 rounded-md font-extrabold">
+                    ↑ {growth?.ordersPercentage ?? 0}%
+                  </span>
+                ) : (
+                  <span className="bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded-md font-extrabold">
+                    ↓ {Math.abs(growth?.ordersPercentage ?? 0)}%
+                  </span>
+                )}
+                <span className="text-[10.5px] text-slate-400 font-medium">vs prev period</span>
               </div>
             </div>
 
@@ -106,60 +376,78 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 3: Total Products */}
+        {/* Card 3: Total Customers */}
         <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
-          {/* Top Row: Title & Action button */}
-          <div className="flex items-center justify-between gap-2 z-10">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Products</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Main Row: Full Value & Proper 3D Clay Products Icon */}
-          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
-            <div className="space-y-1 min-w-0 flex-1">
-              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
-                248
-              </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 5.2%</span>
-                <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
-              </div>
-            </div>
-
-            {/* Proper 3D Cerulean Blue Clay Products Icon */}
-            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
-              <Package className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Total Customers */}
-        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
-          {/* Top Row: Title & Action button */}
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Customers</span>
-            <button className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer" aria-label="More options">
+            <Link
+              href="/admin/dashboard/customers"
+              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              aria-label="View Customers"
+            >
               <MoreVertical className="h-4 w-4" />
-            </button>
+            </Link>
           </div>
 
-          {/* Main Row: Full Value & Proper 3D Clay Customers Icon */}
           <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
-                8,920
+                {(summary?.totalCustomers ?? 0).toLocaleString("en-IN")}
               </div>
+
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#20BF6B] whitespace-nowrap">
-                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">↑ 15.8%</span>
-                <span className="text-[10.5px] text-slate-400 font-medium">vs last month</span>
+                <span className="bg-[#20BF6B]/10 px-1.5 py-0.5 rounded-md font-extrabold">
+                  +{summary?.periodMetrics?.newCustomers ?? 0}
+                </span>
+                <span className="text-[10.5px] text-slate-400 font-medium">new this period</span>
               </div>
             </div>
 
             {/* Proper 3D Emerald Clay Customers Icon */}
             <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#34D399] via-[#10B981] to-[#059669] text-white shadow-[0_6px_16px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
               <Users className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Inventory & Fulfillment Alerts */}
+        <div className="clay-card p-4 sm:p-4.5 xl:p-4 2xl:p-5 flex flex-col justify-between relative overflow-hidden transition-all hover:scale-[1.01] group">
+          <div className="flex items-center justify-between gap-2 z-10">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inventory Alerts</span>
+            <Link
+              href="/admin/dashboard/products"
+              className="text-slate-300 hover:text-slate-600 transition p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              aria-label="Manage Products"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-2.5 z-10">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl lg:text-[22px] xl:text-[21px] 2xl:text-[25px] font-black tracking-tight text-[#2A241E] whitespace-nowrap overflow-visible">
+                {(summary?.totalInventoryAlerts ?? 0).toLocaleString("en-IN")}
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                {(summary?.outOfStockProducts ?? 0) > 0 ? (
+                  <span className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded-md font-extrabold">
+                    {summary?.outOfStockProducts ?? 0} out of stock
+                  </span>
+                ) : (
+                  <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md font-extrabold">
+                    Healthy Stock
+                  </span>
+                )}
+                <span className="text-[10.5px] text-slate-400 font-medium">
+                  • {summary?.pendingOrders ?? 0} pending orders
+                </span>
+              </div>
+            </div>
+
+            {/* Proper 3D Cerulean Blue Clay Products Icon */}
+            <div className="flex h-11 w-11 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white shadow-[0_6px_16px_rgba(14,165,233,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105 select-none">
+              <Package className="h-5 w-5 xl:h-4.5 xl:w-4.5 2xl:h-6 2xl:w-6 stroke-[2.3]" />
             </div>
           </div>
         </div>
@@ -178,15 +466,14 @@ export default function DashboardPage() {
               <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
                 Category Sales Breakdown
               </h2>
-              <p className="text-[11px] text-slate-400 font-medium">Revenue distribution across pet catalog</p>
+              <p className="text-[11px] text-slate-400 font-medium">Revenue contribution across catalog categories</p>
             </div>
-            <div 
-              onClick={handleToggleTimeRange}
-              className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 cursor-pointer select-none hover:bg-slate-50 transition active:scale-95"
+            <Link
+              href="/admin/dashboard/categories"
+              className="clay-button px-3 py-1 text-xs font-bold text-slate-700 hover:text-orange-600 transition cursor-pointer"
             >
-              <span>{timeRange}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-            </div>
+              Categories
+            </Link>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-5">
@@ -194,58 +481,99 @@ export default function DashboardPage() {
             {/* 3D Multi-Color Tactile Clay Donut Chart */}
             <div className="relative flex items-center justify-center shrink-0">
               <svg className="w-44 h-44 sm:w-48 sm:h-48 transform -rotate-90 drop-shadow-[0_10px_20px_rgba(195,180,165,0.3)]" viewBox="0 0 100 100">
+                {/* Background ring */}
                 <circle cx="50" cy="50" r="38" stroke="#EAE4DC" strokeWidth="15" fill="none" />
                 
-                {/* Purple segment: Dog Nutrition (33%) */}
-                <circle cx="50" cy="50" r="38" stroke="#6D62FE" strokeWidth="15" fill="none"
-                  strokeDasharray="79 160" strokeDashoffset="0" strokeLinecap="round" />
-                
-                {/* Green segment: Cat Food & Treats (26%) */}
-                <circle cx="50" cy="50" r="38" stroke="#4EBA79" strokeWidth="15" fill="none"
-                  strokeDasharray="62 177" strokeDashoffset="-80" strokeLinecap="round" />
-                
-                {/* Amber segment: Health & Supplements (16%) */}
-                <circle cx="50" cy="50" r="38" stroke="#F7B731" strokeWidth="15" fill="none"
-                  strokeDasharray="38 201" strokeDashoffset="-144" strokeLinecap="round" />
-                
-                {/* Coral segment: Toys & Activity (13%) */}
-                <circle cx="50" cy="50" r="38" stroke="#F26674" strokeWidth="15" fill="none"
-                  strokeDasharray="31 208" strokeDashoffset="-184" strokeLinecap="round" />
-                
-                {/* Blue segment: Grooming & Accessories (12%) */}
-                <circle cx="50" cy="50" r="38" stroke="#45AAF2" strokeWidth="15" fill="none"
-                  strokeDasharray="28 211" strokeDashoffset="-217" strokeLinecap="round" />
+                {/* Dynamic Category Slices */}
+                {topCategories.length > 0 ? (
+                  topCategories.map((cat, idx) => {
+                    const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+                    const pct = Math.max(1, cat.percentageOfTotal);
+                    const dashLength = (pct / 100) * CIRCUMFERENCE;
+                    const spaceLength = CIRCUMFERENCE - dashLength;
+                    const strokeOffset = -accumulatedPercent;
+                    accumulatedPercent += dashLength;
+
+                    return (
+                      <circle
+                        key={cat.categoryId}
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        stroke={color.stroke}
+                        strokeWidth="15"
+                        fill="none"
+                        strokeDasharray={`${dashLength} ${spaceLength}`}
+                        strokeDashoffset={strokeOffset}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
+                      />
+                    );
+                  })
+                ) : (
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    stroke="#EAE4DC"
+                    strokeWidth="15"
+                    fill="none"
+                    strokeDasharray="8 8"
+                  />
+                )}
               </svg>
 
               {/* Recessed Center Hub */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-eyebrow">Gross Sales</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-eyebrow">
+                  Gross Sales
+                </span>
                 <span className="text-lg sm:text-xl font-black tracking-tight text-[#2A241E]">
-                  ₹14.85L
+                  ₹{formatIndianCurrency(totalCategoryRevenue)}
                 </span>
               </div>
             </div>
 
             {/* Category Breakdown Legend */}
             <div className="w-full sm:w-auto flex-1 space-y-2">
-              {[
-                { label: "Dog Nutrition", amount: "₹4,85,000", pct: "33%", color: "bg-[#6D62FE]" },
-                { label: "Cat Food & Treats", amount: "₹3,85,000", pct: "26%", color: "bg-[#4EBA79]" },
-                { label: "Health & Supplements", amount: "₹2,45,000", pct: "16%", color: "bg-[#F7B731]" },
-                { label: "Toys & Activity", amount: "₹1,95,000", pct: "13%", color: "bg-[#F26674]" },
-                { label: "Grooming & Care", amount: "₹1,75,680", pct: "12%", color: "bg-[#45AAF2]" },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-0.5 px-1 rounded-lg hover:bg-slate-50 transition">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`h-2.5 w-2.5 rounded-full ${item.color} shadow-xs shrink-0`} />
-                    <span className="font-semibold text-slate-600 truncate">{item.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-extrabold text-slate-800">{item.amount}</span>
-                    <span className="text-[10px] font-bold text-slate-400 w-6 text-right">{item.pct}</span>
+              {topCategories.length > 0 ? (
+                topCategories.map((cat, idx) => {
+                  const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+                  return (
+                    <div key={cat.categoryId} className="flex items-center justify-between text-xs py-0.5 px-1 rounded-lg hover:bg-slate-50 transition">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`h-2.5 w-2.5 rounded-full ${color.bg} shadow-xs shrink-0`} />
+                        <span className="font-semibold text-slate-600 truncate max-w-[120px] sm:max-w-[150px]">
+                          {cat.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-extrabold text-slate-800">
+                          ₹{formatFullRupees(cat.totalRevenue)}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 w-9 text-right">
+                          {cat.percentageOfTotal}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-3 bg-[#F9F6F2] rounded-xl border border-[#E8DFC0]/40 text-center space-y-1">
+                  <p className="text-xs font-bold text-slate-700">No Sales Recorded Yet</p>
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    When customers place orders, category volume and revenue percentages will be rendered automatically.
+                  </p>
+                  <div className="pt-1.5">
+                    <Link
+                      href="/admin/dashboard/products"
+                      className="text-[11px] font-extrabold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-0.5"
+                    >
+                      View Catalog Products →
+                    </Link>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
           </div>
@@ -270,37 +598,61 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 pt-3.5 items-center">
             
-            {/* Orders List (7 Cols) */}
+            {/* Orders Stream (7 Cols) */}
             <div className="md:col-span-7 space-y-2">
-              {[
-                { name: "Rahul Sharma (#KO-8924)", item: "Royal Canin Maxi Puppy 10kg", amount: "₹4,250", time: "15m ago", icon: "🐕", badgeClass: "clay-badge-amber", status: "Paid" },
-                { name: "Ananya Patel (#KO-8923)", item: "Whiskas Ocean Fish Feast 7kg", amount: "₹2,150", time: "42m ago", icon: "🐈", badgeClass: "clay-badge-purple", status: "Paid" },
-                { name: "Vikram Malhotra (#KO-8922)", item: "Orthopedic Memory Pet Bed", amount: "₹5,800", time: "2h ago", icon: "🦴", badgeClass: "clay-badge-green", status: "Shipped" },
-                { name: "Pooja Iyer (#KO-8921)", item: "Natural Yak Milk Chew Sticks", amount: "₹890", time: "3h ago", icon: "🐾", badgeClass: "clay-badge-coral", status: "Delivered" },
-              ].map((ord, idx) => (
-                <div key={idx} className="flex items-center justify-between p-1.5 rounded-2xl hover:bg-[#F9F6F2] transition">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`${ord.badgeClass} flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl`}>
-                      {ord.icon}
+              {recentOrders.length > 0 ? (
+                recentOrders.map((ord, idx) => {
+                  const badge = getStatusBadgeStyle(ord.orderStatus);
+                  const emojis = ["🐕", "🐈", "🦴", "🐾"];
+                  const badgeStyles = ["clay-badge-amber", "clay-badge-purple", "clay-badge-green", "clay-badge-coral"];
+                  const iconEmoji = emojis[idx % emojis.length];
+                  const badgeCls = badgeStyles[idx % badgeStyles.length];
+
+                  return (
+                    <div key={ord.id} className="flex items-center justify-between p-1.5 rounded-2xl hover:bg-[#F9F6F2] transition">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`${badgeCls} flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl`}>
+                          {iconEmoji}
+                        </div>
+                        <div className="min-w-0">
+                          <Link
+                            href={`/admin/dashboard/orders`}
+                            className="text-xs font-extrabold text-slate-800 leading-tight truncate hover:text-orange-600 block"
+                          >
+                            {ord.customer.name} (#{ord.orderNumber})
+                          </Link>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate max-w-[170px]">
+                            {ord.itemsSummary || `${ord.itemsCount} item(s)`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-extrabold text-slate-900">
+                          ₹{formatFullRupees(ord.grandTotal)}
+                        </p>
+                        <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-extrabold text-slate-800 leading-tight truncate">{ord.name}</p>
-                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">{ord.item}</p>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-extrabold text-slate-900">
-                      {ord.amount}
-                    </p>
-                    <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full ${
-                      ord.status === "Delivered" ? "bg-emerald-50 text-emerald-700" :
-                      ord.status === "Shipped" ? "bg-indigo-50 text-indigo-700" : "bg-orange-50 text-orange-700"
-                    }`}>
-                      {ord.status}
-                    </span>
-                  </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-white/60 border border-[#E8DFC0]/40 space-y-1.5">
+                  <span className="text-2xl select-none">🛍️</span>
+                  <p className="text-xs font-bold text-slate-700">No Orders Placed Yet</p>
+                  <p className="text-[10.5px] text-slate-400 max-w-[200px] leading-tight">
+                    Customer checkouts will appear here instantly with live order details.
+                  </p>
+                  <Link
+                    href="/admin/dashboard/orders"
+                    className="mt-1 text-[11px] font-extrabold text-orange-600 hover:underline"
+                  >
+                    Open Orders Hub →
+                  </Link>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* 3D Clay Desk Scene (5 Cols) */}
@@ -340,9 +692,12 @@ export default function DashboardPage() {
               </h2>
               <p className="text-[11px] text-slate-400 font-medium">Progress against month-end ecommerce KPIs</p>
             </div>
-            <button className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer">
-              Target Settings
-            </button>
+            <Link
+              href="/admin/dashboard/analytics"
+              className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer"
+            >
+              Analytics
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -356,8 +711,10 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Revenue Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
-                    <span className="font-bold text-slate-700">₹14.85L / ₹20.00L</span>
-                    <span className="font-extrabold text-indigo-700">74%</span>
+                    <span className="font-bold text-slate-700">
+                      ₹{formatIndianCurrency(currentMonthRevenue)} / ₹20.00L
+                    </span>
+                    <span className="font-extrabold text-indigo-700">{revenueGoalPct}%</span>
                   </div>
                 </div>
               </div>
@@ -366,7 +723,7 @@ export default function DashboardPage() {
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
                   className="clay-badge-purple h-full rounded-full transition-all duration-500" 
-                  style={{ width: "74%" }} 
+                  style={{ width: `${Math.max(4, revenueGoalPct)}%` }} 
                 />
               </div>
             </div>
@@ -380,8 +737,10 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Orders Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
-                    <span className="font-bold text-slate-700">3,842 / 4,500</span>
-                    <span className="font-extrabold text-emerald-700">85%</span>
+                    <span className="font-bold text-slate-700">
+                      {currentMonthOrders.toLocaleString("en-IN")} / {monthlyOrdersGoal}
+                    </span>
+                    <span className="font-extrabold text-emerald-700">{ordersGoalPct}%</span>
                   </div>
                 </div>
               </div>
@@ -390,7 +749,7 @@ export default function DashboardPage() {
               <div className="h-3 w-full rounded-full bg-[#E4DCD3] p-0.5 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.12)] overflow-hidden">
                 <div 
                   className="clay-badge-green h-full rounded-full transition-all duration-500" 
-                  style={{ width: "85%" }} 
+                  style={{ width: `${Math.max(4, ordersGoalPct)}%` }} 
                 />
               </div>
             </div>
@@ -405,9 +764,9 @@ export default function DashboardPage() {
               💡
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-extrabold text-[#1E3B1B]">Store Growth Insight</h3>
+              <h3 className="text-sm font-extrabold text-[#1E3B1B]">{insightHeadline}</h3>
               <p className="text-xs text-[#3E5C38] leading-relaxed font-semibold">
-                Cat nutrition &amp; organic dental chews reorders increased by 28% this week.
+                {insightDesc}
               </p>
               <p className="text-xs font-bold text-[#1E3B1B] pt-0.5">
                 Keep bestsellers stocked! 🚀
@@ -416,9 +775,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="pt-3 flex justify-end z-10 select-none">
-            <div className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-lg">
+            <Link
+              href="/admin/dashboard/products"
+              className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-lg hover:scale-105 transition"
+              title="Manage Products & Inventory"
+            >
               🐾
-            </div>
+            </Link>
           </div>
         </div>
 
