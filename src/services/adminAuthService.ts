@@ -7,6 +7,7 @@ import {
 import {
   AdminLoginPayload,
   AdminLoginResponse,
+  AdminRefreshTokenResponse,
   AdminForgotPasswordPayload,
   AdminVerifyOtpPayload,
   AdminVerifyOtpResponse,
@@ -24,13 +25,36 @@ export const AdminAuthService = {
    * and stores access/refresh tokens in localStorage.
    */
   async login(payload: AdminLoginPayload, rememberMe = true): Promise<AdminLoginResponse> {
-    const res = await adminApiClient.post<AdminLoginResponse>("/login", payload);
+    const res = await adminApiClient.post<AdminLoginResponse>("/login", {
+      ...payload,
+      rememberMe,
+    });
     const { accessToken, refreshToken, admin } = res.data;
 
     if (typeof window !== "undefined") {
       setStoredAuth(accessToken, refreshToken, admin, rememberMe);
     }
 
+    return res.data;
+  },
+
+  /**
+   * 1b. Refresh Tokens & Extend Session
+   * Sends active refreshToken to rotate access & refresh tokens statefully,
+   * updating browser vault and extending database session.
+   */
+  async refreshToken(): Promise<AdminRefreshTokenResponse> {
+    const refreshToken = getStoredRefreshToken();
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+    const res = await adminApiClient.post<AdminRefreshTokenResponse>("/refresh", {
+      refreshToken,
+    });
+    const { accessToken, refreshToken: newRefresh, admin } = res.data;
+    if (typeof window !== "undefined") {
+      setStoredAuth(accessToken, newRefresh, admin);
+    }
     return res.data;
   },
 

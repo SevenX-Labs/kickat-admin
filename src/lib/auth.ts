@@ -113,34 +113,44 @@ export const setStoredAuth = (
   accessToken: string,
   refreshToken?: string,
   admin?: AdminUser,
-  rememberMe = true
+  rememberMe?: boolean
 ): void => {
   if (typeof window === "undefined") return;
 
+  const existingVault = readVault();
+  const effectiveRememberMe =
+    rememberMe !== undefined ? rememberMe : (existingVault?.rememberMe ?? true);
+
   // Sanitize admin object: keep only necessary non-sensitive UI fields
-  const safeAdmin: AdminUser | undefined = admin
-    ? {
-        id: admin.id,
-        adminId: admin.adminId,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-        permissions: admin.permissions || [],
-      }
-    : undefined;
+  const safeAdmin: AdminUser | undefined =
+    admin !== undefined
+      ? admin
+        ? {
+            id: admin.id,
+            adminId: admin.adminId,
+            name: admin.name,
+            email: admin.email,
+            role: admin.role,
+            permissions: admin.permissions || [],
+          }
+        : undefined
+      : existingVault?.admin;
+
+  const effectiveRefreshToken =
+    refreshToken !== undefined ? refreshToken : existingVault?.refreshToken;
 
   const vault: AuthVault = {
     accessToken,
-    refreshToken,
+    refreshToken: effectiveRefreshToken,
     admin: safeAdmin,
-    rememberMe,
+    rememberMe: effectiveRememberMe,
     timestamp: Date.now(),
   };
 
   const cipher = encodeVault(vault);
 
   try {
-    if (rememberMe) {
+    if (effectiveRememberMe) {
       localStorage.setItem(STORAGE_VAULT_KEY, cipher);
       sessionStorage.removeItem(STORAGE_VAULT_KEY);
     } else {

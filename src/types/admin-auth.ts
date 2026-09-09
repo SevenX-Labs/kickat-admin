@@ -13,9 +13,17 @@ export interface AdminUser {
 export interface AdminLoginPayload {
   adminId: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface AdminLoginResponse {
+  success: boolean;
+  accessToken: string;
+  refreshToken: string;
+  admin: AdminUser;
+}
+
+export interface AdminRefreshTokenResponse {
   success: boolean;
   accessToken: string;
   refreshToken: string;
