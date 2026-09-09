@@ -40,6 +40,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {
+  CategoryFilterDropdown,
+  SpeciesFilterDropdown,
+  StockFilterDropdown,
+  SortDropdown,
+} from "@/components/products/ProductFilterDropdowns";
+import {
   AdminProductItem,
   ProductSummary,
   ProductPagination,
@@ -553,85 +559,53 @@ export default function ProductsPage() {
         {/* Filter Dropdowns */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-xs">
           {/* Category Filter */}
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                handleFilterChange();
-              }}
-              className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
-            >
-              <option value="ALL">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.parentId ? `└ ${cat.name}` : cat.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
+          <CategoryFilterDropdown
+            value={categoryFilter}
+            onChange={(val) => {
+              setCategoryFilter(val);
+              handleFilterChange();
+            }}
+            categories={categories}
+            onClear={() => {
+              setCategoryFilter("ALL");
+              handleFilterChange();
+            }}
+          />
 
           {/* Species Filter */}
-          <div className="relative">
-            <select
-              value={speciesFilter}
-              onChange={(e) => {
-                setSpeciesFilter(e.target.value as any);
-                handleFilterChange();
-              }}
-              className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
-            >
-              <option value="ALL">All Pet Species</option>
-              <option value="DOG">Dog</option>
-              <option value="CAT">Cat</option>
-              <option value="BIRD">Bird</option>
-              <option value="FISH">Fish</option>
-              <option value="RABBIT">Rabbit</option>
-              <option value="OTHER">Other Species</option>
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
+          <SpeciesFilterDropdown
+            value={speciesFilter}
+            onChange={(val) => {
+              setSpeciesFilter(val);
+              handleFilterChange();
+            }}
+            onClear={() => {
+              setSpeciesFilter("ALL");
+              handleFilterChange();
+            }}
+          />
 
           {/* Stock Filter */}
-          <div className="relative">
-            <select
-              value={stockFilter}
-              onChange={(e) => {
-                setStockFilter(e.target.value as any);
-                handleFilterChange();
-              }}
-              className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
-            >
-              <option value="ALL">All Stock States</option>
-              <option value="IN_STOCK">In Stock (&gt; 0)</option>
-              <option value="LOW_STOCK">Low Stock (&le; 10)</option>
-              <option value="OUT_OF_STOCK">Out of Stock (0)</option>
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
+          <StockFilterDropdown
+            value={stockFilter}
+            onChange={(val) => {
+              setStockFilter(val);
+              handleFilterChange();
+            }}
+            onClear={() => {
+              setStockFilter("ALL");
+              handleFilterChange();
+            }}
+          />
 
           {/* Sort By Dropdown */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as any);
-                handleFilterChange();
-              }}
-              className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 px-2.5 text-xs text-slate-700 outline-none focus:bg-white cursor-pointer appearance-none"
-            >
-              <option value="createdAt_desc">Newest First</option>
-              <option value="createdAt_asc">Oldest First</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="stock_asc">Stock: Low to High</option>
-              <option value="stock_desc">Stock: High to Low</option>
-              <option value="name_asc">Name: A to Z</option>
-              <option value="rating_desc">Top Customer Rating</option>
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
+          <SortDropdown
+            value={sortBy}
+            onChange={(val) => {
+              setSortBy(val);
+              handleFilterChange();
+            }}
+          />
         </div>
       </div>
 
