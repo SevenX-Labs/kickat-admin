@@ -116,8 +116,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   // Revoke any created blob URLs on unmount to prevent memory leaks
   useEffect(() => {
+    const currentPending = pendingFilesRef.current;
     return () => {
-      for (const url of pendingFilesRef.current.keys()) {
+      for (const url of currentPending.keys()) {
         if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
         }
@@ -460,7 +461,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         newErrors.name = "Please enter a product name.";
       }
       if (!categoryId) {
-        newErrors.categoryId = "Please select a category.";
+        newErrors.categoryId = "Please select a subcategory for this product.";
       }
     } else if (stepNumber === 2) {
       if (images.length === 0) {
@@ -900,11 +901,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 )}
               </div>
 
-              {/* Category */}
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">
-                  Category *
-                </label>
+              {/* Category Selection (Root & Subcategory) */}
+              <div>
                 <CategorySelector
                   value={categoryId}
                   categories={categories}
