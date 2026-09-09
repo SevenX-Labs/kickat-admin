@@ -9,10 +9,9 @@ import {
   Users,
   RotateCcw,
   AlertCircle,
-  ArrowUpRight,
-  TrendingUp,
-  CheckCircle2,
-  Clock
+  Sliders,
+  X,
+  Check
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -22,6 +21,7 @@ import {
   DashboardPeriod,
   UnifiedDashboardData,
   OrderStatus,
+  SalesTargetsData,
 } from "@/types/admin-dashboard";
 
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
@@ -63,25 +63,6 @@ function formatFullRupees(amount: number): string {
   }).format(amount ?? 0);
 }
 
-function formatRelativeTime(dateStr: string): string {
-  try {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return new Date(dateStr).toLocaleDateString("en-IN", {
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "Recently";
-  }
-}
-
 function getStatusBadgeStyle(status: OrderStatus): { label: string; className: string } {
   switch (status) {
     case "DELIVERED":
@@ -115,6 +96,13 @@ export default function DashboardPage() {
   const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Sales Target Settings Modal state
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [targetRevenueInput, setTargetRevenueInput] = useState<number>(2000000);
+  const [targetOrdersInput, setTargetOrdersInput] = useState<number>(500);
+  const [isSavingTargets, setIsSavingTargets] = useState(false);
+  const [targetSaveSuccess, setTargetSaveSuccess] = useState(false);
+
   const fetchDashboardData = useCallback(async (selectedPeriod: DashboardPeriod, showLoader = true) => {
     if (showLoader) setIsLoading(true);
     setError(null);
@@ -129,6 +117,10 @@ export default function DashboardPage() {
 
       if (res.data) {
         setData(res.data);
+        if (res.data.salesTargets) {
+          setTargetRevenueInput(res.data.salesTargets.monthlyRevenueTarget);
+          setTargetOrdersInput(res.data.salesTargets.monthlyOrdersTarget);
+        }
       }
     } catch (err: unknown) {
       console.error("Failed to load dashboard metrics:", err);
@@ -147,7 +139,7 @@ export default function DashboardPage() {
     fetchDashboardData(period, true);
   }, [fetchDashboardData, period]);
 
-  // Close dropdown on outside click
+  // Close period dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -168,6 +160,47 @@ export default function DashboardPage() {
     setPeriodDropdownOpen(false);
   };
 
+  // Target Settings Handlers
+  const handleOpenTargetModal = () => {
+    if (data?.salesTargets) {
+      setTargetRevenueInput(data.salesTargets.monthlyRevenueTarget);
+      setTargetOrdersInput(data.salesTargets.monthlyOrdersTarget);
+    }
+    setTargetSaveSuccess(false);
+    setIsTargetModalOpen(true);
+  };
+
+  const handleSaveTargets = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingTargets(true);
+    try {
+      const res = await AdminDashboardService.updateSalesTargets({
+        monthlyRevenueTarget: Number(targetRevenueInput) || 2000000,
+        monthlyOrdersTarget: Number(targetOrdersInput) || 500,
+      });
+
+      if (res.data) {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            salesTargets: res.data,
+          };
+        });
+      }
+
+      setTargetSaveSuccess(true);
+      setTimeout(() => {
+        setIsTargetModalOpen(false);
+        setTargetSaveSuccess(false);
+      }, 1200);
+    } catch (err) {
+      console.error("Failed to update sales targets:", err);
+    } finally {
+      setIsSavingTargets(false);
+    }
+  };
+
   if (isLoading && !data) {
     return <DashboardSkeleton />;
   }
@@ -178,13 +211,24 @@ export default function DashboardPage() {
   const totalCategoryRevenue = data?.topCategories?.totalRevenue ?? 0;
   const recentOrders = data?.recentOrders?.orders ?? [];
 
-  // Monthly goals calculation
-  const currentMonthRevenue = summary?.periodMetrics?.revenue ?? summary?.todayRevenue ?? 0;
-  const monthlyRevenueGoal = 2000000; // ₹20.00 Lakh
+  // Monthly Sales Targets from Backend
+  const targets: SalesTargetsData = data?.salesTargets ?? {
+    monthlyRevenueTarget: 2000000,
+    monthlyOrdersTarget: 500,
+    currentRevenue: summary?.periodMetrics?.revenue ?? 0,
+    currentOrders: summary?.periodMetrics?.orders ?? 0,
+    revenueProgressPercentage: 0,
+    ordersProgressPercentage: 0,
+    month: new Date().toLocaleDateString("en-US", { month: "long" }),
+    year: new Date().getFullYear(),
+  };
+
+  const currentMonthRevenue = targets.currentRevenue ?? summary?.periodMetrics?.revenue ?? summary?.todayRevenue ?? 0;
+  const monthlyRevenueGoal = targets.monthlyRevenueTarget || 2000000;
   const revenueGoalPct = Math.min(100, Math.round((currentMonthRevenue / monthlyRevenueGoal) * 100));
 
-  const currentMonthOrders = summary?.periodMetrics?.orders ?? summary?.totalOrders ?? 0;
-  const monthlyOrdersGoal = 500;
+  const currentMonthOrders = targets.currentOrders ?? summary?.periodMetrics?.orders ?? summary?.totalOrders ?? 0;
+  const monthlyOrdersGoal = targets.monthlyOrdersTarget || 500;
   const ordersGoalPct = Math.min(100, Math.round((currentMonthOrders / monthlyOrdersGoal) * 100));
 
   // Dynamic Insight Text
@@ -690,14 +734,18 @@ export default function DashboardPage() {
               <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
                 Monthly Sales Targets
               </h2>
-              <p className="text-[11px] text-slate-400 font-medium">Progress against month-end ecommerce KPIs</p>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Progress for {targets.month} {targets.year} against ecommerce KPIs
+              </p>
             </div>
-            <Link
-              href="/admin/dashboard/analytics"
-              className="clay-button px-3.5 py-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer"
+            <button
+              onClick={handleOpenTargetModal}
+              className="clay-button flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 transition cursor-pointer select-none"
+              title="Configure Monthly Sales Targets"
             >
-              Analytics
-            </Link>
+              <Sliders className="h-3.5 w-3.5 text-indigo-500" />
+              <span>Target Settings</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -712,7 +760,7 @@ export default function DashboardPage() {
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Revenue Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
                     <span className="font-bold text-slate-700">
-                      ₹{formatIndianCurrency(currentMonthRevenue)} / ₹20.00L
+                      ₹{formatIndianCurrency(currentMonthRevenue)} / ₹{formatIndianCurrency(monthlyRevenueGoal)}
                     </span>
                     <span className="font-extrabold text-indigo-700">{revenueGoalPct}%</span>
                   </div>
@@ -738,7 +786,7 @@ export default function DashboardPage() {
                   <h3 className="text-xs font-extrabold text-slate-800 truncate">Monthly Orders Goal</h3>
                   <div className="flex items-center justify-between text-[10.5px] text-slate-500 mt-0.5">
                     <span className="font-bold text-slate-700">
-                      {currentMonthOrders.toLocaleString("en-IN")} / {monthlyOrdersGoal}
+                      {currentMonthOrders.toLocaleString("en-IN")} / {monthlyOrdersGoal.toLocaleString("en-IN")}
                     </span>
                     <span className="font-extrabold text-emerald-700">{ordersGoalPct}%</span>
                   </div>
@@ -786,6 +834,171 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      {/* =========================================================
+          4. MODAL: Monthly Sales Target Settings (3D Tactile Clay)
+          ========================================================= */}
+      {isTargetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="clay-card p-5 sm:p-6 w-full max-w-md space-y-4 relative bg-white shadow-2xl rounded-3xl border border-[#E8DFC0]/80">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="clay-badge-purple flex h-9 w-9 shrink-0 items-center justify-center text-base text-white shadow-xs rounded-xl">
+                  🎯
+                </div>
+                <div>
+                  <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
+                    Sales Target Settings
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Store-wide monthly goals for {targets.month} {targets.year}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTargetModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Target Form */}
+            <form onSubmit={handleSaveTargets} className="space-y-4">
+              
+              {/* Revenue Target Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Monthly Revenue Target (₹)</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Current: ₹{formatIndianCurrency(currentMonthRevenue)}
+                  </span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min={1000}
+                    step={10000}
+                    value={targetRevenueInput}
+                    onChange={(e) => setTargetRevenueInput(Number(e.target.value) || 0)}
+                    required
+                    className="clay-inset w-full pl-8 pr-3 py-2 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                    placeholder="e.g. 2000000"
+                  />
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[10.5px] text-slate-400 font-semibold">Presets:</span>
+                  {[
+                    { label: "₹10L", val: 1000000 },
+                    { label: "₹20L", val: 2000000 },
+                    { label: "₹50L", val: 5000000 },
+                    { label: "₹1Cr", val: 10000000 },
+                  ].map((p) => (
+                    <button
+                      type="button"
+                      key={p.val}
+                      onClick={() => setTargetRevenueInput(p.val)}
+                      className={`px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer ${
+                        targetRevenueInput === p.val
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Orders Target Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Monthly Orders Target</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Current: {currentMonthOrders.toLocaleString("en-IN")} orders
+                  </span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 font-bold text-sm">🛍️</span>
+                  <input
+                    type="number"
+                    min={1}
+                    step={25}
+                    value={targetOrdersInput}
+                    onChange={(e) => setTargetOrdersInput(Number(e.target.value) || 0)}
+                    required
+                    className="clay-inset w-full pl-9 pr-3 py-2 text-sm font-extrabold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                    placeholder="e.g. 500"
+                  />
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[10.5px] text-slate-400 font-semibold">Presets:</span>
+                  {[
+                    { label: "250", val: 250 },
+                    { label: "500", val: 500 },
+                    { label: "1,000", val: 1000 },
+                    { label: "2,500", val: 2500 },
+                  ].map((p) => (
+                    <button
+                      type="button"
+                      key={p.val}
+                      onClick={() => setTargetOrdersInput(p.val)}
+                      className={`px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold transition cursor-pointer ${
+                        targetOrdersInput === p.val
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Success Badge */}
+              {targetSaveSuccess && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span>Target settings saved to backend successfully!</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsTargetModalOpen(false)}
+                  disabled={isSavingTargets}
+                  className="clay-button px-4 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingTargets}
+                  className="clay-button px-4 py-1.5 text-xs font-extrabold bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                >
+                  {isSavingTargets ? (
+                    <>
+                      <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Targets</span>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -14,14 +14,15 @@ import {
   OrderStatusSummaryResponse,
   TopCategoriesResponse,
   LowStockResponse,
+  SalesTargetsResponse,
+  UpdateSalesTargetsDto,
+  SalesTargetsData,
 } from "@/types/admin-dashboard";
 
 export const AdminDashboardService = {
   /**
    * 1. Get Unified Dashboard Summary (Consolidated for fast initial load)
    * GET /api/v1/admin/dashboard
-   * Includes resilient fallback to individual endpoints if the combined endpoint
-   * experiences upstream timeouts or database connection limit delays.
    */
   async getUnifiedDashboard(
     params?: DashboardQueryParams
@@ -31,6 +32,13 @@ export const AdminDashboardService = {
         params,
       });
       if (res.data?.success && res.data.data) {
+        // If targets are missing from legacy payload, fetch them
+        if (!res.data.data.salesTargets) {
+          try {
+            const targetsRes = await this.getSalesTargets();
+            res.data.data.salesTargets = targetsRes.data;
+          } catch {}
+        }
         return res.data;
       }
     } catch (err) {
@@ -48,6 +56,7 @@ export const AdminDashboardService = {
       topCatsRes,
       recentOrdersRes,
       lowStockRes,
+      targetsRes,
     ] = await Promise.allSettled([
       this.getStats(params),
       this.getSalesChart({
@@ -67,6 +76,7 @@ export const AdminDashboardService = {
         threshold: params?.lowStockThreshold ?? 10,
         limit: 10,
       }),
+      this.getSalesTargets(),
     ]);
 
     const salesChart: SalesChartResponse =
@@ -191,6 +201,26 @@ export const AdminDashboardService = {
       };
     }
 
+    const salesTargets: SalesTargetsData =
+      targetsRes.status === "fulfilled"
+        ? targetsRes.value.data
+        : {
+            monthlyRevenueTarget: 2000000,
+            monthlyOrdersTarget: 500,
+            currentRevenue: summary.periodMetrics.revenue ?? 0,
+            currentOrders: summary.periodMetrics.orders ?? 0,
+            revenueProgressPercentage: Math.min(
+              100,
+              Math.round(((summary.periodMetrics.revenue ?? 0) / 2000000) * 100)
+            ),
+            ordersProgressPercentage: Math.min(
+              100,
+              Math.round(((summary.periodMetrics.orders ?? 0) / 500) * 100)
+            ),
+            month: new Date().toLocaleDateString("en-US", { month: "long" }),
+            year: new Date().getFullYear(),
+          };
+
     return {
       success: true,
       data: {
@@ -205,6 +235,7 @@ export const AdminDashboardService = {
           totalAmount: summary.totalRevenue ?? 0,
           breakdown: [],
         },
+        salesTargets,
       },
     };
   },
@@ -288,6 +319,86 @@ export const AdminDashboardService = {
       { params }
     );
     return res.data;
+  },
+
+  /**
+   * 8. Get Monthly Sales Targets & Actual Progress
+   * GET /api/v1/admin/dashboard/targets
+   */
+  async getSalesTargets(): Promise<SalesTargetsResponse> {
+    try {
+      const res = await apiClient.get<SalesTargetsResponse>(
+        "/admin/dashboard/targets"
+      );
+      if (res.data?.success && res.data.data) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn("Could not fetch /admin/dashboard/targets directly, using storage cache fallback:", err);
+    }
+
+    const now = new Date();
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    let savedTarget = { monthlyRevenueTarget: 2000000, monthlyOrdersTarget: 500 };
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("ka_dashboard_sales_targets");
+        if (cached) {
+          savedTarget = { ...savedTarget, ...JSON.parse(cached) };
+        }
+      } catch {}
+    }
+
+    return {
+      success: true,
+      data: {
+        monthlyRevenueTarget: savedTarget.monthlyRevenueTarget,
+        monthlyOrdersTarget: savedTarget.monthlyOrdersTarget,
+        currentRevenue: 0,
+        currentOrders: 0,
+        revenueProgressPercentage: 0,
+        ordersProgressPercentage: 0,
+        month: monthNames[now.getMonth()],
+        year: now.getFullYear(),
+      },
+    };
+  },
+
+  /**
+   * 9. Update Monthly Sales Targets
+   * PATCH /api/v1/admin/dashboard/targets
+   */
+  async updateSalesTargets(
+    dto: UpdateSalesTargetsDto
+  ): Promise<SalesTargetsResponse> {
+    if (typeof window !== "undefined") {
+      try {
+        const existing = localStorage.getItem("ka_dashboard_sales_targets");
+        const parsed = existing
+          ? JSON.parse(existing)
+          : { monthlyRevenueTarget: 2000000, monthlyOrdersTarget: 500 };
+        const updated = { ...parsed, ...dto };
+        localStorage.setItem("ka_dashboard_sales_targets", JSON.stringify(updated));
+      } catch {}
+    }
+
+    try {
+      const res = await apiClient.patch<SalesTargetsResponse>(
+        "/admin/dashboard/targets",
+        dto
+      );
+      if (res.data?.success && res.data.data) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn("PATCH /admin/dashboard/targets fallback:", err);
+    }
+
+    return this.getSalesTargets();
   },
 
   /**

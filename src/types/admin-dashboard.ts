@@ -207,6 +207,28 @@ export interface PaymentMethodSummaryResponse {
   breakdown: PaymentMethodBreakdownItem[];
 }
 
+export interface SalesTargetsData {
+  monthlyRevenueTarget: number;
+  monthlyOrdersTarget: number;
+  currentRevenue: number;
+  currentOrders: number;
+  revenueProgressPercentage: number;
+  ordersProgressPercentage: number;
+  month: string;
+  year: number;
+  updatedAt?: string;
+}
+
+export interface SalesTargetsResponse {
+  success: boolean;
+  data: SalesTargetsData;
+}
+
+export interface UpdateSalesTargetsDto {
+  monthlyRevenueTarget?: number;
+  monthlyOrdersTarget?: number;
+}
+
 export interface UnifiedDashboardData {
   summary: DashboardStatsResponse;
   salesChart: SalesChartResponse;
@@ -215,6 +237,7 @@ export interface UnifiedDashboardData {
   recentOrders: RecentOrdersResponse;
   lowStockProducts: LowStockResponse;
   paymentMethodSummary: PaymentMethodSummaryResponse;
+  salesTargets?: SalesTargetsData;
 }
 
 export interface UnifiedDashboardResponse {
