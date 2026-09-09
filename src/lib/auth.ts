@@ -28,6 +28,13 @@ const LEGACY_STORAGE_KEYS = [
   "kickat_admin_user",
 ];
 
+// In-memory session cache for zero-latency lookups and resilience against storage read locks
+let memoryVault: AuthVault | null = null;
+
+export function invalidateVaultCache(): void {
+  memoryVault = null;
+}
+
 function purgeLegacyPlaintext(): void {
   if (typeof window === "undefined") return;
   for (const key of LEGACY_STORAGE_KEYS) {
@@ -41,13 +48,18 @@ function purgeLegacyPlaintext(): void {
 }
 
 function readVault(): AuthVault | null {
+  // 1. Fast in-memory cache return
+  if (memoryVault && memoryVault.accessToken) {
+    return memoryVault;
+  }
+
   if (typeof window === "undefined") return null;
 
   try {
-    // 1. Check localStorage first
+    // 2. Check localStorage first
     let rawCipher = localStorage.getItem(STORAGE_VAULT_KEY);
 
-    // 2. Check sessionStorage if not in localStorage
+    // 3. Check sessionStorage if not in localStorage
     if (!rawCipher) {
       rawCipher = sessionStorage.getItem(STORAGE_VAULT_KEY);
     }
@@ -55,11 +67,29 @@ function readVault(): AuthVault | null {
     if (rawCipher) {
       const decrypted = decodeVault<AuthVault>(rawCipher);
       if (decrypted && decrypted.accessToken) {
+        memoryVault = decrypted;
+
+        // Proactively upgrade legacy encrypted format to v2 UTF-8 format
+        if (!rawCipher.startsWith("v2_")) {
+          try {
+            const upgradedCipher = encodeVault(decrypted);
+            if (upgradedCipher) {
+              if (decrypted.rememberMe !== false) {
+                localStorage.setItem(STORAGE_VAULT_KEY, upgradedCipher);
+              } else {
+                sessionStorage.setItem(STORAGE_VAULT_KEY, upgradedCipher);
+              }
+            }
+          } catch {
+            // Non-fatal
+          }
+        }
+
         return decrypted;
       }
     }
 
-    // 3. Fallback: Migration of legacy plain text keys if any exist
+    // 4. Fallback: Migration of legacy plain text keys if any exist
     const legacyToken =
       localStorage.getItem("admin_access_token") ||
       localStorage.getItem("kickat_admin_token");
@@ -82,9 +112,9 @@ function readVault(): AuthVault | null {
         timestamp: Date.now(),
       };
 
-      // Store in encrypted vault and purge plain text
       setStoredAuth(migratedVault.accessToken, migratedVault.refreshToken, migratedVault.admin, true);
       purgeLegacyPlaintext();
+      memoryVault = migratedVault;
       return migratedVault;
     }
   } catch {
@@ -116,8 +146,9 @@ export const setStoredAuth = (
   rememberMe?: boolean
 ): void => {
   if (typeof window === "undefined") return;
+  if (!accessToken || typeof accessToken !== "string") return;
 
-  const existingVault = readVault();
+  const existingVault = memoryVault || readVault();
   const effectiveRememberMe =
     rememberMe !== undefined ? rememberMe : (existingVault?.rememberMe ?? true);
 
@@ -137,7 +168,9 @@ export const setStoredAuth = (
       : existingVault?.admin;
 
   const effectiveRefreshToken =
-    refreshToken !== undefined ? refreshToken : existingVault?.refreshToken;
+    refreshToken !== undefined && refreshToken !== ""
+      ? refreshToken
+      : existingVault?.refreshToken;
 
   const vault: AuthVault = {
     accessToken,
@@ -147,7 +180,11 @@ export const setStoredAuth = (
     timestamp: Date.now(),
   };
 
+  // Keep memory cache updated synchronously
+  memoryVault = vault;
+
   const cipher = encodeVault(vault);
+  if (!cipher) return;
 
   try {
     if (effectiveRememberMe) {
@@ -158,7 +195,10 @@ export const setStoredAuth = (
       localStorage.removeItem(STORAGE_VAULT_KEY);
     }
   } catch {
-    // Fallback if storage quota is constrained
+    // Fallback in restricted storage contexts
+    try {
+      sessionStorage.setItem(STORAGE_VAULT_KEY, cipher);
+    } catch {}
   }
 
   // Ensure zero plain text leaks exist in browser storage
@@ -170,6 +210,8 @@ export const setStoredToken = (token: string): void => {
 };
 
 export const removeStoredToken = (): void => {
+  memoryVault = null;
+
   if (typeof window === "undefined") return;
 
   try {

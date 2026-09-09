@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { initConsoleSecurity } from "@/lib/security";
-import { getStoredToken } from "@/lib/auth";
+import { getStoredToken, invalidateVaultCache } from "@/lib/auth";
 
 export function SecurityShield() {
   const router = useRouter();
@@ -15,11 +15,20 @@ export function SecurityShield() {
 
     // 2. Cross-Tab Session Sync & Auto-Logout Listener
     const handleStorageChange = (e: StorageEvent) => {
-      // If vault key was removed or storage cleared in another tab
       if (e.key === "_ka_auth_v1" || e.key === null) {
-        const token = getStoredToken();
-        if (!token && !pathname.includes("/admin/login")) {
-          router.push("/admin/login?session_expired=true");
+        // Invalidate in-memory cache so fresh tokens from other tabs are picked up
+        invalidateVaultCache();
+
+        // ONLY trigger auto-logout if vault was explicitly removed or cleared in another tab
+        const isExplicitRemoval =
+          (e.key === "_ka_auth_v1" && (e.newValue === null || e.newValue === "")) ||
+          (e.key === null && typeof window !== "undefined" && !localStorage.getItem("_ka_auth_v1"));
+
+        if (isExplicitRemoval) {
+          const token = getStoredToken();
+          if (!token && !pathname.includes("/admin/login")) {
+            router.push("/admin/login?session_expired=true");
+          }
         }
       }
     };

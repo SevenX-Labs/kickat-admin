@@ -109,44 +109,90 @@ export function initConsoleSecurity(): void {
  * Prevents raw tokens and plain-text JSON profiles from appearing in
  * DevTools -> Application -> Storage -> Local Storage / Session Storage.
  */
-const VAULT_SALT = "_kickat_sec_v1_admin_#99!";
-
-function getClientFingerprint(): string {
-  if (typeof window === "undefined") return VAULT_SALT;
-  const nav = window.navigator;
-  const ua = nav.userAgent || "ua";
-  const lang = nav.language || "en";
-  return ua + ":" + lang + ":" + VAULT_SALT;
-}
-
-function xorTransform(text: string, key: string): string {
-  let result = "";
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(
-      text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
-    );
-  }
-  return result;
-}
+const VAULT_KEY = "_kickat_sec_v1_admin_#99!";
+const textEncoder = typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
+const textDecoder = typeof TextDecoder !== "undefined" ? new TextDecoder() : null;
+const VAULT_KEY_BYTES = textEncoder ? textEncoder.encode(VAULT_KEY) : new Uint8Array([95, 107, 105, 99, 107, 97, 116]);
 
 export function encodeVault(data: any): string {
+  if (data === null || data === undefined) return "";
   try {
-    const raw = JSON.stringify(data);
-    const key = getClientFingerprint();
-    const xor = xorTransform(raw, key);
-    return btoa(encodeURIComponent(xor));
+    const jsonStr = JSON.stringify(data);
+    if (textEncoder) {
+      const bytes = textEncoder.encode(jsonStr);
+      const xorBytes = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) {
+        xorBytes[i] = bytes[i] ^ VAULT_KEY_BYTES[i % VAULT_KEY_BYTES.length];
+      }
+      let binary = "";
+      for (let i = 0; i < xorBytes.length; i++) {
+        binary += String.fromCharCode(xorBytes[i]);
+      }
+      return "v2_" + btoa(binary);
+    }
+
+    return "v2_" + Buffer.from(jsonStr).toString("base64");
   } catch {
     return "";
   }
 }
 
 export function decodeVault<T = any>(cipher: string): T | null {
-  try {
-    const key = getClientFingerprint();
-    const xor = decodeURIComponent(atob(cipher));
-    const raw = xorTransform(xor, key);
-    return JSON.parse(raw);
-  } catch {
-    return null;
+  if (!cipher || typeof cipher !== "string") return null;
+
+  // 1. Try v2 format (Robust byte-level UTF-8)
+  if (cipher.startsWith("v2_")) {
+    try {
+      const rawB64 = cipher.slice(3);
+      if (typeof atob === "function" && textDecoder) {
+        const binary = atob(rawB64);
+        const xorBytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          xorBytes[i] = binary.charCodeAt(i) ^ VAULT_KEY_BYTES[i % VAULT_KEY_BYTES.length];
+        }
+        return JSON.parse(textDecoder.decode(xorBytes));
+      } else {
+        const jsonStr = Buffer.from(rawB64, "base64").toString("utf-8");
+        return JSON.parse(jsonStr);
+      }
+    } catch {
+      // Continue to fallbacks
+    }
   }
+
+  // 2. Try legacy v1 format with stable salt
+  try {
+    const xor = decodeURIComponent(atob(cipher));
+    let raw = "";
+    for (let i = 0; i < xor.length; i++) {
+      raw += String.fromCharCode(
+        xor.charCodeAt(i) ^ VAULT_KEY.charCodeAt(i % VAULT_KEY.length)
+      );
+    }
+    return JSON.parse(raw);
+  } catch {}
+
+  // 3. Try legacy v1 format with UA fingerprint (for existing session migration)
+  if (typeof window !== "undefined") {
+    try {
+      const ua = window.navigator.userAgent || "ua";
+      const lang = window.navigator.language || "en";
+      const oldKey = ua + ":" + lang + ":" + VAULT_KEY;
+      const xor = decodeURIComponent(atob(cipher));
+      let raw = "";
+      for (let i = 0; i < xor.length; i++) {
+        raw += String.fromCharCode(
+          xor.charCodeAt(i) ^ oldKey.charCodeAt(i % oldKey.length)
+        );
+      }
+      return JSON.parse(raw);
+    } catch {}
+  }
+
+  // 4. Try plain JSON string (unencrypted fallback)
+  try {
+    return JSON.parse(cipher);
+  } catch {}
+
+  return null;
 }

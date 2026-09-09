@@ -16,6 +16,7 @@ interface QueueItem {
 
 let isRefreshing = false;
 let failedQueue: QueueItem[] = [];
+let isSessionExpiredRedirecting = false;
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -28,8 +29,9 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-function handleSessionExpired() {
-  if (typeof window === "undefined") return;
+export function handleSessionExpired() {
+  if (typeof window === "undefined" || isSessionExpiredRedirecting) return;
+  isSessionExpiredRedirecting = true;
   removeStoredToken();
   if (!window.location.pathname.includes("/admin/login")) {
     window.location.href = "/admin/login?session_expired=true";
@@ -104,16 +106,17 @@ function attachAuthInterceptors(instance: AxiosInstance) {
           .post<{
             success: boolean;
             accessToken: string;
-            refreshToken: string;
-            admin: any;
+            refreshToken?: string;
+            admin?: any;
           }>(
             `${BASE_URL}/admin/auth/refresh`,
             { refreshToken: currentRefreshToken },
-            { withCredentials: true }
+            { withCredentials: true, timeout: 15000 }
           )
           .then(({ data }) => {
             if (data?.accessToken) {
-              setStoredAuth(data.accessToken, data.refreshToken, data.admin);
+              const newRefreshToken = data.refreshToken || currentRefreshToken;
+              setStoredAuth(data.accessToken, newRefreshToken, data.admin);
               processQueue(null, data.accessToken);
               if (originalRequest.headers) {
                 originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
@@ -123,9 +126,13 @@ function attachAuthInterceptors(instance: AxiosInstance) {
               throw new Error("Invalid token refresh response");
             }
           })
-          .catch((refreshErr) => {
+          .catch((refreshErr: any) => {
             processQueue(refreshErr, null);
-            handleSessionExpired();
+            // Only expire session if backend explicitly rejected refresh token with 401 or 403
+            const status = refreshErr.response?.status;
+            if (status === 401 || status === 403) {
+              handleSessionExpired();
+            }
             reject(refreshErr);
           })
           .finally(() => {
