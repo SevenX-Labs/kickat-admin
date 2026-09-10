@@ -101,20 +101,45 @@ export default function ReviewsPage() {
     }
   }, [toastMessage]);
 
+  // Ensure the page and scrollable container start at top on initial mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      const scrollParent = document.querySelector(".overflow-y-auto");
+      if (scrollParent) {
+        scrollParent.scrollTop = 0;
+      }
+    }
+  }, []);
+
   // Scroll to top detector
   useEffect(() => {
+    const scrollParent = document.querySelector(".overflow-y-auto");
     const handleScroll = () => {
-      if (typeof window !== "undefined") {
-        setShowScrollTop(window.scrollY > 280);
-      }
+      const scrollY = scrollParent ? scrollParent.scrollTop : (typeof window !== "undefined" ? window.scrollY : 0);
+      setShowScrollTop(scrollY > 280);
     };
+
+    if (scrollParent) {
+      scrollParent.addEventListener("scroll", handleScroll, { passive: true });
+    }
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      if (scrollParent) {
+        scrollParent.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
+      const scrollParent = document.querySelector(".overflow-y-auto");
+      if (scrollParent) {
+        scrollParent.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   };
 
@@ -308,7 +333,7 @@ export default function ReviewsPage() {
   };
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 pb-14 w-full min-w-0 no-scrollbar">
+    <div className="space-y-5 sm:space-y-6 pb-16 w-full min-w-0">
       {/* Toast Notification Banner */}
       {toastMessage && (
         <div
@@ -394,7 +419,7 @@ export default function ReviewsPage() {
           - Mobile (375px): 3-2 balanced layout (3 cards row 1, 2 cards row 2)
           - Desktop: Single tight row (lg:grid-cols-5) with reduced vertical height
           ========================================================= */}
-      <div className="grid grid-cols-6 lg:grid-cols-5 gap-2 sm:gap-2.5 w-full min-w-0">
+      <div className="grid grid-cols-6 lg:grid-cols-5 gap-2.5 sm:gap-3 w-full min-w-0">
         {/* Card 1: All Reviews (Mobile: col-span-2 -> 1/3 width, Desktop: 1 col) */}
         <button
           type="button"
@@ -403,7 +428,7 @@ export default function ReviewsPage() {
             setSpamFilter("ALL");
             setPage(1);
           }}
-          className={`clay-card p-2.5 sm:p-3 lg:py-2.5 lg:px-3 text-left min-h-[74px] sm:min-h-[78px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
+          className={`clay-card p-3 sm:p-3.5 lg:p-3 text-left min-h-[82px] sm:min-h-[88px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
             statusFilter === "ALL" && spamFilter === "ALL"
               ? "ring-2 ring-slate-800 bg-white shadow-sm"
               : "hover:bg-[#FAF7F2]"
@@ -433,7 +458,7 @@ export default function ReviewsPage() {
             setSpamFilter("ALL");
             setPage(1);
           }}
-          className={`clay-card p-2.5 sm:p-3 lg:py-2.5 lg:px-3 text-left min-h-[74px] sm:min-h-[78px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
+          className={`clay-card p-3 sm:p-3.5 lg:p-3 text-left min-h-[82px] sm:min-h-[88px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
             statusFilter === "PENDING"
               ? "ring-2 ring-amber-500 bg-amber-50/50 shadow-sm"
               : "hover:bg-amber-50/20"
@@ -468,7 +493,7 @@ export default function ReviewsPage() {
             setSpamFilter("CLEAN");
             setPage(1);
           }}
-          className={`clay-card p-2.5 sm:p-3 lg:py-2.5 lg:px-3 text-left min-h-[74px] sm:min-h-[78px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
+          className={`clay-card p-3 sm:p-3.5 lg:p-3 text-left min-h-[82px] sm:min-h-[88px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
             statusFilter === "APPROVED" && spamFilter !== "SPAM"
               ? "ring-2 ring-emerald-500 bg-emerald-50/50 shadow-sm"
               : "hover:bg-emerald-50/20"
@@ -498,7 +523,7 @@ export default function ReviewsPage() {
             setSpamFilter("ALL");
             setPage(1);
           }}
-          className={`clay-card p-2.5 sm:p-3 lg:py-2.5 lg:px-3 text-left min-h-[74px] sm:min-h-[78px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-3 lg:col-span-1 ${
+          className={`clay-card p-3 sm:p-3.5 lg:p-3 text-left min-h-[82px] sm:min-h-[88px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-3 lg:col-span-1 ${
             statusFilter === "REJECTED" && spamFilter !== "SPAM"
               ? "ring-2 ring-rose-500 bg-rose-50/50 shadow-sm"
               : "hover:bg-rose-50/20"
@@ -528,7 +553,7 @@ export default function ReviewsPage() {
             setSpamFilter(spamFilter === "SPAM" ? "ALL" : "SPAM");
             setPage(1);
           }}
-          className={`clay-card p-2.5 sm:p-3 lg:py-2.5 lg:px-3 text-left min-h-[74px] sm:min-h-[78px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-3 lg:col-span-1 ${
+          className={`clay-card p-3 sm:p-3.5 lg:p-3 text-left min-h-[82px] sm:min-h-[88px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer col-span-3 lg:col-span-1 ${
             spamFilter === "SPAM"
               ? "ring-2 ring-slate-800 bg-slate-100 shadow-sm"
               : "hover:bg-slate-50"
@@ -552,10 +577,10 @@ export default function ReviewsPage() {
       </div>
 
       {/* =========================================================
-          STICKY COMPACT SEARCH & FILTER TOOLBAR
+          SEARCH & FILTER TOOLBAR (Normal Document Flow)
           ========================================================= */}
-      <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1 pb-2 md:static md:bg-transparent md:p-0 md:m-0 space-y-1.5">
-        <div className="clay-card p-2 sm:p-2.5 space-y-2 min-w-0 shadow-sm md:shadow-none">
+      <div className="w-full min-w-0">
+        <div className="clay-card p-3 sm:p-4 space-y-3 min-w-0">
           {/* Main Controls Row: Search + Filters + Sort */}
           <div className="flex items-center gap-1.5 sm:gap-2 w-full">
             {/* Search Input (Consistent h-10) */}
@@ -625,7 +650,7 @@ export default function ReviewsPage() {
           </div>
 
           {/* Quick Status Filter Tabs with smooth horizontal scroll + right-edge gradient fade mask */}
-          <div className="relative w-full overflow-hidden">
+          <div className="relative w-full overflow-hidden pt-1 border-t border-slate-100/90">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth pr-6 py-0.5">
               {[
                 { label: "All", val: "ALL" as const, count: summary?.totalReviews },
@@ -706,7 +731,7 @@ export default function ReviewsPage() {
 
           {/* Active Filter Removable Chips */}
           {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1.5 border-t border-slate-100">
               <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow shrink-0">
                 Filters:
               </span>

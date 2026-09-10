@@ -24,6 +24,7 @@ import {
   ChevronRight,
   ArrowUpDown,
   AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import {
   Testimonial,
@@ -88,7 +89,7 @@ export default function TestimonialsPage() {
     totalTestimonials: 0,
     activeCount: 0,
     featuredCount: 0,
-    avgRating: 5.0,
+    avgRating: 0,
   });
   const [pagination, setPagination] = useState<AdminTestimonialsPagination>({
     page: 1,
@@ -218,6 +219,23 @@ export default function TestimonialsPage() {
     fetchTestimonials();
   }, [fetchTestimonials]);
 
+  // Reset all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setStatusFilter("ALL");
+    setSpeciesFilter("ALL");
+    setRatingFilter(undefined);
+    setSortBy("order_asc");
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters =
+    debouncedSearch !== "" ||
+    statusFilter !== "ALL" ||
+    speciesFilter !== "ALL" ||
+    ratingFilter !== undefined;
+
   // Client-side species filtering if active
   const displayedTestimonials = useMemo(() => {
     if (speciesFilter === "ALL") return testimonials;
@@ -344,7 +362,6 @@ export default function TestimonialsPage() {
   const handleToggleFeatured = async (item: Testimonial) => {
     const nextFeatured = !item.isFeatured;
     try {
-      // Optimistic update
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isFeatured: nextFeatured } : t))
       );
@@ -362,7 +379,6 @@ export default function TestimonialsPage() {
         "success"
       );
     } catch (err) {
-      // Revert on failure
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isFeatured: item.isFeatured } : t))
       );
@@ -375,7 +391,6 @@ export default function TestimonialsPage() {
   const handleToggleActive = async (item: Testimonial) => {
     const nextActive = !item.isActive;
     try {
-      // Optimistic update
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isActive: nextActive } : t))
       );
@@ -391,7 +406,6 @@ export default function TestimonialsPage() {
         "success"
       );
     } catch (err) {
-      // Revert on failure
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isActive: item.isActive } : t))
       );
@@ -435,7 +449,6 @@ export default function TestimonialsPage() {
 
     let finalImageUrl: string | undefined = undefined;
 
-    // Handle Image upload or URL
     if (formImageState.kind === "new_file") {
       setIsUploadingImage(true);
       try {
@@ -463,7 +476,6 @@ export default function TestimonialsPage() {
 
     try {
       if (editingItem) {
-        // UPDATE
         const updatePayload: UpdateTestimonialInput = {
           name: formName.trim(),
           role: formRole.trim() || undefined,
@@ -485,7 +497,6 @@ export default function TestimonialsPage() {
           fetchTestimonials(true);
         }
       } else {
-        // CREATE
         const createPayload: CreateTestimonialInput = {
           name: formName.trim(),
           role: formRole.trim() || undefined,
@@ -514,6 +525,11 @@ export default function TestimonialsPage() {
       setSubmitting(false);
     }
   };
+
+  const isStoreCompletelyEmpty =
+    !loading &&
+    summary.totalTestimonials === 0 &&
+    !hasActiveFilters;
 
   return (
     <div className="space-y-4 sm:space-y-6 w-full min-w-0 pb-16 animate-fade-in">
@@ -574,460 +590,488 @@ export default function TestimonialsPage() {
         </div>
       </div>
 
-      {/* 4 Stat KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <div className="flex items-center justify-between gap-1 text-slate-500">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-              Total Stories
-            </span>
-            <MessageSquareQuote className="h-4 w-4 text-indigo-500 shrink-0" />
+      {/* When total testimonials is 0 and no filters active: Show Clean Empty Slate */}
+      {isStoreCompletelyEmpty ? (
+        <div className="clay-card p-10 sm:p-16 text-center flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto my-6 animate-fade-in">
+          <div className="h-16 w-16 rounded-3xl bg-orange-50 text-[#FF7A00] flex items-center justify-center shadow-xs">
+            <MessageSquareQuote className="h-8 w-8 stroke-[1.75]" />
           </div>
-          <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
-            {summary.totalTestimonials}
-          </p>
-          <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-            {summary.activeCount} verified active
-          </p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <div className="flex items-center justify-between gap-1 text-slate-500">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-              Homepage Hero
-            </span>
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+          <div className="space-y-1.5">
+            <h3 className="font-fraunces text-lg sm:text-xl font-bold text-[#2A241E]">
+              No Customer Testimonials Yet
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Curate and publish verified pet parent feedback, health transformations, and genuine stories to display on your storefront hero carousel.
+            </p>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1.5">
-            {summary.featuredCount}
-          </p>
-          <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-            Pinned to homepage carousel
-          </p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <div className="flex items-center justify-between gap-1 text-slate-500">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-              Average Rating
-            </span>
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />
-          </div>
-          <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
-            {summary.avgRating ? summary.avgRating.toFixed(1) : "5.0"}{" "}
-            <span className="text-xs text-slate-400 font-bold">/ 5.0</span>
-          </p>
-          <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 mt-0.5 truncate">
-            Verified parent feedback
-          </p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <div className="flex items-center justify-between gap-1 text-slate-500">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-              Photo Attached
-            </span>
-            <ImageIcon className="h-4 w-4 text-emerald-500 shrink-0" />
-          </div>
-          <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1.5">
-            {testimonials.filter((t) => Boolean(t.imageUrl)).length}
-          </p>
-          <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-            Real pet photography
-          </p>
-        </div>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="clay-card p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search parent name, role, pet, or story content..."
-              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-[#F8F5F1] border border-slate-200/70 text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Status Filter Segmented Control */}
-          <div className="flex items-center rounded-xl bg-[#F8F5F1] p-1 border border-slate-200/70 overflow-x-auto no-scrollbar">
-            {(
-              [
-                { key: "ALL", label: "All" },
-                { key: "FEATURED", label: "⭐ Featured" },
-                { key: "ACTIVE", label: "Live" },
-                { key: "INACTIVE", label: "Draft" },
-              ] as const
-            ).map((st) => (
-              <button
-                key={st.key}
-                onClick={() => {
-                  setStatusFilter(st.key);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition active:scale-95 cursor-pointer shrink-0 ${
-                  statusFilter === st.key
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {st.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow shrink-0">
-              <ArrowUpDown className="h-3 w-3 inline mr-1" />
-              Sort:
-            </span>
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as any);
-                setCurrentPage(1);
-              }}
-              className="rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 px-2.5 text-xs text-slate-800 font-bold outline-none cursor-pointer"
-            >
-              <option value="order_asc">Display Order (Asc)</option>
-              <option value="order_desc">Display Order (Desc)</option>
-              <option value="createdAt_desc">Newest First</option>
-              <option value="createdAt_asc">Oldest First</option>
-              <option value="rating_desc">Highest Rating</option>
-              <option value="rating_asc">Lowest Rating</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Pet Species Filter Tags & Rating Filter */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100/90 text-xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow shrink-0 mr-1 flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Species:
-            </span>
-            {["ALL", "Dogs", "Cats", "Birds", "Other"].map((sp) => (
-              <button
-                key={sp}
-                onClick={() => setSpeciesFilter(sp)}
-                className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg shrink-0 transition cursor-pointer ${
-                  speciesFilter === sp
-                    ? "bg-orange-500 text-white shadow-xs font-bold"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60"
-                }`}
-              >
-                {sp === "Dogs" ? "🐕 Dogs" : sp === "Cats" ? "🐱 Cats" : sp === "Birds" ? "🦜 Birds" : sp}
-              </button>
-            ))}
-          </div>
-
-          {/* Star Rating Quick Filter */}
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow mr-1">
-              Rating:
-            </span>
-            <button
-              onClick={() => {
-                setRatingFilter(undefined);
-                setCurrentPage(1);
-              }}
-              className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition cursor-pointer ${
-                ratingFilter === undefined
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              All
-            </button>
-            {[5, 4, 3].map((stars) => (
-              <button
-                key={stars}
-                onClick={() => {
-                  setRatingFilter(stars === ratingFilter ? undefined : stars);
-                  setCurrentPage(1);
-                }}
-                className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md flex items-center gap-0.5 transition cursor-pointer ${
-                  ratingFilter === stars
-                    ? "bg-amber-500 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                <span>{stars}</span>
-                <Star className="h-2.5 w-2.5 fill-current" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Loading Skeleton */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="clay-card p-5 space-y-4 animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-slate-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 w-32 bg-slate-200 rounded" />
-                  <div className="h-3 w-20 bg-slate-200 rounded" />
-                </div>
-              </div>
-              <div className="h-3 w-24 bg-slate-200 rounded" />
-              <div className="space-y-1.5">
-                <div className="h-3 w-full bg-slate-200 rounded" />
-                <div className="h-3 w-4/5 bg-slate-200 rounded" />
-                <div className="h-3 w-2/3 bg-slate-200 rounded" />
-              </div>
-              <div className="h-32 bg-slate-200 rounded-xl" />
-            </div>
-          ))}
-        </div>
-      ) : displayedTestimonials.length === 0 ? (
-        /* Empty State */
-        <div className="clay-card p-12 text-center space-y-3">
-          <div className="text-4xl">💬</div>
-          <h3 className="font-fraunces text-lg font-bold text-[#2A241E]">
-            No testimonials found
-          </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            {searchQuery || statusFilter !== "ALL" || speciesFilter !== "ALL" || ratingFilter
-              ? "Try adjusting your search or filters to see more results."
-              : "No customer stories published yet. Add your first testimonial to showcase on the homepage."}
-          </p>
           <div className="pt-2">
             <button
               onClick={handleOpenAdd}
-              className="clay-btn-orange inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              className="clay-btn-orange inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-              <span>Add Testimonial</span>
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              <span>Add Your First Testimonial</span>
             </button>
           </div>
         </div>
       ) : (
-        /* Testimonials Cards Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
-          {displayedTestimonials.map((item) => (
-            <div
-              key={item.id}
-              className={`clay-card p-4 sm:p-5 flex flex-col justify-between min-w-0 transition-all relative group ${
-                item.isFeatured ? "ring-2 ring-amber-400/90 shadow-md" : ""
-              }`}
-            >
-              {/* Card Body */}
-              <div className="space-y-3">
-                {/* Author row */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {item.avatarUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={item.avatarUrl}
-                        alt={item.name}
-                        className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-xs"
-                      />
-                    ) : (
-                      <div
-                        className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl ${getAvatarGradient(
-                          item.name
-                        )} text-white text-xs font-black shadow-xs`}
-                      >
-                        {getInitials(item.name)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                          {item.name}
-                        </h3>
-                        <span title="Verified Pet Parent">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                        </span>
-                      </div>
-                      <p className="text-[10.5px] text-slate-500 truncate">
-                        {item.role || "Verified Pet Parent"}
-                      </p>
-                    </div>
-                  </div>
+        <>
+          {/* 4 Stat KPI Cards (only rendered when testimonials exist or loading) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
+            <div className="clay-card p-3.5 sm:p-4 min-w-0">
+              <div className="flex items-center justify-between gap-1 text-slate-500">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+                  Total Stories
+                </span>
+                <MessageSquareQuote className="h-4 w-4 text-indigo-500 shrink-0" />
+              </div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
+                {summary.totalTestimonials}
+              </p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
+                {summary.activeCount} verified active
+              </p>
+            </div>
 
-                  {/* Status Badges */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    {item.isFeatured && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9.5px] font-black rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0 uppercase">
-                        <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                        <span>Featured</span>
-                      </span>
-                    )}
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0.5 text-[9.5px] font-bold rounded-md ${
-                        item.isActive
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-slate-100 text-slate-500 border border-slate-200"
-                      }`}
-                    >
-                      {item.isActive ? "Live" : "Draft"}
-                    </span>
-                  </div>
-                </div>
+            <div className="clay-card p-3.5 sm:p-4 min-w-0">
+              <div className="flex items-center justify-between gap-1 text-slate-500">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+                  Homepage Hero
+                </span>
+                <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+              </div>
+              <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1.5">
+                {summary.featuredCount}
+              </p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
+                Pinned to homepage carousel
+              </p>
+            </div>
 
-                {/* Pet Pill & Star Rating */}
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/90 text-xs">
-                  <span className="px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-[#F8F4EF] text-slate-700 border border-slate-200/60 truncate max-w-[200px]">
-                    🐾 {item.petName || "Beloved Pet"} {item.petType ? `(${item.petType})` : ""}
-                  </span>
+            <div className="clay-card p-3.5 sm:p-4 min-w-0">
+              <div className="flex items-center justify-between gap-1 text-slate-500">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+                  Average Rating
+                </span>
+                <Star className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />
+              </div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
+                {summary.avgRating > 0 ? summary.avgRating.toFixed(1) : "—"}{" "}
+                <span className="text-xs text-slate-400 font-bold">/ 5.0</span>
+              </p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 mt-0.5 truncate">
+                {summary.totalTestimonials > 0 ? "Verified parent feedback" : "No ratings yet"}
+              </p>
+            </div>
 
-                  <div className="flex items-center gap-0.5 text-amber-400 shrink-0">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-3.5 w-3.5 ${
-                          i < item.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-slate-200"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
+            <div className="clay-card p-3.5 sm:p-4 min-w-0">
+              <div className="flex items-center justify-between gap-1 text-slate-500">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+                  Photo Attached
+                </span>
+                <ImageIcon className="h-4 w-4 text-emerald-500 shrink-0" />
+              </div>
+              <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1.5">
+                {testimonials.filter((t) => Boolean(t.imageUrl)).length}
+              </p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
+                Real pet photography
+              </p>
+            </div>
+          </div>
 
-                {/* Testimonial Story */}
-                <div className="space-y-1.5 pt-1">
-                  <p className="text-xs text-slate-700 leading-relaxed font-normal line-clamp-4 italic">
-                    &ldquo;{item.content}&rdquo;
-                  </p>
-                </div>
-
-                {/* Pet Photo preview if available */}
-                {item.imageUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200/80 aspect-[16/9] bg-slate-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.imageUrl}
-                      alt={`${item.petName || item.name} photo`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <ImageIcon className="h-3 w-3" />
-                      <span>{item.petName || "Pet Story"}</span>
-                    </div>
-                  </div>
+          {/* Search & Filter Bar */}
+          <div className="clay-card p-3 sm:p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search parent name, role, pet, or story content..."
+                  className="w-full pl-10 pr-8 py-2 text-xs rounded-xl bg-[#F8F5F1] border border-slate-200/70 text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 )}
-
-                {/* Metadata tag: display order & date */}
-                <div className="clay-inset p-2.5 flex items-center justify-between text-[11px] text-slate-600">
-                  <span className="font-mono text-[10.5px] text-slate-500 font-bold">
-                    Order: #{item.order}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                    {formatDate(item.createdAt)}
-                  </span>
-                </div>
               </div>
 
-              {/* Card Footer Actions */}
-              <div className="mt-4 pt-3 border-t border-slate-100/90 flex items-center justify-between gap-2">
-                {/* Pin to Home button */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleFeatured(item)}
-                  className={`clay-button flex-1 py-1.5 px-2 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    item.isFeatured
-                      ? "text-amber-700 hover:text-amber-800 bg-amber-50/70"
-                      : "text-slate-600 hover:text-amber-600"
-                  }`}
-                  title={item.isFeatured ? "Unpin from Homepage Hero" : "Pin to Homepage Hero Carousel"}
-                >
-                  <Star className={`h-3.5 w-3.5 ${item.isFeatured ? "fill-amber-500 text-amber-500" : ""}`} />
-                  <span>{item.isFeatured ? "Pinned Hero" : "Pin to Home"}</span>
-                </button>
+              {/* Status Filter Segmented Control */}
+              <div className="flex items-center rounded-xl bg-[#F8F5F1] p-1 border border-slate-200/70 overflow-x-auto no-scrollbar">
+                {(
+                  [
+                    { key: "ALL", label: "All" },
+                    { key: "FEATURED", label: "⭐ Featured" },
+                    { key: "ACTIVE", label: "Live" },
+                    { key: "INACTIVE", label: "Draft" },
+                  ] as const
+                ).map((st) => (
+                  <button
+                    key={st.key}
+                    onClick={() => {
+                      setStatusFilter(st.key);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition active:scale-95 cursor-pointer shrink-0 ${
+                      statusFilter === st.key
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
 
-                {/* Live toggle */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleActive(item)}
-                  className={`clay-button flex h-8 w-8 items-center justify-center rounded-xl transition cursor-pointer ${
-                    item.isActive ? "text-emerald-600 hover:text-slate-500" : "text-slate-400 hover:text-emerald-600"
-                  }`}
-                  title={item.isActive ? "Hide testimonial (Draft)" : "Publish live on website"}
-                >
-                  {item.isActive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                </button>
-
-                {/* Edit */}
-                <button
-                  type="button"
-                  onClick={() => handleOpenEdit(item)}
-                  className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-orange-600 transition cursor-pointer"
-                  title="Edit testimonial"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                </button>
-
-                {/* Delete */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDeleteTarget(item);
-                    setDeletePermanent(false);
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow shrink-0">
+                  <ArrowUpDown className="h-3 w-3 inline mr-1" />
+                  Sort:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value as any);
+                    setCurrentPage(1);
                   }}
-                  className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                  title="Delete testimonial"
+                  className="rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 px-2.5 text-xs text-slate-800 font-bold outline-none cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <option value="order_asc">Display Order (Asc)</option>
+                  <option value="order_desc">Display Order (Desc)</option>
+                  <option value="createdAt_desc">Newest First</option>
+                  <option value="createdAt_asc">Oldest First</option>
+                  <option value="rating_desc">Highest Rating</option>
+                  <option value="rating_asc">Lowest Rating</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pet Species Filter Tags & Rating Filter */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100/90 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow shrink-0 mr-1 flex items-center gap-1">
+                  <Filter className="h-3 w-3" /> Species:
+                </span>
+                {["ALL", "Dogs", "Cats", "Birds", "Other"].map((sp) => (
+                  <button
+                    key={sp}
+                    onClick={() => setSpeciesFilter(sp)}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg shrink-0 transition cursor-pointer ${
+                      speciesFilter === sp
+                        ? "bg-orange-500 text-white shadow-xs font-bold"
+                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+                    }`}
+                  >
+                    {sp === "Dogs" ? "🐕 Dogs" : sp === "Cats" ? "🐱 Cats" : sp === "Birds" ? "🦜 Birds" : sp}
+                  </button>
+                ))}
+              </div>
+
+              {/* Star Rating Quick Filter */}
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase font-mono-eyebrow mr-1">
+                  Rating:
+                </span>
+                <button
+                  onClick={() => {
+                    setRatingFilter(undefined);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition cursor-pointer ${
+                    ratingFilter === undefined
+                      ? "bg-slate-800 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  All
+                </button>
+                {[5, 4, 3].map((stars) => (
+                  <button
+                    key={stars}
+                    onClick={() => {
+                      setRatingFilter(stars === ratingFilter ? undefined : stars);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md flex items-center gap-0.5 transition cursor-pointer ${
+                      ratingFilter === stars
+                        ? "bg-amber-500 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <span>{stars}</span>
+                    <Star className="h-2.5 w-2.5 fill-current" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Loading Skeleton */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="clay-card p-5 space-y-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-11 w-11 rounded-2xl bg-slate-200 shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 w-32 bg-slate-200 rounded" />
+                      <div className="h-3 w-20 bg-slate-200 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-24 bg-slate-200 rounded" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-full bg-slate-200 rounded" />
+                    <div className="h-3 w-4/5 bg-slate-200 rounded" />
+                    <div className="h-3 w-2/3 bg-slate-200 rounded" />
+                  </div>
+                  <div className="h-32 bg-slate-200 rounded-xl" />
+                </div>
+              ))}
+            </div>
+          ) : displayedTestimonials.length === 0 ? (
+            /* Empty Search/Filter Results */
+            <div className="clay-card p-10 text-center space-y-3">
+              <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <Search className="h-6 w-6" />
+              </div>
+              <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
+                No matching testimonials
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No testimonials match your active search or filter criteria.
+              </p>
+              <div className="pt-1">
+                <button
+                  onClick={handleClearFilters}
+                  className="clay-button inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-orange-600 rounded-xl cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ) : (
+            /* Testimonials Cards Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
+              {displayedTestimonials.map((item) => (
+                <div
+                  key={item.id}
+                  className={`clay-card p-4 sm:p-5 flex flex-col justify-between min-w-0 transition-all relative group ${
+                    item.isFeatured ? "ring-2 ring-amber-400/90 shadow-md" : ""
+                  }`}
+                >
+                  {/* Card Body */}
+                  <div className="space-y-3">
+                    {/* Author row */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {item.avatarUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={item.avatarUrl}
+                            alt={item.name}
+                            className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-xs"
+                          />
+                        ) : (
+                          <div
+                            className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl ${getAvatarGradient(
+                              item.name
+                            )} text-white text-xs font-black shadow-xs`}
+                          >
+                            {getInitials(item.name)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              {item.name}
+                            </h3>
+                            <span title="Verified Pet Parent">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                            </span>
+                          </div>
+                          <p className="text-[10.5px] text-slate-500 truncate">
+                            {item.role || "Verified Pet Parent"}
+                          </p>
+                        </div>
+                      </div>
 
-      {/* Pagination Controls */}
-      {pagination.totalPages > 1 && (
-        <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p className="text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</strong> to{" "}
-            <strong className="text-slate-800">
-              {Math.min(pagination.page * pagination.limit, pagination.total)}
-            </strong>{" "}
-            of <strong className="text-slate-800">{pagination.total}</strong> testimonials
-          </p>
+                      {/* Status Badges */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {item.isFeatured && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9.5px] font-black rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0 uppercase">
+                            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                            <span>Featured</span>
+                          </span>
+                        )}
+                        <span
+                          className={`inline-flex items-center px-1.5 py-0.5 text-[9.5px] font-bold rounded-md ${
+                            item.isActive
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
+                          }`}
+                        >
+                          {item.isActive ? "Live" : "Draft"}
+                        </span>
+                      </div>
+                    </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={pagination.page <= 1}
-              className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span>Previous</span>
-            </button>
+                    {/* Pet Pill & Star Rating */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/90 text-xs">
+                      <span className="px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-[#F8F4EF] text-slate-700 border border-slate-200/60 truncate max-w-[200px]">
+                        🐾 {item.petName || "Beloved Pet"} {item.petType ? `(${item.petType})` : ""}
+                      </span>
 
-            <span className="px-3 py-1 text-slate-700 font-bold bg-[#F8F5F1] rounded-lg border border-slate-200/60 font-mono">
-              {pagination.page} / {pagination.totalPages}
-            </span>
+                      <div className="flex items-center gap-0.5 text-amber-400 shrink-0">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3.5 w-3.5 ${
+                              i < item.rating
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-200"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
-              disabled={pagination.page >= pagination.totalPages}
-              className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
-            >
-              <span>Next</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+                    {/* Testimonial Story */}
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-xs text-slate-700 leading-relaxed font-normal line-clamp-4 italic">
+                        &ldquo;{item.content}&rdquo;
+                      </p>
+                    </div>
+
+                    {/* Pet Photo preview if available */}
+                    {item.imageUrl && (
+                      <div className="relative rounded-xl overflow-hidden border border-slate-200/80 aspect-[16/9] bg-slate-100">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.imageUrl}
+                          alt={`${item.petName || item.name} photo`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <ImageIcon className="h-3 w-3" />
+                          <span>{item.petName || "Pet Story"}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Metadata tag: display order & date */}
+                    <div className="clay-inset p-2.5 flex items-center justify-between text-[11px] text-slate-600">
+                      <span className="font-mono text-[10.5px] text-slate-500 font-bold">
+                        Order: #{item.order}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                        {formatDate(item.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Footer Actions */}
+                  <div className="mt-4 pt-3 border-t border-slate-100/90 flex items-center justify-between gap-2">
+                    {/* Pin to Home button */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeatured(item)}
+                      className={`clay-button flex-1 py-1.5 px-2 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        item.isFeatured
+                          ? "text-amber-700 hover:text-amber-800 bg-amber-50/70"
+                          : "text-slate-600 hover:text-amber-600"
+                      }`}
+                      title={item.isFeatured ? "Unpin from Homepage Hero" : "Pin to Homepage Hero Carousel"}
+                    >
+                      <Star className={`h-3.5 w-3.5 ${item.isFeatured ? "fill-amber-500 text-amber-500" : ""}`} />
+                      <span>{item.isFeatured ? "Pinned Hero" : "Pin to Home"}</span>
+                    </button>
+
+                    {/* Live toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActive(item)}
+                      className={`clay-button flex h-8 w-8 items-center justify-center rounded-xl transition cursor-pointer ${
+                        item.isActive ? "text-emerald-600 hover:text-slate-500" : "text-slate-400 hover:text-emerald-600"
+                      }`}
+                      title={item.isActive ? "Hide testimonial (Draft)" : "Publish live on website"}
+                    >
+                      {item.isActive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Edit */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(item)}
+                      className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-orange-600 transition cursor-pointer"
+                      title="Edit testimonial"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteTarget(item);
+                        setDeletePermanent(false);
+                      }}
+                      className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                      title="Delete testimonial"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {pagination.totalPages > 1 && (
+            <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <p className="text-slate-500 font-medium">
+                Showing <strong className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</strong> to{" "}
+                <strong className="text-slate-800">
+                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                </strong>{" "}
+                of <strong className="text-slate-800">{pagination.total}</strong> testimonials
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.page <= 1}
+                  className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3 py-1 text-slate-700 font-bold bg-[#F8F5F1] rounded-lg border border-slate-200/60 font-mono">
+                  {pagination.page} / {pagination.totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* =========================================================
