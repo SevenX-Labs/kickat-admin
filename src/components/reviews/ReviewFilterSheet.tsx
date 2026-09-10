@@ -274,7 +274,7 @@ export const ReviewFilterSheet: React.FC<ReviewFilterSheetProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 sm:p-4 bg-[#FAF7F2] border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 pb-6 sm:pb-4 bg-[#FAF7F2] border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={handleReset}

@@ -138,7 +138,7 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => setReply(tmpl)}
-                  className="w-full text-left p-2 rounded-xl text-[11px] font-medium text-slate-600 bg-slate-50 hover:bg-orange-50/70 hover:text-orange-900 border border-slate-200/60 transition active:scale-[0.99] cursor-pointer"
+                  className="w-full text-left p-2.5 min-h-[40px] rounded-xl text-xs sm:text-[11px] font-medium text-slate-600 bg-slate-50 hover:bg-orange-50/70 hover:text-orange-900 border border-slate-200/60 transition active:scale-[0.99] cursor-pointer flex items-center"
                 >
                   &ldquo;{tmpl}&rdquo;
                 </button>
@@ -162,7 +162,7 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
               onChange={(e) => setReply(e.target.value.slice(0, 1000))}
               placeholder="Write a courteous and helpful store response to this pet parent..."
               rows={4}
-              className="w-full rounded-xl bg-[#FDFCFB] border border-slate-200 p-3 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition resize-none"
+              className="w-full rounded-xl bg-[#FDFCFB] border border-slate-200 p-3 text-base sm:text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition resize-none"
             />
           </div>
 
@@ -173,7 +173,7 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
           )}
 
           {/* Footer Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+          <div className="pt-3 pb-2 sm:pb-0 flex items-center justify-end gap-2.5 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}

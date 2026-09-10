@@ -131,7 +131,7 @@ export const ReviewRejectModal: React.FC<ReviewRejectModalProps> = ({
               onChange={(e) => setReason(e.target.value)}
               placeholder="Provide context or explanation for why this review is being rejected..."
               rows={3}
-              className="w-full rounded-xl bg-[#FDFCFB] border border-slate-200 p-3 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition resize-none"
+              className="w-full rounded-xl bg-[#FDFCFB] border border-slate-200 p-3 text-base sm:text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition resize-none"
             />
           </div>
 
@@ -142,7 +142,7 @@ export const ReviewRejectModal: React.FC<ReviewRejectModalProps> = ({
           )}
 
           {/* Footer Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+          <div className="pt-3 pb-2 sm:pb-0 flex items-center justify-end gap-2.5 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
