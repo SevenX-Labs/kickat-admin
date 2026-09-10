@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   ShoppingBag,
   Search,
@@ -15,15 +15,14 @@ import {
   ChevronRight,
   ChevronLeft,
   RefreshCw,
-  MoreVertical,
   RotateCcw,
   PackageCheck,
-  Calendar,
   IndianRupee,
   Package,
   XCircle,
   Check,
-  SlidersHorizontal,
+  X,
+  ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -35,7 +34,7 @@ import {
   AdminOrderSortEnum,
 } from "@/types/admin-order";
 import { AdminOrderService } from "@/services/adminOrderService";
-import { TableListSkeleton, StatCardsSkeleton } from "@/components/ui/Skeleton";
+import { TableListSkeleton } from "@/components/ui/Skeleton";
 import UpdateOrderStatusModal from "@/components/orders/UpdateOrderStatusModal";
 import CancelOrderModal from "@/components/orders/CancelOrderModal";
 import ProcessRefundModal from "@/components/orders/ProcessRefundModal";
@@ -76,10 +75,15 @@ export default function OrdersPage() {
   const [activeRefundOrder, setActiveRefundOrder] = useState<AdminOrderItem | null>(null);
   const [activeInvoiceOrderId, setActiveInvoiceOrderId] = useState<string | null>(null);
   const [activeSlipOrderId, setActiveSlipOrderId] = useState<string | null>(null);
-  const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Scroll to top state
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Refs for auto-scrolling active filter tab
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
     setToastMessage({ text, type });
@@ -94,6 +98,35 @@ export default function OrdersPage() {
     }, 350);
     return () => clearTimeout(handler);
   }, [search]);
+
+  // Handle scroll for scroll-to-top floating button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (typeof window !== "undefined") {
+        setShowScrollTop(window.scrollY > 280);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Auto-scroll active tab into view when selectedStatus changes
+  useEffect(() => {
+    const activeTabEl = tabRefs.current[selectedStatus];
+    if (activeTabEl) {
+      activeTabEl.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [selectedStatus]);
 
   // Fetch orders
   const fetchOrders = useCallback(async (isSilent = false) => {
@@ -130,26 +163,25 @@ export default function OrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Close menus on outside click
-  useEffect(() => {
-    const handleOutsideClick = () => setActiveActionMenuId(null);
-    window.addEventListener("click", handleOutsideClick);
-    return () => window.removeEventListener("click", handleOutsideClick);
-  }, []);
-
+  /**
+   * Fully consistent semantic color mapping across stat cards & order list badges:
+   * - In Progress / Processing / Picking / Placed: amber / orange
+   * - In Transit / Shipped / Out for delivery: blue (fixed: replaced inconsistent purple/indigo with blue!)
+   * - Delivered / Completed: green (emerald)
+   * - Cancelled: red (rose)
+   */
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case "DELIVERED":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "SHIPPED":
       case "OUT_FOR_DELIVERY":
-        return "bg-indigo-50 text-indigo-700 border-indigo-200";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "PROCESSING":
       case "PACKED":
-        return "bg-amber-50 text-amber-700 border-amber-200";
       case "PLACED":
       case "PENDING":
-        return "bg-orange-50 text-orange-700 border-orange-200";
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "CANCELLED":
         return "bg-rose-50 text-rose-700 border-rose-200";
       case "RETURN_INITIATED":
@@ -176,7 +208,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 pb-12 w-full min-w-0 no-scrollbar">
+    <div className="space-y-4 sm:space-y-5 pb-16 w-full min-w-0 no-scrollbar">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in border border-slate-700/50">
@@ -190,7 +222,7 @@ export default function OrdersPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <h1 className="font-fraunces text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
@@ -209,172 +241,266 @@ export default function OrdersPage() {
           <button
             onClick={() => fetchOrders(true)}
             disabled={refreshing || loading}
-            className="clay-button inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-orange-600 transition"
+            className="clay-button inline-flex items-center justify-center gap-1.5 h-10 min-h-[40px] px-3.5 text-xs font-bold text-slate-700 hover:text-orange-600 active:scale-95 transition cursor-pointer"
             title="Refresh Orders"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Summary Cards */}
+      {/* KPI Stats Summary Cards (Consistent min-height across 2-column mobile grid, interactive filters) */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
           {/* Total Orders */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-slate-500 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">Orders</span>
-              <ShoppingBag className="h-4 w-4 text-orange-500" />
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus("ALL");
+              setPage(1);
+            }}
+            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+              selectedStatus === "ALL"
+                ? "ring-2 ring-slate-900/30 border-slate-900 shadow-md"
+                : "hover:border-slate-300"
+            }`}
+          >
+            <div className="flex items-center justify-between text-slate-500 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Orders</span>
+              <ShoppingBag className="h-4 w-4 text-orange-500 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-[#2A241E]">
-              {summary.totalOrders}
-            </p>
-            <p className="text-[10px] text-slate-400 font-medium">All lifecycle orders</p>
-          </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+                {summary.totalOrders}
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">All lifecycle orders</p>
+            </div>
+          </button>
 
           {/* Total Revenue */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-emerald-600 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">Revenue</span>
-              <IndianRupee className="h-4 w-4 text-emerald-600" />
+          <div className="clay-card p-3.5 sm:p-4 min-h-[96px] flex flex-col justify-between">
+            <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Revenue</span>
+              <IndianRupee className="h-4 w-4 text-emerald-600 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-emerald-700 truncate">
-              ₹{summary.totalRevenue.toLocaleString("en-IN")}
-            </p>
-            <p className="text-[10px] text-slate-400 font-medium">Net non-cancelled</p>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 truncate">
+                ₹{summary.totalRevenue.toLocaleString("en-IN")}
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">Net non-cancelled</p>
+            </div>
           </div>
 
-          {/* Processing / Placed */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-amber-600 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">In Progress</span>
-              <Clock className="h-4 w-4 text-amber-500" />
+          {/* Processing / Placed (In Progress) */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus((prev) => (prev === "PROCESSING" ? "ALL" : "PROCESSING"));
+              setPage(1);
+            }}
+            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+              selectedStatus === "PROCESSING" || selectedStatus === "PLACED"
+                ? "ring-2 ring-amber-500/40 border-amber-500 shadow-md"
+                : "hover:border-amber-300"
+            }`}
+          >
+            <div className="flex items-center justify-between text-amber-600 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">In Progress</span>
+              <Clock className="h-4 w-4 text-amber-500 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-[#2A241E]">
-              {(summary.processingCount || 0) + (summary.placedCount || 0) + (summary.pendingCount || 0)}
-            </p>
-            <p className="text-[10px] text-amber-600 font-medium">Picking & packing</p>
-          </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+                {(summary.processingCount || 0) + (summary.placedCount || 0) + (summary.pendingCount || 0)}
+              </p>
+              <p className="text-[10px] text-amber-600 font-medium">Picking & packing</p>
+            </div>
+          </button>
 
-          {/* Shipped */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-indigo-600 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">In Transit</span>
-              <Truck className="h-4 w-4 text-indigo-500" />
+          {/* Shipped (In Transit - Blue) */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus((prev) => (prev === "SHIPPED" ? "ALL" : "SHIPPED"));
+              setPage(1);
+            }}
+            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+              selectedStatus === "SHIPPED" || selectedStatus === "OUT_FOR_DELIVERY"
+                ? "ring-2 ring-blue-500/40 border-blue-500 shadow-md"
+                : "hover:border-blue-300"
+            }`}
+          >
+            <div className="flex items-center justify-between text-blue-600 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">In Transit</span>
+              <Truck className="h-4 w-4 text-blue-500 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-[#2A241E]">
-              {(summary.shippedCount || 0) + (summary.packedCount || 0)}
-            </p>
-            <p className="text-[10px] text-indigo-600 font-medium">With couriers</p>
-          </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+                {(summary.shippedCount || 0) + (summary.packedCount || 0)}
+              </p>
+              <p className="text-[10px] text-blue-600 font-medium">With couriers</p>
+            </div>
+          </button>
 
           {/* Delivered */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-emerald-600 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">Delivered</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus((prev) => (prev === "DELIVERED" ? "ALL" : "DELIVERED"));
+              setPage(1);
+            }}
+            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+              selectedStatus === "DELIVERED"
+                ? "ring-2 ring-emerald-500/40 border-emerald-500 shadow-md"
+                : "hover:border-emerald-300"
+            }`}
+          >
+            <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Delivered</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-[#2A241E]">
-              {summary.deliveredCount}
-            </p>
-            <p className="text-[10px] text-emerald-600 font-medium">Successfully fulfilled</p>
-          </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+                {summary.deliveredCount}
+              </p>
+              <p className="text-[10px] text-emerald-600 font-medium">Successfully fulfilled</p>
+            </div>
+          </button>
 
           {/* Cancelled */}
-          <div className="clay-card p-3.5 sm:p-4 space-y-1">
-            <div className="flex items-center justify-between text-rose-600 text-xs">
-              <span className="font-bold text-[11px] uppercase tracking-wider font-mono-eyebrow">Cancelled</span>
-              <XCircle className="h-4 w-4 text-rose-500" />
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus((prev) => (prev === "CANCELLED" ? "ALL" : "CANCELLED"));
+              setPage(1);
+            }}
+            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+              selectedStatus === "CANCELLED"
+                ? "ring-2 ring-rose-500/40 border-rose-500 shadow-md"
+                : "hover:border-rose-300"
+            }`}
+          >
+            <div className="flex items-center justify-between text-rose-600 text-xs w-full">
+              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Cancelled</span>
+              <XCircle className="h-4 w-4 text-rose-500 shrink-0" />
             </div>
-            <p className="text-lg sm:text-xl font-black text-[#2A241E]">
-              {summary.cancelledCount}
-            </p>
-            <p className="text-[10px] text-rose-500 font-medium">Restocked inventory</p>
-          </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+                {summary.cancelledCount}
+              </p>
+              <p className="text-[10px] text-rose-500 font-medium">Restocked inventory</p>
+            </div>
+          </button>
         </div>
       )}
 
-      {/* Filter & Search Bar */}
-      <div className="clay-card p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      {/* =========================================================
+          STICKY SEARCH, FILTER & STATUS TABS TOOLBAR
+          Sticky at top: 0 with canvas backdrop blur on mobile
+          All touch targets meet 44px min height
+          ========================================================= */}
+      <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1.5 pb-2.5 md:static md:bg-transparent md:p-0 md:m-0 space-y-2">
+        <div className="clay-card p-2.5 sm:p-3.5 space-y-2.5 min-w-0 shadow-sm md:shadow-none">
+          {/* Row 1: Search Input with 44px min height & short placeholder to fit 375px without truncation */}
+          <div className="relative w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by Order ID, customer name, email, or phone..."
-              className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2 pl-10 pr-3 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+              placeholder="Search order ID, name, email..."
+              className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
+                title="Clear search"
+                aria-label="Clear search query"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Quick Dropdown Filters */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Row 2: Filter Dropdowns (Equal 2-col grid on mobile, 44px touch target) */}
+          <div className="grid grid-cols-2 gap-2 w-full">
             {/* Payment Status Dropdown */}
-            <select
-              value={paymentStatus}
-              onChange={(e) => {
-                setPaymentStatus(e.target.value as any);
-                setPage(1);
-              }}
-              className="rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20"
-            >
-              <option value="ALL">All Payments</option>
-              <option value="COMPLETED">Paid (Completed)</option>
-              <option value="PENDING">Pending Payment</option>
-              <option value="FAILED">Failed</option>
-              <option value="REFUNDED">Refunded</option>
-            </select>
+            <div className="relative">
+              <select
+                value={paymentStatus}
+                onChange={(e) => {
+                  setPaymentStatus(e.target.value as any);
+                  setPage(1);
+                }}
+                className="h-11 min-h-[44px] w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 sm:px-3 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 truncate cursor-pointer"
+              >
+                <option value="ALL">All Payments</option>
+                <option value="COMPLETED">Paid (Completed)</option>
+                <option value="PENDING">Pending Payment</option>
+                <option value="FAILED">Failed</option>
+                <option value="REFUNDED">Refunded</option>
+              </select>
+            </div>
 
             {/* Sort Options */}
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as AdminOrderSortEnum);
-                setPage(1);
-              }}
-              className="rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20"
-            >
-              <option value="createdAt_desc">Latest First</option>
-              <option value="createdAt_asc">Oldest First</option>
-              <option value="grandTotal_desc">Highest Value</option>
-              <option value="grandTotal_asc">Lowest Value</option>
-            </select>
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as AdminOrderSortEnum);
+                  setPage(1);
+                }}
+                className="h-11 min-h-[44px] w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 sm:px-3 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 truncate cursor-pointer"
+              >
+                <option value="createdAt_desc">Latest First</option>
+                <option value="createdAt_asc">Oldest First</option>
+                <option value="grandTotal_desc">Highest Value</option>
+                <option value="grandTotal_asc">Lowest Value</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* Status Horizontal Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 border-t border-slate-100 pt-2.5">
-          {[
-            { label: "All Orders", value: "ALL" },
-            { label: "Placed", value: "PLACED" },
-            { label: "Processing", value: "PROCESSING" },
-            { label: "Packed", value: "PACKED" },
-            { label: "Shipped", value: "SHIPPED" },
-            { label: "Out For Delivery", value: "OUT_FOR_DELIVERY" },
-            { label: "Delivered", value: "DELIVERED" },
-            { label: "Cancelled", value: "CANCELLED" },
-            { label: "Returns", value: "RETURNED" },
-          ].map((st) => (
-            <button
-              key={st.value}
-              onClick={() => {
-                setSelectedStatus(st.value as any);
-                setPage(1);
-              }}
-              className={`
-                px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition active:scale-95
-                ${selectedStatus === st.value
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
-                }
-              `}
-            >
-              {st.label}
-            </button>
-          ))}
+          {/* Row 3: Status Horizontal Scrollable Tabs with right-edge fade mask */}
+          <div className="relative pt-1 border-t border-slate-100">
+            {/* Subtle right fade gradient indicator for more tabs offscreen */}
+            <div className="pointer-events-none absolute right-0 top-1 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5 scroll-smooth">
+              {[
+                { label: "All Orders", value: "ALL" },
+                { label: "Placed", value: "PLACED" },
+                { label: "Processing", value: "PROCESSING" },
+                { label: "Packed", value: "PACKED" },
+                { label: "Shipped", value: "SHIPPED" },
+                { label: "Out For Delivery", value: "OUT_FOR_DELIVERY" },
+                { label: "Delivered", value: "DELIVERED" },
+                { label: "Cancelled", value: "CANCELLED" },
+                { label: "Returns", value: "RETURNED" },
+              ].map((st) => (
+                <button
+                  key={st.value}
+                  ref={(el) => {
+                    tabRefs.current[st.value] = el;
+                  }}
+                  onClick={() => {
+                    setSelectedStatus(st.value as any);
+                    setPage(1);
+                  }}
+                  className={`
+                    h-9 min-h-[36px] px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition active:scale-95 shrink-0 flex items-center justify-center cursor-pointer
+                    ${selectedStatus === st.value
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                    }
+                  `}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -387,7 +513,7 @@ export default function OrdersPage() {
           </div>
           <button
             onClick={() => fetchOrders()}
-            className="font-bold underline hover:text-rose-900"
+            className="font-bold underline hover:text-rose-900 cursor-pointer"
           >
             Retry
           </button>
@@ -399,37 +525,51 @@ export default function OrdersPage() {
         <TableListSkeleton rows={8} />
       ) : orders.length === 0 ? (
         /* Empty State */
-        <div className="clay-card p-12 text-center space-y-3">
+        <div className="clay-card p-8 sm:p-12 text-center space-y-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 mx-auto">
             <ShoppingBag className="h-7 w-7" />
           </div>
           <h3 className="font-fraunces text-base sm:text-lg font-bold text-slate-800">
-            No orders found
+            {selectedStatus !== "ALL"
+              ? `No ${selectedStatus.replace("_", " ").toLowerCase()} orders`
+              : debouncedSearch
+              ? `No orders matching "${debouncedSearch}"`
+              : "No orders found"}
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            No orders match your current filters. Try changing your search query, status tabs, or clearing filters.
+          <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+            {debouncedSearch
+              ? `No orders match "${debouncedSearch}". Try checking the spelling, resetting search, or clearing status tabs.`
+              : selectedStatus !== "ALL"
+              ? `There are currently no orders in "${selectedStatus.replace("_", " ").toLowerCase()}" milestone status.`
+              : paymentStatus !== "ALL"
+              ? `No orders found with payment status "${paymentStatus.toLowerCase()}".`
+              : "No customer orders have been placed in this store yet."}
           </p>
-          <button
-            onClick={() => {
-              setSearch("");
-              setSelectedStatus("ALL");
-              setPaymentStatus("ALL");
-              setPage(1);
-            }}
-            className="clay-button px-4 py-2 text-xs font-bold text-orange-600 hover:bg-orange-50 transition"
-          >
-            Clear All Filters
-          </button>
+          {(selectedStatus !== "ALL" || paymentStatus !== "ALL" || debouncedSearch) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setSelectedStatus("ALL");
+                setPaymentStatus("ALL");
+                setPage(1);
+              }}
+              className="clay-button h-11 min-h-[44px] px-5 text-xs font-bold text-orange-600 hover:bg-orange-50 active:scale-95 transition inline-flex items-center justify-center cursor-pointer"
+            >
+              Reset All Filters
+            </button>
+          )}
         </div>
       ) : (
         <>
-          {/* Mobile Order Cards (< md) */}
+          {/* Mobile Order Cards (< md) — Full responsive at 375px with 44px tap targets */}
           <div className="grid grid-cols-1 gap-3 md:hidden">
             {orders.map((ord) => (
-              <div key={ord.id} className="clay-card p-4 space-y-3 min-w-0">
+              <div key={ord.id} className="clay-card p-4 space-y-2.5 min-w-0">
+                {/* Top Row: Order ID, Date/Time, and Status Badge */}
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-black font-mono-eyebrow text-slate-900">
+                  <div className="min-w-0">
+                    <span className="text-xs font-black font-mono-eyebrow text-slate-900 block truncate">
                       {ord.orderNumber}
                     </span>
                     <p className="text-[11px] text-slate-400 mt-0.5">
@@ -442,8 +582,9 @@ export default function OrdersPage() {
                     </p>
                   </div>
 
+                  {/* Standardized Pill Sizing & Semantic Color */}
                   <span
-                    className={`px-2.5 py-0.5 text-[9.5px] font-bold rounded-full border ${getStatusBadge(
+                    className={`min-w-[84px] h-6 px-2.5 text-[10px] font-bold rounded-full border inline-flex items-center justify-center text-center uppercase tracking-wide shrink-0 ${getStatusBadge(
                       ord.orderStatus
                     )}`}
                   >
@@ -451,23 +592,25 @@ export default function OrdersPage() {
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-800">
+                {/* Customer Name & Product Line */}
+                <div>
+                  <p className="text-xs font-bold text-slate-800 truncate">
                     {ord.customer?.name || "Customer"}
                   </p>
-                  <p className="text-[11px] text-slate-500 line-clamp-1">
+                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                     {ord.itemsSummary || `${ord.itemsCount} item(s)`}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                {/* Payment Pill & Grand Total Price Row */}
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
                   <div>
                     <span
-                      className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded border uppercase ${getPaymentBadge(
+                      className={`inline-flex items-center h-5 px-2 text-[9px] font-bold rounded border uppercase ${getPaymentBadge(
                         ord.paymentStatus
                       )}`}
                     >
-                      {ord.paymentStatus} • {ord.paymentMethod || "COD"}
+                      {ord.paymentStatus} • {ord.paymentMethod || "UPI"}
                     </span>
                   </div>
                   <div className="text-right">
@@ -477,29 +620,31 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                {/* Mobile Quick Action Buttons */}
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                {/* Mobile Action Buttons (44px min touch target height) */}
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 text-xs">
                   <Link
                     href={`/admin/dashboard/orders/${ord.id}`}
-                    className="clay-button flex items-center justify-center gap-1 py-1.5 text-slate-700 font-bold hover:text-indigo-600"
+                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-indigo-600 active:scale-[0.98] transition cursor-pointer"
                   >
-                    <Eye className="h-3 w-3" />
+                    <Eye className="h-3.5 w-3.5 shrink-0" />
                     <span>View</span>
                   </Link>
 
                   <button
+                    type="button"
                     onClick={() => setActiveStatusOrder(ord)}
-                    className="clay-button flex items-center justify-center gap-1 py-1.5 text-slate-700 font-bold hover:text-orange-600"
+                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-orange-600 active:scale-[0.98] transition cursor-pointer"
                   >
-                    <Truck className="h-3 w-3" />
+                    <Truck className="h-3.5 w-3.5 shrink-0" />
                     <span>Status</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setActiveInvoiceOrderId(ord.id)}
-                    className="clay-button flex items-center justify-center gap-1 py-1.5 text-slate-700 font-bold hover:text-emerald-600"
+                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-emerald-600 active:scale-[0.98] transition cursor-pointer"
                   >
-                    <FileText className="h-3 w-3" />
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
                     <span>Invoice</span>
                   </button>
                 </div>
@@ -598,7 +743,7 @@ export default function OrdersPage() {
                       {/* Fulfillment Status */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span
-                          className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadge(
+                          className={`min-w-[80px] inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border text-center uppercase ${getStatusBadge(
                             ord.orderStatus
                           )}`}
                         >
@@ -612,7 +757,7 @@ export default function OrdersPage() {
                           {/* View Detail Link */}
                           <Link
                             href={`/admin/dashboard/orders/${ord.id}`}
-                            className="clay-button inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:text-indigo-600 transition"
+                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-indigo-600 transition cursor-pointer"
                             title="View Full Details"
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -620,8 +765,9 @@ export default function OrdersPage() {
 
                           {/* Quick Status Update */}
                           <button
+                            type="button"
                             onClick={() => setActiveStatusOrder(ord)}
-                            className="clay-button inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:text-orange-600 transition"
+                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-orange-600 transition cursor-pointer"
                             title="Update Status / Tracking"
                           >
                             <Truck className="h-3.5 w-3.5" />
@@ -629,8 +775,9 @@ export default function OrdersPage() {
 
                           {/* Print Invoice */}
                           <button
+                            type="button"
                             onClick={() => setActiveInvoiceOrderId(ord.id)}
-                            className="clay-button inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:text-emerald-600 transition"
+                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-emerald-600 transition cursor-pointer"
                             title="GST Tax Invoice"
                           >
                             <FileText className="h-3.5 w-3.5" />
@@ -638,8 +785,9 @@ export default function OrdersPage() {
 
                           {/* Packing Slip */}
                           <button
+                            type="button"
                             onClick={() => setActiveSlipOrderId(ord.id)}
-                            className="clay-button inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:text-purple-600 transition"
+                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-purple-600 transition cursor-pointer"
                             title="Warehouse Packing Slip"
                           >
                             <PackageCheck className="h-3.5 w-3.5" />
@@ -653,10 +801,10 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {/* Pagination Controls */}
-          {pagination.totalPages > 1 && (
+          {/* Pagination Controls (Optimized for Mobile 375px and Desktop) */}
+          {pagination.total > 0 && (
             <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="text-slate-500 text-[11px] font-medium">
+              <div className="text-slate-500 text-[11px] font-medium text-center sm:text-left">
                 Showing{" "}
                 <span className="font-bold text-slate-800">
                   {(pagination.page - 1) * pagination.limit + 1}
@@ -668,45 +816,63 @@ export default function OrdersPage() {
                 of <span className="font-bold text-slate-800">{pagination.total}</span> orders
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-2">
                 <select
                   value={limit}
                   onChange={(e) => {
                     setLimit(Number(e.target.value));
                     setPage(1);
                   }}
-                  className="rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2 py-1 text-xs font-bold text-slate-700 outline-none"
+                  className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer"
                 >
                   <option value="10">10 / page</option>
                   <option value="25">25 / page</option>
                   <option value="50">50 / page</option>
+                  <option value="100">100 / page</option>
                 </select>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
+                    type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={!pagination.hasPrevPage}
-                    className="clay-button h-8 w-8 inline-flex items-center justify-center text-slate-600 disabled:opacity-30"
+                    className="clay-button h-11 min-h-[44px] px-3.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 shrink-0" />
+                    <span className="hidden sm:inline">Prev</span>
                   </button>
 
-                  <span className="px-3 py-1 font-bold text-slate-800 text-xs">
-                    {pagination.page} / {pagination.totalPages}
+                  <span className="px-2.5 py-1 font-bold text-slate-800 text-xs whitespace-nowrap">
+                    Page {pagination.page} of {pagination.totalPages || 1}
                   </span>
 
                   <button
+                    type="button"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!pagination.hasNextPage}
-                    className="clay-button h-8 w-8 inline-flex items-center justify-center text-slate-600 disabled:opacity-30"
+                    className="clay-button h-11 min-h-[44px] px-3.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="h-4 w-4 shrink-0" />
                   </button>
                 </div>
               </div>
             </div>
           )}
         </>
+      )}
+
+      {/* Floating Scroll to Top Button (Mobile + Desktop after scroll threshold) */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed bottom-5 right-4 z-30 h-11 w-11 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer animate-fade-in"
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-4 w-4 stroke-[2.5]" />
+        </button>
       )}
 
       {/* Update Status Modal */}
