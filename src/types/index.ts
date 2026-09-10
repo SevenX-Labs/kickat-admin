@@ -51,3 +51,5 @@ export interface Customer {
 }
 
 export * from "./admin-testimonial";
+
+export * from "./admin-blog";
