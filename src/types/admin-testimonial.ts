@@ -1,33 +1,37 @@
 export interface Testimonial {
   id: string;
   name: string;
-  role: string | null;
-  avatarUrl: string | null;
+  role?: string | null;
   rating: number;
   content: string;
-  petName: string | null;
-  petType: string | null;
-  imageUrl: string | null;
+  petName?: string | null;
+  petType?: string | null;
   isActive: boolean;
   isFeatured: boolean;
   order: number;
-  deletedAt: string | null;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AdminTestimonialsSummary {
-  totalTestimonials: number;
-  activeCount: number;
-  featuredCount: number;
-  avgRating: number;
-}
-
-export interface AdminTestimonialsPagination {
+export interface TestimonialsMeta {
+  total: number;
   page: number;
   limit: number;
-  total: number;
   totalPages: number;
+}
+
+export interface TestimonialsStats {
+  total: number;
+  active: number;
+  featured: number;
+  averageRating: number;
+}
+
+export interface TestimonialsResponse {
+  testimonials: Testimonial[];
+  meta: TestimonialsMeta;
+  stats: TestimonialsStats;
 }
 
 export interface AdminTestimonialsQueryParams {
@@ -42,13 +46,11 @@ export interface AdminTestimonialsQueryParams {
 
 export interface CreateTestimonialInput {
   name: string;
-  role?: string;
-  avatarUrl?: string;
-  rating?: number;
   content: string;
+  rating?: number;
+  role?: string;
   petName?: string;
   petType?: string;
-  imageUrl?: string;
   isActive?: boolean;
   isFeatured?: boolean;
   order?: number;
@@ -56,23 +58,16 @@ export interface CreateTestimonialInput {
 
 export type UpdateTestimonialInput = Partial<CreateTestimonialInput>;
 
-export interface AdminTestimonialsResponse {
-  success: boolean;
-  data: {
-    testimonials: Testimonial[];
-    pagination: AdminTestimonialsPagination;
-    summary: AdminTestimonialsSummary;
-  };
-}
-
 export interface SingleTestimonialResponse {
-  success: boolean;
+  success?: boolean;
+  statusCode?: number;
   message?: string;
   data: Testimonial;
 }
 
 export interface DeleteTestimonialResponse {
-  success: boolean;
+  success?: boolean;
+  statusCode?: number;
   message: string;
 }
 

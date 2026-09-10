@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   MessageSquareQuote,
   Star,
@@ -14,10 +14,7 @@ import {
   Eye,
   EyeOff,
   X,
-  UploadCloud,
   CheckCircle2,
-  Image as ImageIcon,
-  ImageOff,
   Loader2,
   RefreshCw,
   ChevronLeft,
@@ -28,21 +25,13 @@ import {
 } from "lucide-react";
 import {
   Testimonial,
-  AdminTestimonialsSummary,
-  AdminTestimonialsPagination,
+  TestimonialsMeta,
+  TestimonialsStats,
   AdminTestimonialsQueryParams,
   CreateTestimonialInput,
   UpdateTestimonialInput,
 } from "@/types/admin-testimonial";
 import AdminTestimonialService from "@/services/adminTestimonialService";
-import AdminUploadService from "@/services/adminUploadService";
-
-type FormImageAction =
-  | { kind: "none" }
-  | { kind: "existing"; url: string }
-  | { kind: "new_file"; file: File; previewUrl: string; previousUrl?: string | null }
-  | { kind: "new_url"; url: string; previousUrl?: string | null }
-  | { kind: "removed" };
 
 const AVATAR_GRADIENTS = [
   "bg-gradient-to-br from-amber-400 to-orange-500",
@@ -85,15 +74,15 @@ function formatDate(dateStr: string): string {
 export default function TestimonialsPage() {
   // Data State
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [summary, setSummary] = useState<AdminTestimonialsSummary>({
-    totalTestimonials: 0,
-    activeCount: 0,
-    featuredCount: 0,
-    avgRating: 0,
+  const [stats, setStats] = useState<TestimonialsStats>({
+    total: 0,
+    active: 0,
+    featured: 0,
+    averageRating: 0,
   });
-  const [pagination, setPagination] = useState<AdminTestimonialsPagination>({
+  const [meta, setMeta] = useState<TestimonialsMeta>({
     page: 1,
-    limit: 9,
+    limit: 10,
     total: 0,
     totalPages: 1,
   });
@@ -110,7 +99,7 @@ export default function TestimonialsPage() {
   const [speciesFilter, setSpeciesFilter] = useState<string>("ALL");
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
   const [sortBy, setSortBy] = useState<
-    "order_asc" | "order_desc" | "createdAt_desc" | "createdAt_asc" | "rating_desc" | "rating_asc"
+    "order_asc" | "order_desc" | "createdAt_desc" | "createdAt_asc" | "rating_desc"
   >("order_asc");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -120,7 +109,7 @@ export default function TestimonialsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  // Form Fields
+  // Strictly Text-Based Form Fields
   const [formName, setFormName] = useState("");
   const [formRole, setFormRole] = useState("");
   const [formRating, setFormRating] = useState(5);
@@ -131,21 +120,22 @@ export default function TestimonialsPage() {
   const [formOrder, setFormOrder] = useState<number>(0);
   const [formIsActive, setFormIsActive] = useState<boolean>(true);
   const [formIsFeatured, setFormIsFeatured] = useState<boolean>(false);
-  const [formAvatarUrl, setFormAvatarUrl] = useState("");
-
-  // Image Upload State for Modal
-  const [formImageState, setFormImageState] = useState<FormImageAction>({ kind: "none" });
-  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [modalPreviewError, setModalPreviewError] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Delete Dialog State
   const [deleteTarget, setDeleteTarget] = useState<Testimonial | null>(null);
   const [deletePermanent, setDeletePermanent] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Reset scroll container to top on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      const scrollParent = document.querySelector(".overflow-y-auto");
+      if (scrollParent) {
+        scrollParent.scrollTop = 0;
+      }
+    }
+  }, []);
 
   // Toast Helper
   const showToast = useCallback((message: string, type: "success" | "error" | "info" = "success") => {
@@ -174,7 +164,7 @@ export default function TestimonialsPage() {
       try {
         const queryParams: AdminTestimonialsQueryParams = {
           page: currentPage,
-          limit: 9,
+          limit: 10,
           sort: sortBy,
         };
 
@@ -195,14 +185,12 @@ export default function TestimonialsPage() {
         }
 
         const res = await AdminTestimonialService.getTestimonials(queryParams);
-        if (res.success && res.data) {
-          setTestimonials(res.data.testimonials || []);
-          if (res.data.summary) {
-            setSummary(res.data.summary);
-          }
-          if (res.data.pagination) {
-            setPagination(res.data.pagination);
-          }
+        setTestimonials(res.testimonials || []);
+        if (res.stats) {
+          setStats(res.stats);
+        }
+        if (res.meta) {
+          setMeta(res.meta);
         }
       } catch (err: unknown) {
         const msg = AdminTestimonialService.extractErrorMessage(err, "Failed to load testimonials.");
@@ -264,12 +252,7 @@ export default function TestimonialsPage() {
     setFormOrder(0);
     setFormIsActive(true);
     setFormIsFeatured(false);
-    setFormAvatarUrl("");
-    setFormImageState({ kind: "none" });
-    setUploadMode("file");
     setModalError(null);
-    setImageUploadError(null);
-    setModalPreviewError(false);
     setIsModalOpen(true);
   };
 
@@ -296,66 +279,13 @@ export default function TestimonialsPage() {
     setFormOrder(item.order || 0);
     setFormIsActive(item.isActive ?? true);
     setFormIsFeatured(item.isFeatured ?? false);
-    setFormAvatarUrl(item.avatarUrl || "");
-
-    if (item.imageUrl) {
-      setFormImageState({ kind: "existing", url: item.imageUrl });
-    } else {
-      setFormImageState({ kind: "none" });
-    }
-
-    setUploadMode("file");
     setModalError(null);
-    setImageUploadError(null);
-    setModalPreviewError(false);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    if (isUploadingImage || submitting) return;
-    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageState.previewUrl);
-    }
+    if (submitting) return;
     setIsModalOpen(false);
-  };
-
-  // Image Upload Handlers
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setImageUploadError("Please select a valid image file (PNG, JPG, WebP).");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setImageUploadError("Image size must be 10MB or less.");
-      return;
-    }
-    setImageUploadError(null);
-    setModalPreviewError(false);
-    const previewUrl = URL.createObjectURL(file);
-    setFormImageState({
-      kind: "new_file",
-      file,
-      previewUrl,
-      previousUrl: formImageState.kind === "existing" ? formImageState.url : null,
-    });
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragOver(false);
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFileSelect(files[0]);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    if (formImageState.kind === "new_file" && formImageState.previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(formImageState.previewUrl);
-    }
-    setFormImageState({ kind: "removed" });
-    setImageUploadError(null);
-    setModalPreviewError(false);
   };
 
   // Toggle Featured (Pin to Homepage Hero Carousel)
@@ -365,9 +295,9 @@ export default function TestimonialsPage() {
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isFeatured: nextFeatured } : t))
       );
-      setSummary((prev) => ({
+      setStats((prev) => ({
         ...prev,
-        featuredCount: nextFeatured ? prev.featuredCount + 1 : Math.max(0, prev.featuredCount - 1),
+        featured: nextFeatured ? prev.featured + 1 : Math.max(0, prev.featured - 1),
       }));
 
       await AdminTestimonialService.updateTestimonial(item.id, {
@@ -394,9 +324,9 @@ export default function TestimonialsPage() {
       setTestimonials((prev) =>
         prev.map((t) => (t.id === item.id ? { ...t, isActive: nextActive } : t))
       );
-      setSummary((prev) => ({
+      setStats((prev) => ({
         ...prev,
-        activeCount: nextActive ? prev.activeCount + 1 : Math.max(0, prev.activeCount - 1),
+        active: nextActive ? prev.active + 1 : Math.max(0, prev.active - 1),
       }));
 
       await AdminTestimonialService.toggleStatus(item.id, nextActive);
@@ -431,7 +361,7 @@ export default function TestimonialsPage() {
     }
   };
 
-  // Submit Add / Edit Form
+  // Submit Add / Edit Form (Strictly Text-Based)
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) {
@@ -445,33 +375,10 @@ export default function TestimonialsPage() {
 
     setSubmitting(true);
     setModalError(null);
-    setImageUploadError(null);
-
-    let finalImageUrl: string | undefined = undefined;
-
-    if (formImageState.kind === "new_file") {
-      setIsUploadingImage(true);
-      try {
-        const uploadRes = await AdminUploadService.uploadImage(formImageState.file, "testimonials");
-        finalImageUrl = uploadRes.url;
-      } catch (uploadErr) {
-        setIsUploadingImage(false);
-        setSubmitting(false);
-        setImageUploadError("Failed to upload image. Please try again.");
-        return;
-      }
-      setIsUploadingImage(false);
-    } else if (formImageState.kind === "new_url") {
-      finalImageUrl = formImageState.url.trim() || undefined;
-    } else if (formImageState.kind === "existing") {
-      finalImageUrl = formImageState.url;
-    } else if (formImageState.kind === "removed") {
-      finalImageUrl = "";
-    }
 
     const finalPetType =
       formPetType === "Other"
-        ? formCustomPetType.trim() || "Pet"
+        ? formCustomPetType.trim() || undefined
         : formPetType;
 
     try {
@@ -483,15 +390,13 @@ export default function TestimonialsPage() {
           content: formContent.trim(),
           petName: formPetName.trim() || undefined,
           petType: finalPetType,
-          imageUrl: finalImageUrl,
-          avatarUrl: formAvatarUrl.trim() || undefined,
           isActive: formIsActive,
           isFeatured: formIsFeatured,
           order: Number(formOrder) || 0,
         };
 
         const res = await AdminTestimonialService.updateTestimonial(editingItem.id, updatePayload);
-        if (res.success) {
+        if (res.data || res.success) {
           showToast(`Updated testimonial from "${formName.trim()}"!`, "success");
           handleCloseModal();
           fetchTestimonials(true);
@@ -504,15 +409,13 @@ export default function TestimonialsPage() {
           content: formContent.trim(),
           petName: formPetName.trim() || undefined,
           petType: finalPetType,
-          imageUrl: finalImageUrl,
-          avatarUrl: formAvatarUrl.trim() || undefined,
           isActive: formIsActive,
           isFeatured: formIsFeatured,
           order: Number(formOrder) || 0,
         };
 
         const res = await AdminTestimonialService.createTestimonial(createPayload);
-        if (res.success) {
+        if (res.data || res.success) {
           showToast(`Created testimonial for "${formName.trim()}"!`, "success");
           handleCloseModal();
           fetchTestimonials(true);
@@ -528,11 +431,11 @@ export default function TestimonialsPage() {
 
   const isStoreCompletelyEmpty =
     !loading &&
-    summary.totalTestimonials === 0 &&
+    stats.total === 0 &&
     !hasActiveFilters;
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full min-w-0 pb-16 animate-fade-in">
+    <div className="space-y-5 sm:space-y-6 w-full min-w-0 pb-16 animate-fade-in">
       {/* Toast Notification */}
       {toast && (
         <div
@@ -554,18 +457,18 @@ export default function TestimonialsPage() {
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
-              Customer Testimonials
+              Homepage Testimonials
             </h1>
             {refreshing && (
               <RefreshCw className="h-4 w-4 text-[#FF7A00] animate-spin shrink-0" />
             )}
           </div>
           <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Curate, feature, and showcase verified pet parent stories on the homepage and catalog pages.
+            Curate and feature verified pet parent text reviews on the homepage carousel.
           </p>
         </div>
 
@@ -601,7 +504,7 @@ export default function TestimonialsPage() {
               No Customer Testimonials Yet
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              Curate and publish verified pet parent feedback, health transformations, and genuine stories to display on your storefront hero carousel.
+              Curate and publish genuine pet parent feedback, health transformations, and verified stories to display on your homepage carousel.
             </p>
           </div>
           <div className="pt-2">
@@ -616,7 +519,7 @@ export default function TestimonialsPage() {
         </div>
       ) : (
         <>
-          {/* 4 Stat KPI Cards (only rendered when testimonials exist or loading) */}
+          {/* 4 Stat KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
             <div className="clay-card p-3.5 sm:p-4 min-w-0">
               <div className="flex items-center justify-between gap-1 text-slate-500">
@@ -626,25 +529,40 @@ export default function TestimonialsPage() {
                 <MessageSquareQuote className="h-4 w-4 text-indigo-500 shrink-0" />
               </div>
               <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
-                {summary.totalTestimonials}
+                {stats.total}
               </p>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-                {summary.activeCount} verified active
+                {stats.active} active on storefront
               </p>
             </div>
 
             <div className="clay-card p-3.5 sm:p-4 min-w-0">
               <div className="flex items-center justify-between gap-1 text-slate-500">
                 <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Homepage Hero
+                  Homepage Featured
                 </span>
                 <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
               </div>
               <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1.5">
-                {summary.featuredCount}
+                {stats.featured}
               </p>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-                Pinned to homepage carousel
+                Pinned to homepage slider
+              </p>
+            </div>
+
+            <div className="clay-card p-3.5 sm:p-4 min-w-0">
+              <div className="flex items-center justify-between gap-1 text-slate-500">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+                  Active Status
+                </span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+              </div>
+              <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1.5">
+                {stats.active}
+              </p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 mt-0.5 truncate">
+                Live &amp; published
               </p>
             </div>
 
@@ -656,32 +574,17 @@ export default function TestimonialsPage() {
                 <Star className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />
               </div>
               <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">
-                {summary.avgRating > 0 ? summary.avgRating.toFixed(1) : "—"}{" "}
+                {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "—"}{" "}
                 <span className="text-xs text-slate-400 font-bold">/ 5.0</span>
               </p>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 mt-0.5 truncate">
-                {summary.totalTestimonials > 0 ? "Verified parent feedback" : "No ratings yet"}
-              </p>
-            </div>
-
-            <div className="clay-card p-3.5 sm:p-4 min-w-0">
-              <div className="flex items-center justify-between gap-1 text-slate-500">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Photo Attached
-                </span>
-                <ImageIcon className="h-4 w-4 text-emerald-500 shrink-0" />
-              </div>
-              <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1.5">
-                {testimonials.filter((t) => Boolean(t.imageUrl)).length}
-              </p>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">
-                Real pet photography
+                {stats.total > 0 ? "Verified feedback" : "No ratings yet"}
               </p>
             </div>
           </div>
 
-          {/* Search & Filter Bar */}
-          <div className="clay-card p-3 sm:p-4 space-y-3">
+          {/* Search & Filter Bar (Normal Document Flow) */}
+          <div className="clay-card p-3 sm:p-4 space-y-3 min-w-0">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
               {/* Search Input */}
               <div className="relative flex-1 min-w-0">
@@ -690,7 +593,7 @@ export default function TestimonialsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search parent name, role, pet, or story content..."
+                  placeholder="Search by parent name, role, pet, or story content..."
                   className="w-full pl-10 pr-8 py-2 text-xs rounded-xl bg-[#F8F5F1] border border-slate-200/70 text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                 />
                 {searchQuery && (
@@ -749,7 +652,6 @@ export default function TestimonialsPage() {
                   <option value="createdAt_desc">Newest First</option>
                   <option value="createdAt_asc">Oldest First</option>
                   <option value="rating_desc">Highest Rating</option>
-                  <option value="rating_asc">Lowest Rating</option>
                 </select>
               </div>
             </div>
@@ -832,7 +734,7 @@ export default function TestimonialsPage() {
                     <div className="h-3 w-4/5 bg-slate-200 rounded" />
                     <div className="h-3 w-2/3 bg-slate-200 rounded" />
                   </div>
-                  <div className="h-32 bg-slate-200 rounded-xl" />
+                  <div className="h-8 bg-slate-100 rounded-xl" />
                 </div>
               ))}
             </div>
@@ -859,7 +761,7 @@ export default function TestimonialsPage() {
               </div>
             </div>
           ) : (
-            /* Testimonials Cards Grid */
+            /* Testimonials Cards Grid (STRICTLY TEXT-BASED) */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5 w-full min-w-0">
               {displayedTestimonials.map((item) => (
                 <div
@@ -873,22 +775,13 @@ export default function TestimonialsPage() {
                     {/* Author row */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {item.avatarUrl ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img
-                            src={item.avatarUrl}
-                            alt={item.name}
-                            className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-xs"
-                          />
-                        ) : (
-                          <div
-                            className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl ${getAvatarGradient(
-                              item.name
-                            )} text-white text-xs font-black shadow-xs`}
-                          >
-                            {getInitials(item.name)}
-                          </div>
-                        )}
+                        <div
+                          className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl ${getAvatarGradient(
+                            item.name
+                          )} text-white text-xs font-black shadow-xs`}
+                        >
+                          {getInitials(item.name)}
+                        </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
@@ -944,28 +837,12 @@ export default function TestimonialsPage() {
                       </div>
                     </div>
 
-                    {/* Testimonial Story */}
+                    {/* Strictly Text Story Content */}
                     <div className="space-y-1.5 pt-1">
-                      <p className="text-xs text-slate-700 leading-relaxed font-normal line-clamp-4 italic">
+                      <p className="text-xs text-slate-700 leading-relaxed font-normal line-clamp-5 italic">
                         &ldquo;{item.content}&rdquo;
                       </p>
                     </div>
-
-                    {/* Pet Photo preview if available */}
-                    {item.imageUrl && (
-                      <div className="relative rounded-xl overflow-hidden border border-slate-200/80 aspect-[16/9] bg-slate-100">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.imageUrl}
-                          alt={`${item.petName || item.name} photo`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <ImageIcon className="h-3 w-3" />
-                          <span>{item.petName || "Pet Story"}</span>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Metadata tag: display order & date */}
                     <div className="clay-inset p-2.5 flex items-center justify-between text-[11px] text-slate-600">
@@ -989,7 +866,7 @@ export default function TestimonialsPage() {
                           ? "text-amber-700 hover:text-amber-800 bg-amber-50/70"
                           : "text-slate-600 hover:text-amber-600"
                       }`}
-                      title={item.isFeatured ? "Unpin from Homepage Hero" : "Pin to Homepage Hero Carousel"}
+                      title={item.isFeatured ? "Unpin from Homepage Hero" : "Pin to Homepage Hero Slider"}
                     >
                       <Star className={`h-3.5 w-3.5 ${item.isFeatured ? "fill-amber-500 text-amber-500" : ""}`} />
                       <span>{item.isFeatured ? "Pinned Hero" : "Pin to Home"}</span>
@@ -1002,7 +879,7 @@ export default function TestimonialsPage() {
                       className={`clay-button flex h-8 w-8 items-center justify-center rounded-xl transition cursor-pointer ${
                         item.isActive ? "text-emerald-600 hover:text-slate-500" : "text-slate-400 hover:text-emerald-600"
                       }`}
-                      title={item.isActive ? "Hide testimonial (Draft)" : "Publish live on website"}
+                      title={item.isActive ? "Hide testimonial (Draft)" : "Publish live on storefront"}
                     >
                       {item.isActive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                     </button>
@@ -1036,20 +913,20 @@ export default function TestimonialsPage() {
           )}
 
           {/* Pagination Controls */}
-          {pagination.totalPages > 1 && (
+          {meta.totalPages > 1 && (
             <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <p className="text-slate-500 font-medium">
-                Showing <strong className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</strong> to{" "}
+                Showing <strong className="text-slate-800">{(meta.page - 1) * meta.limit + 1}</strong> to{" "}
                 <strong className="text-slate-800">
-                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  {Math.min(meta.page * meta.limit, meta.total)}
                 </strong>{" "}
-                of <strong className="text-slate-800">{pagination.total}</strong> testimonials
+                of <strong className="text-slate-800">{meta.total}</strong> testimonials
               </p>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={pagination.page <= 1}
+                  disabled={meta.page <= 1}
                   className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
@@ -1057,12 +934,12 @@ export default function TestimonialsPage() {
                 </button>
 
                 <span className="px-3 py-1 text-slate-700 font-bold bg-[#F8F5F1] rounded-lg border border-slate-200/60 font-mono">
-                  {pagination.page} / {pagination.totalPages}
+                  {meta.page} / {meta.totalPages}
                 </span>
 
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
-                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
+                  disabled={meta.page >= meta.totalPages}
                   className="clay-button px-3 py-1.5 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
                 >
                   <span>Next</span>
@@ -1075,11 +952,11 @@ export default function TestimonialsPage() {
       )}
 
       {/* =========================================================
-          Add / Edit Testimonial Clay Modal
+          Add / Edit Testimonial Modal (STRICTLY TEXT-BASED)
           ========================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="clay-modal w-full max-w-xl p-5 sm:p-6 bg-white space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar animate-scale-in">
+          <div className="clay-modal w-full max-w-lg p-5 sm:p-6 bg-white space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar animate-scale-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -1091,14 +968,14 @@ export default function TestimonialsPage() {
                     {editingItem ? "Edit Testimonial" : "New Customer Story"}
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    Publish pet parent social proof to web store
+                    Publish pet parent text review to homepage slider
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleCloseModal}
-                disabled={submitting || isUploadingImage}
-                className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 disabled:opacity-50"
+                disabled={submitting}
+                className="clay-button flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 disabled:opacity-50 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1126,7 +1003,7 @@ export default function TestimonialsPage() {
                     maxLength={100}
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Ananya Deshmukh"
+                    placeholder="e.g. Sarah Jenkins"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
@@ -1140,7 +1017,7 @@ export default function TestimonialsPage() {
                     maxLength={100}
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value)}
-                    placeholder="e.g. Mumbai, Maharashtra"
+                    placeholder="e.g. Mumbai"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
@@ -1155,7 +1032,7 @@ export default function TestimonialsPage() {
                     maxLength={50}
                     value={formPetName}
                     onChange={(e) => setFormPetName(e.target.value)}
-                    placeholder="e.g. Bruno or Milo & Luna"
+                    placeholder="e.g. Luna"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
@@ -1176,7 +1053,7 @@ export default function TestimonialsPage() {
                     {formPetType === "Other" && (
                       <input
                         type="text"
-                        placeholder="e.g. Rabbit, Hamster"
+                        placeholder="e.g. Persian Cat"
                         maxLength={50}
                         value={formCustomPetType}
                         onChange={(e) => setFormCustomPetType(e.target.value)}
@@ -1229,205 +1106,22 @@ export default function TestimonialsPage() {
                   maxLength={1500}
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
-                  placeholder="Share the customer's detailed feedback, observed pet health benefits, and experience..."
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Kickat is the only brand my cat loves! Her coat has become noticeably shinier..."
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 leading-relaxed"
                 />
               </div>
 
-              {/* Pet Photo / Testimonial Image Section */}
-              <div className="space-y-2 pt-1 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="block text-slate-700 font-bold">
-                      Pet Photo or Review Image
-                    </label>
-                    <p className="text-[10.5px] text-slate-400">
-                      Upload pet photo or enter direct public image URL
-                    </p>
-                  </div>
-
-                  {/* Mode switcher */}
-                  <div className="flex items-center rounded-lg bg-[#F8F5F1] p-0.5 border border-slate-200/70">
-                    <button
-                      type="button"
-                      onClick={() => setUploadMode("file")}
-                      className={`px-2 py-0.5 text-[10.5px] font-bold rounded transition cursor-pointer ${
-                        uploadMode === "file"
-                          ? "bg-white text-orange-600 shadow-2xs"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      File
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUploadMode("url")}
-                      className={`px-2 py-0.5 text-[10.5px] font-bold rounded transition cursor-pointer ${
-                        uploadMode === "url"
-                          ? "bg-white text-orange-600 shadow-2xs"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      URL
-                    </button>
-                  </div>
-                </div>
-
-                {uploadMode === "file" ? (
-                  <>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/jpg"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFileSelect(file);
-                      }}
-                    />
-
-                    {/* Image Preview if present */}
-                    {(formImageState.kind === "existing" || formImageState.kind === "new_file") && (
-                      <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-orange-50/40 border border-orange-200/80">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-12 w-12 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
-                            {modalPreviewError ? (
-                              <ImageOff className="h-4 w-4 text-slate-400" />
-                            ) : (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={
-                                  formImageState.kind === "new_file"
-                                    ? formImageState.previewUrl
-                                    : formImageState.url
-                                }
-                                alt="Pet Preview"
-                                className="h-full w-full object-cover"
-                                onError={() => setModalPreviewError(true)}
-                              />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">
-                              {formImageState.kind === "new_file"
-                                ? formImageState.file.name
-                                : "Current Attached Photo"}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              {formImageState.kind === "new_file"
-                                ? `${(formImageState.file.size / 1024).toFixed(0)} KB ready to upload`
-                                : "Saved in Cloud Storage"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="px-2 py-1 text-[11px] font-bold text-orange-600 hover:bg-orange-100 rounded-lg transition cursor-pointer"
-                          >
-                            Replace
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleRemoveImage}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                            title="Remove image"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dropzone if no image */}
-                    {(formImageState.kind === "none" || formImageState.kind === "removed") && (
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDragOver(true);
-                        }}
-                        onDragLeave={() => setDragOver(false)}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`relative rounded-2xl border-2 border-dashed p-4 text-center transition-all select-none cursor-pointer group ${
-                          dragOver
-                            ? "!border-[#FF7A00] !bg-orange-50/60"
-                            : "border-slate-200 bg-[#F8F5F1] hover:border-[#FF7A00] hover:bg-orange-50/30"
-                        }`}
-                      >
-                        <div className="py-2 space-y-1 pointer-events-none">
-                          <div className="flex justify-center">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A00]">
-                              <UploadCloud className="h-5 w-5" />
-                            </div>
-                          </div>
-                          <div className="text-xs font-bold text-slate-800">
-                            Upload pet or customer photo
-                          </div>
-                          <p className="text-[10.5px] text-slate-400">
-                            PNG, JPG, WebP up to 10MB
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  /* Direct URL Input */
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      value={
-                        formImageState.kind === "new_url"
-                          ? formImageState.url
-                          : formImageState.kind === "existing"
-                          ? formImageState.url
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val.trim()) {
-                          setFormImageState({ kind: "new_url", url: val.trim() });
-                        } else {
-                          setFormImageState({ kind: "none" });
-                        }
-                      }}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
-                    />
-                  </div>
-                )}
-
-                {imageUploadError && (
-                  <p className="text-[11px] text-rose-600 font-semibold">{imageUploadError}</p>
-                )}
-              </div>
-
-              {/* Order & Avatar URL */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
-                <div className="space-y-1">
-                  <label className="block text-slate-700 font-bold">Display Order</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formOrder}
-                    onChange={(e) => setFormOrder(parseInt(e.target.value) || 0)}
-                    placeholder="0 = auto append at end"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-slate-700 font-bold">Avatar URL (Optional)</label>
-                  <input
-                    type="url"
-                    value={formAvatarUrl}
-                    onChange={(e) => setFormAvatarUrl(e.target.value)}
-                    placeholder="https://... (or leave blank for initials)"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
-                  />
-                </div>
+              {/* Display Order */}
+              <div className="space-y-1 pt-1">
+                <label className="block text-slate-700 font-bold">Display Order</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={formOrder}
+                  onChange={(e) => setFormOrder(parseInt(e.target.value) || 0)}
+                  placeholder="0 = auto append at end"
+                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none"
+                />
               </div>
 
               {/* Homepage Pin & Active Toggle */}
@@ -1437,10 +1131,10 @@ export default function TestimonialsPage() {
                   <div>
                     <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
                       <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                      Pin to Homepage Hero Carousel
+                      Pin to Homepage Hero Slider
                     </p>
                     <p className="text-[10.5px] text-slate-500">
-                      Showcase this story prominently in the homepage testimonials slider
+                      Showcase this story prominently on the public web store
                     </p>
                   </div>
                   <input
@@ -1459,7 +1153,7 @@ export default function TestimonialsPage() {
                       Publish Live on Storefront
                     </p>
                     <p className="text-[10.5px] text-slate-500">
-                      Visible to pet parents across the storefront
+                      Visible to customers across the web store
                     </p>
                   </div>
                   <input
@@ -1476,20 +1170,20 @@ export default function TestimonialsPage() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  disabled={submitting || isUploadingImage}
+                  disabled={submitting}
                   className="clay-button px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || isUploadingImage}
+                  disabled={submitting}
                   className="clay-btn-orange inline-flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {submitting || isUploadingImage ? (
+                  {submitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>{isUploadingImage ? "Uploading Image..." : "Saving..."}</span>
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>
@@ -1525,7 +1219,7 @@ export default function TestimonialsPage() {
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Are you sure you want to remove this testimonial? It will no longer be visible to customers on the homepage.
+              Are you sure you want to remove this testimonial? It will no longer be displayed on the homepage.
             </p>
 
             <label className="clay-inset p-2.5 flex items-center justify-between cursor-pointer">

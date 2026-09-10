@@ -3,12 +3,14 @@ import { AxiosError } from "axios";
 import { apiClient } from "./api";
 import {
   AdminTestimonialsQueryParams,
-  AdminTestimonialsResponse,
   CreateTestimonialInput,
   DeleteTestimonialResponse,
   ReorderTestimonialItem,
   SingleTestimonialResponse,
   Testimonial,
+  TestimonialsMeta,
+  TestimonialsResponse,
+  TestimonialsStats,
   UpdateTestimonialInput,
 } from "../types/admin-testimonial";
 
@@ -19,12 +21,31 @@ export const AdminTestimonialService = {
    */
   async getTestimonials(
     params?: AdminTestimonialsQueryParams
-  ): Promise<AdminTestimonialsResponse> {
-    const res = await apiClient.get<AdminTestimonialsResponse>(
-      "/admin/testimonials",
-      { params }
-    );
-    return res.data;
+  ): Promise<TestimonialsResponse> {
+    const res = await apiClient.get<any>("/admin/testimonials", { params });
+    const rootData = res.data?.data || res.data || {};
+    const testimonials: Testimonial[] = Array.isArray(rootData.testimonials)
+      ? rootData.testimonials
+      : [];
+
+    const meta: TestimonialsMeta = {
+      total: rootData.meta?.total ?? rootData.pagination?.total ?? testimonials.length,
+      page: rootData.meta?.page ?? rootData.pagination?.page ?? params?.page ?? 1,
+      limit: rootData.meta?.limit ?? rootData.pagination?.limit ?? params?.limit ?? 10,
+      totalPages:
+        rootData.meta?.totalPages ??
+        rootData.pagination?.totalPages ??
+        Math.max(1, Math.ceil((rootData.pagination?.total ?? testimonials.length) / (params?.limit ?? 10))),
+    };
+
+    const stats: TestimonialsStats = {
+      total: rootData.stats?.total ?? rootData.summary?.totalTestimonials ?? testimonials.length,
+      active: rootData.stats?.active ?? rootData.summary?.activeCount ?? 0,
+      featured: rootData.stats?.featured ?? rootData.summary?.featuredCount ?? 0,
+      averageRating: rootData.stats?.averageRating ?? rootData.summary?.avgRating ?? 0,
+    };
+
+    return { testimonials, meta, stats };
   },
 
   /**
@@ -39,7 +60,7 @@ export const AdminTestimonialService = {
   },
 
   /**
-   * 3. Create a New Homepage Testimonial
+   * 3. Create a New Homepage Testimonial (Strictly Text-Based)
    * POST /api/v1/admin/testimonials
    */
   async createTestimonial(
@@ -53,7 +74,7 @@ export const AdminTestimonialService = {
   },
 
   /**
-   * 4. Update Testimonial Details
+   * 4. Update Testimonial Details (Strictly Text-Based)
    * PATCH /api/v1/admin/testimonials/:id
    */
   async updateTestimonial(
@@ -68,7 +89,7 @@ export const AdminTestimonialService = {
   },
 
   /**
-   * 5. Toggle Active / Live Status
+   * 5. Toggle Active / Homepage Visibility Status
    * PATCH /api/v1/admin/testimonials/:id/status
    */
   async toggleStatus(
@@ -83,13 +104,13 @@ export const AdminTestimonialService = {
   },
 
   /**
-   * 6. Reorder Testimonials
+   * 6. Batch Reorder Display Sequence
    * PATCH /api/v1/admin/testimonials/reorder
    */
   async reorderTestimonials(
     items: ReorderTestimonialItem[]
-  ): Promise<{ success: boolean; message: string }> {
-    const res = await apiClient.patch<{ success: boolean; message: string }>(
+  ): Promise<{ success?: boolean; message: string }> {
+    const res = await apiClient.patch<{ success?: boolean; message: string }>(
       "/admin/testimonials/reorder",
       { items }
     );
