@@ -1,24 +1,22 @@
-import { apiClient } from "./api";
+import { AdminOrderService } from "./adminOrderService";
+import {
+  AdminOrdersQuery,
+  UpdateOrderStatusDto,
+  AdminCancelOrderDto,
+  AdminRefundOrderDto,
+} from "@/types/admin-order";
 
 export const ordersService = {
-  list: async (params?: Record<string, any>) => {
-    const res = await apiClient.get("/admin/orders", { params });
-    return res.data;
-  },
-  getById: async (id: string) => {
-    const res = await apiClient.get(`/admin/orders/${id}`);
-    return res.data;
-  },
-  updateStatus: async (id: string, status: string, notes?: string) => {
-    const res = await apiClient.patch(`/admin/orders/${id}/status`, { status, notes });
-    return res.data;
-  },
-  cancel: async (id: string, reason: string) => {
-    const res = await apiClient.post(`/admin/orders/${id}/cancel`, { reason });
-    return res.data;
-  },
-  getInvoice: async (id: string) => {
-    const res = await apiClient.get(`/admin/orders/${id}/invoice`);
-    return res.data;
-  },
+  list: (params?: AdminOrdersQuery) => AdminOrderService.getOrders(params),
+  getById: (id: string) => AdminOrderService.getOrderById(id),
+  updateStatus: (id: string, payload: UpdateOrderStatusDto) =>
+    AdminOrderService.updateStatus(id, payload),
+  cancel: (id: string, payload: AdminCancelOrderDto) =>
+    AdminOrderService.cancelOrder(id, payload),
+  processRefund: (id: string, payload: AdminRefundOrderDto) =>
+    AdminOrderService.processRefund(id, payload),
+  getInvoice: (id: string) => AdminOrderService.getInvoice(id),
+  getPackingSlip: (id: string) => AdminOrderService.getPackingSlip(id),
 };
+
+export default ordersService;
