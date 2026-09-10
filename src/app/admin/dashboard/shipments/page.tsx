@@ -32,6 +32,8 @@ import { TableListSkeleton } from "@/components/ui/Skeleton";
 import ShipmentTrackingModal from "@/components/shipments/ShipmentTrackingModal";
 import AssignCourierModal from "@/components/shipments/AssignCourierModal";
 import UpdateShipmentStatusModal from "@/components/shipments/UpdateShipmentStatusModal";
+import ShipmentFilterSheet from "@/components/shipments/ShipmentFilterSheet";
+import ShipmentCourierDropdown from "@/components/shipments/ShipmentCourierDropdown";
 
 const COURIER_FILTER_OPTIONS = [
   { value: "ALL", label: "All Couriers" },
@@ -81,6 +83,12 @@ export default function ShipmentsPage() {
 
   const [updateStatusShipment, setUpdateStatusShipment] = useState<AdminShipmentItem | null>(null);
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
+
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+
+  const activeFiltersCount =
+    (statusFilter !== "ALL" ? 1 : 0) +
+    (courierFilter !== "ALL" ? 1 : 0);
 
   // Debounce search
   useEffect(() => {
@@ -364,96 +372,137 @@ export default function ShipmentsPage() {
         </button>
       </div>
 
-      {/* Sticky Search & Filter Toolbar */}
-      <div className="clay-card p-2.5 sm:p-3.5 space-y-2.5 shadow-sm">
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search AWB, order #, customer, city..."
-              className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
-                title="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+      {/* =========================================================
+          STICKY COMPACT SEARCH & FILTER TOOLBAR (375px Mobile Optimized)
+          - Search bar (majority width)
+          - Filter Icon Button (with active count badge, opens Filter Sheet)
+          - Custom Courier Dropdown (custom styled, NO native select)
+          - Active Filter Removable Chips (compact, only when filters active)
+          - NO permanent scrollable pill row taking up screen space!
+          ========================================================= */}
+      <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1.5 pb-2.5 md:static md:bg-transparent md:p-0 md:m-0 space-y-2">
+        <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0 shadow-sm md:shadow-none">
+          {/* Main Controls Row: Search + Filter Button + Custom Courier Dropdown */}
+          <div className="flex items-center gap-2 w-full">
+            {/* Search Input (44px min height & short placeholder) */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search AWB, order #, customer, city..."
+                className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
+                  title="Clear search"
+                  aria-label="Clear search query"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-          {/* Courier Filter Select */}
-          <div className="w-36 sm:w-44 shrink-0">
-            <select
-              value={courierFilter}
-              onChange={(e) => {
-                setCourierFilter(e.target.value);
-                setPage(1);
-              }}
-              className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-            >
-              {COURIER_FILTER_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Reset button if filtered */}
-          {(statusFilter !== "ALL" || courierFilter !== "ALL" || search) && (
+            {/* Filter Icon Button (Opens Filter Bottom Sheet) */}
             <button
               type="button"
-              onClick={() => {
-                setStatusFilter("ALL");
-                setCourierFilter("ALL");
-                setSearch("");
-                setPage(1);
-              }}
-              className="h-11 min-h-[44px] px-3 rounded-xl border border-slate-200 text-slate-600 hover:text-orange-600 text-xs font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+              onClick={() => setIsFilterSheetOpen(true)}
+              className={`h-11 min-h-[44px] px-3 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition active:scale-95 cursor-pointer shrink-0 ${
+                activeFiltersCount > 0
+                  ? "bg-orange-50/90 border-orange-300 text-orange-950 ring-1 ring-orange-200/60 shadow-xs"
+                  : "bg-white border-slate-200/80 text-slate-700 hover:bg-[#FAF7F2]"
+              }`}
+              title="Filter Shipments"
+              aria-label="Filter Shipments"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Reset</span>
+              <SlidersHorizontal
+                className={`h-4 w-4 ${activeFiltersCount > 0 ? "text-orange-600" : "text-slate-500"}`}
+              />
+              <span className="hidden sm:inline">Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="h-5 min-w-[20px] px-1 rounded-full bg-orange-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                  {activeFiltersCount}
+                </span>
+              )}
             </button>
-          )}
-        </div>
 
-        {/* Milestone Quick Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
-          {[
-            { value: "ALL", label: "All" },
-            { value: "PACKED", label: "Pending Pickup" },
-            { value: "SHIPPED", label: "Shipped" },
-            { value: "OUT_FOR_DELIVERY", label: "Out For Delivery" },
-            { value: "DELIVERED", label: "Delivered" },
-            { value: "RETURN_INITIATED", label: "Returns / RTO" },
-          ].map((st) => {
-            const isSelected = statusFilter === st.value;
-            return (
-              <button
-                key={st.value}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(st.value as any);
+            {/* Custom Courier Dropdown (Zero native select element) */}
+            <div className="shrink-0 w-32 sm:w-40">
+              <ShipmentCourierDropdown
+                value={courierFilter}
+                onChange={(val) => {
+                  setCourierFilter(val);
                   setPage(1);
                 }}
-                className={`h-8 min-h-[32px] px-3 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1 ${
-                  isSelected
-                    ? "bg-[#2A241E] text-white shadow-xs"
-                    : "bg-[#F8F5F1] text-slate-600 hover:bg-slate-200/70 border border-slate-200/70"
-                }`}
+              />
+            </div>
+          </div>
+
+          {/* Active Removable Filter Chips (Only rendered when filters are active) */}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-slate-100/90">
+              <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow mr-0.5">
+                Active:
+              </span>
+
+              {statusFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 h-6 px-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[11px] font-bold">
+                  <span>
+                    {statusFilter === "PACKED"
+                      ? "Pending Pickup"
+                      : statusFilter === "RETURN_INITIATED"
+                      ? "Returns / RTO"
+                      : statusFilter.replace(/_/g, " ")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter("ALL");
+                      setPage(1);
+                    }}
+                    className="hover:bg-orange-200/70 rounded p-0.5 transition cursor-pointer"
+                    title="Remove status filter"
+                  >
+                    <X className="h-2.5 w-2.5 text-orange-700" />
+                  </button>
+                </span>
+              )}
+
+              {courierFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 h-6 px-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[11px] font-bold">
+                  <span>{courierFilter}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCourierFilter("ALL");
+                      setPage(1);
+                    }}
+                    className="hover:bg-orange-200/70 rounded p-0.5 transition cursor-pointer"
+                    title="Remove courier filter"
+                  >
+                    <X className="h-2.5 w-2.5 text-orange-700" />
+                  </button>
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("ALL");
+                  setCourierFilter("ALL");
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="text-[11px] font-bold text-slate-500 hover:text-orange-600 underline ml-1 cursor-pointer transition"
               >
-                <span>{st.label}</span>
+                Clear all
               </button>
-            );
-          })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -823,6 +872,28 @@ export default function ShipmentsPage() {
           setUpdateStatusShipment(null);
         }}
         onSuccess={() => fetchShipments()}
+      />
+
+      <ShipmentFilterSheet
+        isOpen={isFilterSheetOpen}
+        onClose={() => setIsFilterSheetOpen(false)}
+        status={statusFilter}
+        onStatusChange={(st) => {
+          setStatusFilter(st);
+          setPage(1);
+        }}
+        courier={courierFilter}
+        onCourierChange={(c) => {
+          setCourierFilter(c);
+          setPage(1);
+        }}
+        onApply={() => fetchShipments()}
+        onClearAll={() => {
+          setStatusFilter("ALL");
+          setCourierFilter("ALL");
+          setPage(1);
+        }}
+        activeCount={activeFiltersCount}
       />
     </div>
   );
