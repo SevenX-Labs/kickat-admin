@@ -1,254 +1,768 @@
 "use client";
 
-import { 
-  Truck, 
-  Search, 
-  MapPin, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Truck,
+  Search,
+  MapPin,
+  Calendar,
+  CheckCircle2,
+  Clock,
   ExternalLink,
   PackageCheck,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  SlidersHorizontal,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Plus,
+  Package,
+  ArrowUpDown,
+  Navigation,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import {
+  AdminShipmentItem,
+  AdminShipmentSummary,
+  AdminShipmentPagination,
+  ShipmentStatus,
+} from "@/types/admin-shipping";
+import { AdminShippingService } from "@/services/adminShippingService";
+import { TableListSkeleton } from "@/components/ui/Skeleton";
+import ShipmentTrackingModal from "@/components/shipments/ShipmentTrackingModal";
+import AssignCourierModal from "@/components/shipments/AssignCourierModal";
+import UpdateShipmentStatusModal from "@/components/shipments/UpdateShipmentStatusModal";
 
-interface ShipmentItem {
-  id: string;
-  trackingNumber: string;
-  orderNumber: string;
-  courier: string;
-  destination: string;
-  customerName: string;
-  dispatchDate: string;
-  estDelivery: string;
-  status: "OUT_FOR_DELIVERY" | "IN_TRANSIT" | "DELIVERED" | "EXCEPTION";
-}
-
-const SHIPMENTS_DATA: ShipmentItem[] = [
-  {
-    id: "shp-1",
-    trackingNumber: "BD-889410291",
-    orderNumber: "ORD-94820",
-    courier: "Blue Dart Air",
-    destination: "Mumbai, Maharashtra",
-    customerName: "Rahul Verma",
-    dispatchDate: "Today, 08:30 AM",
-    estDelivery: "Tomorrow, by 2 PM",
-    status: "IN_TRANSIT"
-  },
-  {
-    id: "shp-2",
-    trackingNumber: "DEL-441209581",
-    orderNumber: "ORD-94819",
-    courier: "Delhivery Surface",
-    destination: "Bengaluru, Karnataka",
-    customerName: "Ananya Desai",
-    dispatchDate: "16 May 2026",
-    estDelivery: "Today, by 6 PM",
-    status: "OUT_FOR_DELIVERY"
-  },
-  {
-    id: "shp-3",
-    trackingNumber: "SHD-190284712",
-    orderNumber: "ORD-94816",
-    courier: "Shadowfax Express",
-    destination: "Delhi NCR",
-    customerName: "Rohan Khanna",
-    dispatchDate: "15 May 2026",
-    estDelivery: "Delivered at 11:30 AM",
-    status: "DELIVERED"
-  },
-  {
-    id: "shp-4",
-    trackingNumber: "DTDC-992014728",
-    orderNumber: "ORD-94814",
-    courier: "DTDC Prime",
-    destination: "Pune, Maharashtra",
-    customerName: "Deepak Joshi",
-    dispatchDate: "14 May 2026",
-    estDelivery: "Address Verification Needed",
-    status: "EXCEPTION"
-  },
+const COURIER_FILTER_OPTIONS = [
+  { value: "ALL", label: "All Couriers" },
+  { value: "Delhivery", label: "Delhivery" },
+  { value: "Blue Dart", label: "Blue Dart" },
+  { value: "Shiprocket", label: "Shiprocket" },
+  { value: "Shadowfax", label: "Shadowfax" },
+  { value: "DTDC", label: "DTDC" },
+  { value: "Xpressbees", label: "Xpressbees" },
 ];
 
 export default function ShipmentsPage() {
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-
-  const filtered = SHIPMENTS_DATA.filter((s) => {
-    const matchesSearch = s.trackingNumber.toLowerCase().includes(search.toLowerCase()) || 
-                          s.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-                          s.destination.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = filterStatus === "ALL" || s.status === filterStatus;
-    return matchesSearch && matchesStatus;
+  // Data States
+  const [shipments, setShipments] = useState<AdminShipmentItem[]>([]);
+  const [summary, setSummary] = useState<AdminShipmentSummary>({
+    totalShipments: 0,
+    pendingPickup: 0,
+    shippedCount: 0,
+    outForDeliveryCount: 0,
+    deliveredCount: 0,
+    rtoCount: 0,
+  });
+  const [pagination, setPagination] = useState<AdminShipmentPagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
   });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | ShipmentStatus>("ALL");
+  const [courierFilter, setCourierFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  // Modals
+  const [trackingShipmentId, setTrackingShipmentId] = useState<string | null>(null);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+
+  const [assignShipment, setAssignShipment] = useState<AdminShipmentItem | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+  const [updateStatusShipment, setUpdateStatusShipment] = useState<AdminShipmentItem | null>(null);
+  const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch Shipments
+  const fetchShipments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await AdminShippingService.getShipments({
+        page,
+        limit,
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        courier: courierFilter !== "ALL" ? courierFilter : undefined,
+        search: debouncedSearch.trim() || undefined,
+      });
+
+      if (res.success && res.data) {
+        setShipments(res.data.shipments || []);
+        setPagination(res.data.pagination);
+        if (res.data.summary) {
+          setSummary(res.data.summary);
+        }
+      } else {
+        setError("Failed to load shipments.");
+      }
+    } catch (err) {
+      setError(
+        AdminShippingService.extractErrorMessage(
+          err,
+          "Failed to fetch shipments. Please verify backend connection."
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, statusFilter, courierFilter, debouncedSearch]);
+
+  useEffect(() => {
+    fetchShipments();
+  }, [fetchShipments]);
+
+  const handleOpenTracking = (id: string) => {
+    setTrackingShipmentId(id);
+    setIsTrackingModalOpen(true);
+  };
+
+  const handleOpenAssign = (shp: AdminShipmentItem) => {
+    setAssignShipment(shp);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleOpenUpdateStatus = (shp: AdminShipmentItem) => {
+    setUpdateStatusShipment(shp);
+    setIsUpdateStatusModalOpen(true);
+  };
+
+  const getStatusBadge = (status: ShipmentStatus) => {
+    switch (status) {
+      case "DELIVERED":
+        return "bg-emerald-50 text-emerald-800 border-emerald-200";
+      case "OUT_FOR_DELIVERY":
+        return "bg-amber-50 text-amber-900 border-amber-200";
+      case "SHIPPED":
+        return "bg-indigo-50 text-indigo-900 border-indigo-200";
+      case "PACKED":
+        return "bg-blue-50 text-blue-900 border-blue-200";
+      case "PROCESSING":
+      case "PLACED":
+        return "bg-orange-50 text-orange-900 border-orange-200";
+      case "RETURN_INITIATED":
+      case "RETURNED":
+      case "CANCELLED":
+        return "bg-rose-50 text-rose-800 border-rose-200";
+      default:
+        return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-5 pb-8 w-full min-w-0 no-scrollbar">
-      
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
-        <div className="min-w-0">
-          <h1 className="font-fraunces text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-            Shipments & Logistics
-          </h1>
-          <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Monitor pet supplies fulfillment, courier partner API handoffs, and live dispatch tracking.
+    <div className="space-y-4 sm:space-y-6 pb-12 w-full min-w-0">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-fraunces text-xl sm:text-2xl font-bold text-[#2A241E] tracking-tight">
+              Shipping & Logistics
+            </h1>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 font-mono">
+              Live Fulfillment
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time courier assignments, AWB tracking, delivery milestones & SLA tracking
           </p>
         </div>
 
-        <button className="clay-button inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition self-start sm:self-auto">
-          <Truck className="h-3.5 w-3.5 text-indigo-600" />
-          <span>Dispatch Waybills</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchShipments()}
+            disabled={loading}
+            className="h-11 min-h-[44px] px-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] text-xs font-bold text-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+            title="Refresh Shipments"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-orange-500" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5 Interactive Semantic Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 w-full min-w-0">
+        {/* Total Shipments */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter("ALL");
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "ALL" ? "ring-2 ring-slate-700 border-slate-700 shadow-md" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+              All Shipments
+            </span>
+            <Package className="h-4 w-4 text-slate-400 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {summary.totalShipments}
+            </p>
+            <p className="text-[10px] text-slate-500 font-medium truncate">Total recorded</p>
+          </div>
+        </button>
+
+        {/* Pending Pickup / Packed */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter((prev) => (prev === "PACKED" ? "ALL" : "PACKED"));
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "PACKED" ? "ring-2 ring-orange-500 border-orange-500 shadow-md" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-orange-600 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+              Pending Pickup
+            </span>
+            <Clock className="h-4 w-4 text-orange-500 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {summary.pendingPickup}
+            </p>
+            <p className="text-[10px] text-orange-600 font-medium truncate">Ready for courier</p>
+          </div>
+        </button>
+
+        {/* In Transit / Shipped */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter((prev) => (prev === "SHIPPED" ? "ALL" : "SHIPPED"));
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "SHIPPED" ? "ring-2 ring-indigo-500 border-indigo-500 shadow-md" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-indigo-600 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+              In Transit
+            </span>
+            <Truck className="h-4 w-4 text-indigo-500 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {summary.shippedCount}
+            </p>
+            <p className="text-[10px] text-indigo-600 font-medium truncate">Handed to courier</p>
+          </div>
+        </button>
+
+        {/* Out For Delivery */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter((prev) => (prev === "OUT_FOR_DELIVERY" ? "ALL" : "OUT_FOR_DELIVERY"));
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "OUT_FOR_DELIVERY" ? "ring-2 ring-amber-500 border-amber-500 shadow-md" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-600 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+              Out for Delivery
+            </span>
+            <Navigation className="h-4 w-4 text-amber-500 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {summary.outForDeliveryCount}
+            </p>
+            <p className="text-[10px] text-amber-600 font-medium truncate">Reaching today</p>
+          </div>
+        </button>
+
+        {/* Delivered */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter((prev) => (prev === "DELIVERED" ? "ALL" : "DELIVERED"));
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
+            statusFilter === "DELIVERED" ? "ring-2 ring-emerald-500 border-emerald-500 shadow-md" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+              Delivered
+            </span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {summary.deliveredCount}
+            </p>
+            <p className="text-[10px] text-emerald-600 font-medium truncate">
+              {summary.rtoCount > 0 ? `${summary.rtoCount} RTO` : "100% SLA"}
+            </p>
+          </div>
         </button>
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow truncate block">Active Dispatches</span>
-          <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1">64</p>
-          <p className="text-[10px] font-semibold text-[#20BF6B] mt-0.5 truncate">Across 14 cities</p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow truncate block">Out for Delivery</span>
-          <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1">22</p>
-          <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">Reaching today</p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow truncate block">Delivered Today</span>
-          <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">45</p>
-          <p className="text-[10px] font-semibold text-emerald-600 mt-0.5 truncate">99.4% SLA</p>
-        </div>
-
-        <div className="clay-card p-3.5 sm:p-4 min-w-0">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow truncate block">Transit Issues</span>
-          <p className="text-xl sm:text-2xl font-black text-rose-600 mt-1">2</p>
-          <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">Requires support</p>
-        </div>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div className="clay-card p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tracking number, order ID, city..."
-            className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 py-2 pl-10 pr-3 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          {["ALL", "OUT_FOR_DELIVERY", "IN_TRANSIT", "DELIVERED", "EXCEPTION"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`
-                px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition active:scale-95
-                ${filterStatus === st 
-                  ? "bg-slate-900 text-white shadow-sm" 
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
-                }
-              `}
-            >
-              {st === "OUT_FOR_DELIVERY" ? "Out for Delivery" : st === "IN_TRANSIT" ? "In Transit" : st === "EXCEPTION" ? "Alerts" : st === "DELIVERED" ? "Delivered" : "All Shipments"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile Shipment Cards */}
-      <div className="grid grid-cols-1 gap-3 md:hidden">
-        {filtered.map((shp) => (
-          <div key={shp.id} className="clay-card p-4 space-y-3 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <span className="text-xs font-black font-mono-eyebrow text-slate-900">{shp.trackingNumber}</span>
-                <p className="text-[11px] text-indigo-600 font-bold mt-0.5">{shp.courier}</p>
-              </div>
-
-              <span className={`
-                px-2.5 py-0.5 text-[9.5px] font-bold rounded-full
-                ${shp.status === "DELIVERED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : ""}
-                ${shp.status === "OUT_FOR_DELIVERY" ? "bg-amber-50 text-amber-700 border border-amber-200" : ""}
-                ${shp.status === "IN_TRANSIT" ? "bg-blue-50 text-blue-700 border border-blue-200" : ""}
-                ${shp.status === "EXCEPTION" ? "bg-rose-50 text-rose-700 border border-rose-200" : ""}
-              `}>
-                {shp.status.replace(/_/g, " ")}
-              </span>
-            </div>
-
-            <div className="text-xs pt-1 border-t border-slate-100 space-y-1">
-              <div className="flex items-center gap-1.5 text-slate-700">
-                <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{shp.destination}</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                <span>{shp.orderNumber} ({shp.customerName})</span>
-                <span className="font-bold text-slate-700">{shp.estDelivery}</span>
-              </div>
-            </div>
+      {/* Sticky Search & Filter Toolbar */}
+      <div className="clay-card p-2.5 sm:p-3.5 space-y-2.5 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Search bar */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search AWB, order #, customer, city..."
+              className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
+                title="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-        ))}
+
+          {/* Courier Filter Select */}
+          <div className="w-36 sm:w-44 shrink-0">
+            <select
+              value={courierFilter}
+              onChange={(e) => {
+                setCourierFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            >
+              {COURIER_FILTER_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter Reset button if filtered */}
+          {(statusFilter !== "ALL" || courierFilter !== "ALL" || search) && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter("ALL");
+                setCourierFilter("ALL");
+                setSearch("");
+                setPage(1);
+              }}
+              className="h-11 min-h-[44px] px-3 rounded-xl border border-slate-200 text-slate-600 hover:text-orange-600 text-xs font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
+          )}
+        </div>
+
+        {/* Milestone Quick Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
+          {[
+            { value: "ALL", label: "All" },
+            { value: "PACKED", label: "Pending Pickup" },
+            { value: "SHIPPED", label: "Shipped" },
+            { value: "OUT_FOR_DELIVERY", label: "Out For Delivery" },
+            { value: "DELIVERED", label: "Delivered" },
+            { value: "RETURN_INITIATED", label: "Returns / RTO" },
+          ].map((st) => {
+            const isSelected = statusFilter === st.value;
+            return (
+              <button
+                key={st.value}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(st.value as any);
+                  setPage(1);
+                }}
+                className={`h-8 min-h-[32px] px-3 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1 ${
+                  isSelected
+                    ? "bg-[#2A241E] text-white shadow-xs"
+                    : "bg-[#F8F5F1] text-slate-600 hover:bg-slate-200/70 border border-slate-200/70"
+                }`}
+              >
+                <span>{st.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Error state */}
+      {error && (
+        <div className="clay-card p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-rose-700 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => fetchShipments()}
+            className="font-bold underline hover:text-rose-900 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && <TableListSkeleton rows={5} />}
+
+      {/* Empty State */}
+      {!loading && !error && shipments.length === 0 && (
+        <div className="clay-card p-10 text-center space-y-3">
+          <div className="h-12 w-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto">
+            <Truck className="h-6 w-6" />
+          </div>
+          <h3 className="font-fraunces text-base font-bold text-slate-800">
+            No Shipments Found
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            No shipments match the selected filters or search keyword. Try resetting your search or filter parameters.
+          </p>
+        </div>
+      )}
+
+      {/* Mobile Card List (375px optimized with 44px min touch targets) */}
+      {!loading && !error && shipments.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:hidden">
+          {shipments.map((shp) => {
+            const hasAwb = !!shp.awbNumber;
+            return (
+              <div key={shp.id} className="clay-card p-3.5 space-y-3 min-w-0">
+                {/* Card Header: AWB & Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-mono font-bold text-slate-900">
+                        {shp.awbNumber || "Pending AWB"}
+                      </span>
+                      {shp.trackingUrl && (
+                        <a
+                          href={shp.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-600 hover:text-orange-700 p-1"
+                          title="Courier Portal"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-bold text-indigo-700 mt-0.5">
+                      {shp.courierPartner || "Unassigned"}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`px-2.5 py-0.5 text-[9.5px] font-bold rounded-full border ${getStatusBadge(
+                      shp.status
+                    )}`}
+                  >
+                    {shp.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+
+                {/* Destination & Customer Info */}
+                <div className="text-xs pt-1 border-t border-slate-100 space-y-1">
+                  <div className="flex items-center gap-1.5 text-slate-700">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">
+                      {shp.destination?.city || shp.customer.city || "Destination"},{" "}
+                      {shp.destination?.pincode || shp.customer.pincode || ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span className="font-mono text-slate-600">
+                      {shp.orderNumber} • {shp.customer.name}
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {shp.estimatedDelivery
+                        ? new Date(shp.estimatedDelivery).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : "SLA Standard"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mobile Touch Actions (44px min touch height) */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenTracking(shp.id)}
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Truck className="h-3.5 w-3.5 text-orange-600" />
+                    <span>Track</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAssign(shp)}
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <PackageCheck className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>{hasAwb ? "Reassign" : "Assign"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenUpdateStatus(shp)}
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Status</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Desktop Responsive Table */}
-      <div className="clay-card overflow-hidden hidden md:block">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-400 font-mono-eyebrow text-[10px] uppercase tracking-wider">
-                <th className="py-3 px-4 font-bold">Tracking #</th>
-                <th className="py-3 px-4 font-bold">Courier & Order</th>
-                <th className="py-3 px-4 font-bold">Destination</th>
-                <th className="py-3 px-4 font-bold">Dispatch Date</th>
-                <th className="py-3 px-4 font-bold">Est. Delivery</th>
-                <th className="py-3 px-4 font-bold text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((shp) => (
-                <tr key={shp.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
-                  <td className="py-3 px-4 font-bold font-mono-eyebrow text-slate-900">
-                    {shp.trackingNumber}
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="font-bold text-slate-900">{shp.courier}</p>
-                    <p className="text-[10.5px] text-slate-400">{shp.orderNumber} • {shp.customerName}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                      <span>{shp.destination}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-slate-500">{shp.dispatchDate}</td>
-                  <td className="py-3 px-4 font-bold text-slate-800">{shp.estDelivery}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`
-                      inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full
-                      ${shp.status === "DELIVERED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : ""}
-                      ${shp.status === "OUT_FOR_DELIVERY" ? "bg-amber-50 text-amber-700 border border-amber-200" : ""}
-                      ${shp.status === "IN_TRANSIT" ? "bg-blue-50 text-blue-700 border border-blue-200" : ""}
-                      ${shp.status === "EXCEPTION" ? "bg-rose-50 text-rose-700 border border-rose-200" : ""}
-                    `}>
-                      {shp.status.replace(/_/g, " ")}
-                    </span>
-                  </td>
+      {!loading && !error && shipments.length > 0 && (
+        <div className="clay-card overflow-hidden hidden md:block">
+          <div className="overflow-x-auto no-scrollbar">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-400 font-mono-eyebrow text-[10px] uppercase tracking-wider">
+                  <th className="py-3 px-4 font-bold">AWB / Tracking #</th>
+                  <th className="py-3 px-4 font-bold">Courier & Order</th>
+                  <th className="py-3 px-4 font-bold">Customer & City</th>
+                  <th className="py-3 px-4 font-bold">Dispatch Date</th>
+                  <th className="py-3 px-4 font-bold">Est. Delivery</th>
+                  <th className="py-3 px-4 font-bold text-center">Milestone</th>
+                  <th className="py-3 px-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {shipments.map((shp) => (
+                  <tr key={shp.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                      <div className="flex items-center gap-1.5">
+                        <span>{shp.awbNumber || "Pending"}</span>
+                        {shp.trackingUrl && (
+                          <a
+                            href={shp.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-600 hover:text-orange-700"
+                            title="Open courier portal"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="font-bold text-slate-900">
+                        {shp.courierPartner || "Unassigned"}
+                      </p>
+                      <p className="text-[10.5px] font-mono text-slate-500">
+                        {shp.orderNumber}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="font-bold text-slate-800">{shp.customer.name}</p>
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                        <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span>
+                          {shp.destination?.city || shp.customer.city || "Destination"},{" "}
+                          {shp.destination?.pincode || shp.customer.pincode || ""}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-500">
+                      {new Date(shp.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-800">
+                      {shp.estimatedDelivery
+                        ? new Date(shp.estimatedDelivery).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : "Standard"}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadge(
+                          shp.status
+                        )}`}
+                      >
+                        {shp.status.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTracking(shp.id)}
+                          className="h-8 px-2.5 rounded-lg bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                          title="Live Tracking Timeline"
+                        >
+                          <Truck className="h-3 w-3 text-orange-600" />
+                          <span>Track</span>
+                        </button>
 
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAssign(shp)}
+                          className="h-8 px-2 rounded-lg bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                          title="Assign Courier"
+                        >
+                          <PackageCheck className="h-3 w-3 text-indigo-600" />
+                          <span>Assign</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenUpdateStatus(shp)}
+                          className="h-8 px-2 rounded-lg bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                          title="Update Status Milestone"
+                        >
+                          <RefreshCw className="h-3 w-3 text-emerald-600" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && !error && pagination.total > 0 && (
+        <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="text-slate-500 font-medium">
+            Showing{" "}
+            <span className="font-bold text-slate-800">
+              {(pagination.page - 1) * pagination.limit + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-bold text-slate-800">
+              {Math.min(pagination.page * pagination.limit, pagination.total)}
+            </span>{" "}
+            of <span className="font-bold text-slate-800">{pagination.total}</span> shipments
+          </div>
+
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer"
+            >
+              <option value="10">10 / page</option>
+              <option value="25">25 / page</option>
+              <option value="50">50 / page</option>
+            </select>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.page <= 1}
+                className="h-11 min-h-[44px] px-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] font-bold text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Prev</span>
+              </button>
+
+              <span className="px-2 text-xs font-bold text-slate-700 font-mono">
+                {pagination.page} / {pagination.totalPages || 1}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                disabled={pagination.page >= pagination.totalPages}
+                className="h-11 min-h-[44px] px-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] font-bold text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1"
+                aria-label="Next page"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ShipmentTrackingModal
+        shipmentId={trackingShipmentId}
+        isOpen={isTrackingModalOpen}
+        onClose={() => {
+          setIsTrackingModalOpen(false);
+          setTrackingShipmentId(null);
+        }}
+      />
+
+      <AssignCourierModal
+        shipment={assignShipment}
+        isOpen={isAssignModalOpen}
+        onClose={() => {
+          setIsAssignModalOpen(false);
+          setAssignShipment(null);
+        }}
+        onSuccess={() => fetchShipments()}
+      />
+
+      <UpdateShipmentStatusModal
+        shipment={updateStatusShipment}
+        isOpen={isUpdateStatusModalOpen}
+        onClose={() => {
+          setIsUpdateStatusModalOpen(false);
+          setUpdateStatusShipment(null);
+        }}
+        onSuccess={() => fetchShipments()}
+      />
     </div>
   );
 }
