@@ -49,3 +49,5 @@ export interface Customer {
   status: "ACTIVE" | "BLOCKED";
   createdAt: string;
 }
+
+export * from "./admin-testimonial";
