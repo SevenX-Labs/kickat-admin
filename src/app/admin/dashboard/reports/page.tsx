@@ -12,9 +12,7 @@ import {
   Receipt,
   BarChart3,
   Calendar,
-  Layers,
-  ArrowUpRight,
-  Info
+  FileText
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AdminReportService } from "../../../../services/adminReportService";
@@ -49,7 +47,7 @@ export default function ReportsPage() {
       from.setFullYear(2025, 3, 1);
       to.setFullYear(2026, 2, 31);
     }
-    return { from: from.toISOString(), to: to.toISOString() };
+    return { dateFrom: from.toISOString(), dateTo: to.toISOString() };
   }, [timeRange]);
 
   const fetchData = useCallback(async () => {
@@ -165,8 +163,11 @@ export default function ReportsPage() {
   const avgCartValue = salesSummary?.averageOrderValue || 0;
   const unitsSold = salesSummary?.totalUnitsSold || 0;
 
-  const gst18SlabValue = gstSummary?.totalTaxableValue || 0;
-  const gst18Tax = gstSummary?.totalGstCollected || 0;
+  // Real backend GST metrics
+  const totalTaxable = gstSummary?.totalTaxableValue || 0;
+  const totalCgst = gstSummary?.totalCgstCollected || 0;
+  const totalSgst = gstSummary?.totalSgstCollected || 0;
+  const totalInvoices = gstSummary?.totalInvoicesCount || 0;
 
   return (
     <div className="space-y-4 sm:space-y-6 w-full min-w-0 pb-16">
@@ -239,7 +240,7 @@ export default function ReportsPage() {
                 <Receipt className="h-4 w-4 text-indigo-500 shrink-0" />
               </div>
               <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">{formatCurrency(gstCollected)}</p>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">Standard 18% slab</p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">Standard 18% tax</p>
             </div>
 
             <div className="clay-card p-3.5 sm:p-4 min-w-0">
@@ -332,7 +333,7 @@ export default function ReportsPage() {
                 </div>
               </div>
             ) : (
-              /* Real Zero-State Baseline Visualization (No Fake Data) */
+              /* Real Zero-State Baseline Visualization */
               <div className="clay-inset p-8 text-center space-y-3">
                 <div className="flex h-12 w-12 rounded-2xl bg-orange-100 text-orange-600 items-center justify-center mx-auto shadow-inner">
                   <BarChart3 className="h-6 w-6" />
@@ -457,32 +458,35 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* GST Slabs Breakdown Summary */}
+          {/* Real Backend GST Summary Metrics */}
           <div className="clay-card p-4 sm:p-6 space-y-4">
-            <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-              GST Tax Slab Breakdown (Current Period)
-            </h2>
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <FileText className="h-5 w-5 text-indigo-500" />
+              <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                GST Tax Reconciliation (Real Database Telemetry)
+              </h2>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="clay-inset p-3 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">0% Exempt Goods</span>
-                <p className="text-sm font-black text-slate-800">₹0</p>
-                <p className="text-[10px] text-slate-500">Tax: ₹0 (Fresh Pet Meat)</p>
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Total Invoices</span>
+                <p className="text-sm font-black text-slate-800">{totalInvoices} Orders</p>
+                <p className="text-[10px] text-slate-500">Processed in current period</p>
               </div>
               <div className="clay-inset p-3 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">5% Slab (Kibble Base)</span>
-                <p className="text-sm font-black text-slate-800">₹0</p>
-                <p className="text-[10px] text-slate-400">Tax: ₹0</p>
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Total Taxable Value</span>
+                <p className="text-sm font-black text-slate-800">{formatCurrency(totalTaxable)}</p>
+                <p className="text-[10px] text-slate-500">Base before GST</p>
               </div>
               <div className="clay-inset p-3 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">12% (Supplements)</span>
-                <p className="text-sm font-black text-slate-800">₹0</p>
-                <p className="text-[10px] text-slate-400">Tax: ₹0</p>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase font-mono-eyebrow">CGST Collected</span>
+                <p className="text-sm font-black text-indigo-900">{formatCurrency(totalCgst)}</p>
+                <p className="text-[10px] text-indigo-600 font-bold">Central GST share</p>
               </div>
               <div className="clay-inset p-3 space-y-1 border border-emerald-100 bg-emerald-50/30">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase font-mono-eyebrow">18% (Standard Pet Goods)</span>
-                <p className="text-sm font-black text-slate-800">{formatCurrency(gst18SlabValue)}</p>
-                <p className="text-[10px] text-emerald-600 font-bold">Tax: {formatCurrency(gst18Tax)}</p>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase font-mono-eyebrow">SGST Collected</span>
+                <p className="text-sm font-black text-emerald-900">{formatCurrency(totalSgst)}</p>
+                <p className="text-[10px] text-emerald-600 font-bold">State GST share</p>
               </div>
             </div>
           </div>

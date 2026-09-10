@@ -1,6 +1,8 @@
 import api from './api';
 
 export interface ReportDateRange {
+  dateFrom?: string;
+  dateTo?: string;
   from?: string;
   to?: string;
   page?: number;
@@ -24,22 +26,32 @@ export interface ReportSummaryResponse<T> {
   };
 }
 
+const normalizeParams = (params?: ReportDateRange) => {
+  if (!params) return undefined;
+  const { from, to, dateFrom, dateTo, ...rest } = params;
+  return {
+    ...rest,
+    dateFrom: dateFrom || from,
+    dateTo: dateTo || to,
+  };
+};
+
 export const AdminReportService = {
   getSalesReport: async (params?: ReportDateRange) => {
-    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/sales', { params });
+    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/sales', { params: normalizeParams(params) });
     return response.data;
   },
 
   exportSalesReport: async (format: 'CSV' | 'JSON' | 'PDF', params?: ReportDateRange) => {
     const response = await api.get('/admin/reports/sales/export', {
-      params: { ...params, format },
+      params: { ...normalizeParams(params), format: format.toLowerCase() },
       responseType: 'blob', // Important for file downloads
     });
     return response.data;
   },
 
   getOrdersReport: async (params?: ReportDateRange & { status?: string }) => {
-    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/orders', { params });
+    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/orders', { params: normalizeParams(params) });
     return response.data;
   },
 
@@ -49,17 +61,17 @@ export const AdminReportService = {
   },
 
   getProductsReport: async (params?: ReportDateRange & { categoryId?: string }) => {
-    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/products', { params });
+    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/products', { params: normalizeParams(params) });
     return response.data;
   },
 
   getRefundsReport: async (params?: ReportDateRange) => {
-    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/refunds', { params });
+    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/refunds', { params: normalizeParams(params) });
     return response.data;
   },
 
   getGstReport: async (params?: ReportDateRange) => {
-    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/gst', { params });
+    const response = await api.get<ReportSummaryResponse<any>>('/admin/reports/gst', { params: normalizeParams(params) });
     return response.data;
   }
 };
