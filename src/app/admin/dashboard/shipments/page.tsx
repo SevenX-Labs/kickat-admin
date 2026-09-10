@@ -373,32 +373,34 @@ export default function ShipmentsPage() {
       </div>
 
       {/* =========================================================
-          STICKY COMPACT SEARCH & FILTER TOOLBAR (375px Mobile Optimized)
-          - Search bar (majority width)
-          - Filter Icon Button (with active count badge, opens Filter Sheet)
-          - Custom Courier Dropdown (custom styled, NO native select)
-          - Active Filter Removable Chips (compact, only when filters active)
+          STICKY COMPACT SEARCH & FILTER TOOLBAR (Mobile-First Responsive)
+          - Mobile (<640px): 
+            Row 1: Search bar (full width, spacious placeholder)
+            Row 2: Filter Button + Custom Courier Dropdown (spacious, zero truncation!)
+          - Tablet/Desktop (>=640px):
+            Single row: Search (flex-1) + Filter Button + Courier Dropdown (w-44)
+          - Active Removable Filter Chips (only when filters active)
           - NO permanent scrollable pill row taking up screen space!
           ========================================================= */}
       <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1.5 pb-2.5 md:static md:bg-transparent md:p-0 md:m-0 space-y-2">
         <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0 shadow-sm md:shadow-none">
-          {/* Main Controls Row: Search + Filter Button + Custom Courier Dropdown */}
-          <div className="flex items-center gap-2 w-full">
-            {/* Search Input (44px min height & short placeholder) */}
+          {/* Controls: Stacked on mobile (Row 1 search, Row 2 filters+courier), single-row on sm+ */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+            {/* Search Input (44px min height, full width on mobile) */}
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search AWB, order #, customer, city..."
-                className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
                   title="Clear search"
                   aria-label="Clear search query"
                 >
@@ -407,38 +409,41 @@ export default function ShipmentsPage() {
               )}
             </div>
 
-            {/* Filter Icon Button (Opens Filter Bottom Sheet) */}
-            <button
-              type="button"
-              onClick={() => setIsFilterSheetOpen(true)}
-              className={`h-11 min-h-[44px] px-3 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition active:scale-95 cursor-pointer shrink-0 ${
-                activeFiltersCount > 0
-                  ? "bg-orange-50/90 border-orange-300 text-orange-950 ring-1 ring-orange-200/60 shadow-xs"
-                  : "bg-white border-slate-200/80 text-slate-700 hover:bg-[#FAF7F2]"
-              }`}
-              title="Filter Shipments"
-              aria-label="Filter Shipments"
-            >
-              <SlidersHorizontal
-                className={`h-4 w-4 ${activeFiltersCount > 0 ? "text-orange-600" : "text-slate-500"}`}
-              />
-              <span className="hidden sm:inline">Filters</span>
-              {activeFiltersCount > 0 && (
-                <span className="h-5 min-w-[20px] px-1 rounded-full bg-orange-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
+            {/* Filter Button + Courier Dropdown (Row 2 on mobile, inline on desktop) */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              {/* Filter Icon Button (Opens Filter Bottom Sheet) */}
+              <button
+                type="button"
+                onClick={() => setIsFilterSheetOpen(true)}
+                className={`h-11 min-h-[44px] px-3.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition active:scale-95 cursor-pointer shrink-0 ${
+                  activeFiltersCount > 0
+                    ? "bg-orange-50/90 border-orange-300 text-orange-950 ring-1 ring-orange-200/60 shadow-xs"
+                    : "bg-white border-slate-200/80 text-slate-700 hover:bg-[#FAF7F2]"
+                }`}
+                title="Filter Shipments"
+                aria-label="Filter Shipments"
+              >
+                <SlidersHorizontal
+                  className={`h-4 w-4 ${activeFiltersCount > 0 ? "text-orange-600" : "text-slate-500"}`}
+                />
+                <span>Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span className="h-5 min-w-[20px] px-1 rounded-full bg-orange-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
 
-            {/* Custom Courier Dropdown (Zero native select element) */}
-            <div className="shrink-0 w-32 sm:w-40">
-              <ShipmentCourierDropdown
-                value={courierFilter}
-                onChange={(val) => {
-                  setCourierFilter(val);
-                  setPage(1);
-                }}
-              />
+              {/* Custom Courier Dropdown (flex-1 on mobile so it never truncates, w-44 on desktop) */}
+              <div className="flex-1 sm:w-44 sm:flex-initial">
+                <ShipmentCourierDropdown
+                  value={courierFilter}
+                  onChange={(val) => {
+                    setCourierFilter(val);
+                    setPage(1);
+                  }}
+                />
+              </div>
             </div>
           </div>
 
