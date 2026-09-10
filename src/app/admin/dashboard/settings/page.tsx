@@ -10,9 +10,10 @@ import {
   Share2,
   ShieldAlert,
   Loader2,
-  Sparkles
+  Sparkles,
+  Save
 } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   AdminSettingsService, 
   GeneralSettings, 
@@ -23,11 +24,10 @@ import {
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
-  const [autoSaving, setAutoSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
+  const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // TAB 1: General Settings
+  // SECTION 1: General Settings
   const [supportEmail, setSupportEmail] = useState("");
   const [supportPhone, setSupportPhone] = useState("");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -37,24 +37,21 @@ export default function SettingsPage() {
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 
-  // TAB 2: Payment Methods
+  // SECTION 2: Payment Methods
   const [codEnabled, setCodEnabled] = useState(true);
   const [codExtraFee, setCodExtraFee] = useState<number>(0);
   const [upiEnabled, setUpiEnabled] = useState(true);
   const [cardEnabled, setCardEnabled] = useState(true);
 
-  // TAB 3: Tax & GST
+  // SECTION 3: Tax & GST
   const [gstEnabled, setGstEnabled] = useState(true);
   const [gstNumber, setGstNumber] = useState("");
   const [gstPercentage, setGstPercentage] = useState<number>(18);
 
-  // TAB 4: Delivery Settings
+  // SECTION 4: Delivery Settings
   const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState<number>(50);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number>(0);
-
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const initialLoadDone = useRef(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -104,8 +101,6 @@ export default function SettingsPage() {
         setDeliveryFee(data.delivery.deliveryFee ?? 50);
         setFreeDeliveryThreshold(data.delivery.freeDeliveryThreshold ?? 0);
       }
-      setSaveStatus("saved");
-      initialLoadDone.current = true;
     } catch (err: any) {
       console.error("Failed to load settings:", err);
       showToast("Failed to load store settings");
@@ -118,120 +113,74 @@ export default function SettingsPage() {
     loadAllSettings();
   }, [loadAllSettings]);
 
-  // Auto-Save Function
-  const saveSectionSettings = useCallback(async (section: "general" | "payment" | "tax" | "delivery", overrideData?: any) => {
-    if (!initialLoadDone.current) return;
-    setAutoSaving(true);
-    setSaveStatus("saving");
+  // Manual Save Function for All Settings
+  const handleSaveAllSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
 
     try {
-      if (section === "general") {
-        const payload: GeneralSettings = {
-          supportEmail,
-          supportPhone,
-          maintenanceMode,
-          socialLinks: {
-            instagram: instagramUrl,
-            facebook: facebookUrl,
-            youtube: youtubeUrl,
-            twitter: twitterUrl,
-            linkedin: linkedinUrl,
-          },
-          ...overrideData,
-        };
-        await AdminSettingsService.updateGeneral(payload);
-      } else if (section === "payment") {
-        const payload: PaymentSettings = {
-          cod: {
-            enabled: codEnabled,
-            extraFee: Number(codExtraFee) || 0,
-          },
-          upi: {
-            enabled: upiEnabled,
-          },
-          card: {
-            enabled: cardEnabled,
-          },
-          ...overrideData,
-        };
-        await AdminSettingsService.updatePayment(payload);
-      } else if (section === "tax") {
-        const payload: TaxSettings = {
-          gstEnabled,
-          gstNumber,
-          gstPercentage: Number(gstPercentage) || 0,
-          ...overrideData,
-        };
-        await AdminSettingsService.updateTax(payload);
-      } else if (section === "delivery") {
-        const payload: DeliverySettings = {
-          deliveryFeeEnabled,
-          deliveryFee: Number(deliveryFee) || 0,
-          freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
-          ...overrideData,
-        };
-        await AdminSettingsService.updateDelivery(payload);
-      }
+      // 1. General Payload
+      const generalPayload: GeneralSettings = {
+        supportEmail,
+        supportPhone,
+        maintenanceMode,
+        socialLinks: {
+          instagram: instagramUrl,
+          facebook: facebookUrl,
+          youtube: youtubeUrl,
+          twitter: twitterUrl,
+          linkedin: linkedinUrl,
+        },
+      };
 
-      setSaveStatus("saved");
-      showToast("Auto-saved changes!");
+      // 2. Payment Payload
+      const paymentPayload: PaymentSettings = {
+        cod: {
+          enabled: codEnabled,
+          extraFee: Number(codExtraFee) || 0,
+        },
+        upi: {
+          enabled: upiEnabled,
+        },
+        card: {
+          enabled: cardEnabled,
+        },
+      };
+
+      // 3. Tax Payload
+      const taxPayload: TaxSettings = {
+        gstEnabled,
+        gstNumber,
+        gstPercentage: Number(gstPercentage) || 0,
+      };
+
+      // 4. Delivery Payload
+      const deliveryPayload: DeliverySettings = {
+        deliveryFeeEnabled,
+        deliveryFee: Number(deliveryFee) || 0,
+        freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
+      };
+
+      // Update all settings in parallel
+      await Promise.all([
+        AdminSettingsService.updateGeneral(generalPayload),
+        AdminSettingsService.updatePayment(paymentPayload),
+        AdminSettingsService.updateTax(taxPayload),
+        AdminSettingsService.updateDelivery(deliveryPayload),
+      ]);
+
+      showToast("Store settings saved successfully!");
     } catch (err: any) {
-      console.error("Auto-save error:", err);
-      setSaveStatus("idle");
-      const msg = err?.response?.data?.message || "Failed to auto-save settings.";
+      console.error("Save error:", err);
+      const msg = err?.response?.data?.message || "Failed to save settings.";
       showToast(Array.isArray(msg) ? msg[0] : msg);
     } finally {
-      setAutoSaving(false);
+      setSaving(false);
     }
-  }, [
-    supportEmail, supportPhone, maintenanceMode, instagramUrl, facebookUrl, youtubeUrl, twitterUrl, linkedinUrl,
-    codEnabled, codExtraFee, upiEnabled, cardEnabled,
-    gstEnabled, gstNumber, gstPercentage,
-    deliveryFeeEnabled, deliveryFee, freeDeliveryThreshold
-  ]);
-
-  // Trigger Debounced Auto-Save on text/number changes
-  const triggerDebouncedAutoSave = (section: "general" | "payment" | "tax" | "delivery") => {
-    setSaveStatus("saving");
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      saveSectionSettings(section);
-    }, 700);
-  };
-
-  // Instant Auto-Save for toggle switches
-  const toggleGeneralMaintenance = (val: boolean) => {
-    setMaintenanceMode(val);
-    saveSectionSettings("general", { maintenanceMode: val });
-  };
-
-  const toggleCodEnabled = (val: boolean) => {
-    setCodEnabled(val);
-    saveSectionSettings("payment", { cod: { enabled: val, extraFee: Number(codExtraFee) || 0 } });
-  };
-
-  const toggleUpiEnabled = (val: boolean) => {
-    setUpiEnabled(val);
-    saveSectionSettings("payment", { upi: { enabled: val } });
-  };
-
-  const toggleCardEnabled = (val: boolean) => {
-    setCardEnabled(val);
-    saveSectionSettings("payment", { card: { enabled: val } });
-  };
-
-  const toggleGstEnabled = (val: boolean) => {
-    setGstEnabled(val);
-    saveSectionSettings("tax", { gstEnabled: val });
-  };
-
-  const toggleDeliveryFeeEnabled = (val: boolean) => {
-    setDeliveryFeeEnabled(val);
-    saveSectionSettings("delivery", { deliveryFeeEnabled: val });
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 w-full min-w-0 pb-20">
+    <form onSubmit={handleSaveAllSettings} className="space-y-6 sm:space-y-8 w-full min-w-0 pb-24">
       
       {/* Toast */}
       {toastMessage && (
@@ -242,42 +191,44 @@ export default function SettingsPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
           <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
             Store & System Settings
           </h1>
           <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Automatic live synchronization for platform support, payments, GST rates, and delivery fees.
+            Configure platform support, payment gateways, GST calculation rules, and delivery fees.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Auto-Save Indicator Badge */}
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-xs text-xs font-semibold">
-            {autoSaving || saveStatus === "saving" ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin" />
-                <span className="text-orange-600">Auto-saving...</span>
-              </>
-            ) : saveStatus === "saved" ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-emerald-700">All changes saved</span>
-              </>
-            ) : (
-              <span className="text-slate-400">Auto-save enabled</span>
-            )}
-          </div>
-
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={loadAllSettings}
-            disabled={loading}
-            className="clay-button p-2 text-slate-600 hover:text-orange-600 transition rounded-2xl cursor-pointer"
+            disabled={loading || saving}
+            className="clay-button p-2.5 text-slate-600 hover:text-orange-600 transition rounded-2xl cursor-pointer disabled:opacity-50"
             title="Refresh Settings"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4.5 w-4.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+
+          {/* Main Save Settings Button */}
+          <button
+            type="submit"
+            disabled={saving || loading}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-500/20 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                <span>Saving Settings...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                <span>Save Settings</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -311,7 +262,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={maintenanceMode}
-                  onChange={(e) => toggleGeneralMaintenance(e.target.checked)}
+                  onChange={(e) => setMaintenanceMode(e.target.checked)}
                   className="rounded text-red-600 h-4 w-4 cursor-pointer"
                 />
               </label>
@@ -324,10 +275,7 @@ export default function SettingsPage() {
                 <input
                   type="email"
                   value={supportEmail}
-                  onChange={(e) => {
-                    setSupportEmail(e.target.value);
-                    triggerDebouncedAutoSave("general");
-                  }}
+                  onChange={(e) => setSupportEmail(e.target.value)}
                   placeholder="support@kickat.co.in"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
@@ -338,10 +286,7 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={supportPhone}
-                  onChange={(e) => {
-                    setSupportPhone(e.target.value);
-                    triggerDebouncedAutoSave("general");
-                  }}
+                  onChange={(e) => setSupportPhone(e.target.value)}
                   placeholder="+91 98765 43210"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
@@ -360,10 +305,7 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={instagramUrl}
-                    onChange={(e) => {
-                      setInstagramUrl(e.target.value);
-                      triggerDebouncedAutoSave("general");
-                    }}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
                     placeholder="https://instagram.com/kickat"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -374,10 +316,7 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={facebookUrl}
-                    onChange={(e) => {
-                      setFacebookUrl(e.target.value);
-                      triggerDebouncedAutoSave("general");
-                    }}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
                     placeholder="https://facebook.com/kickat"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -388,10 +327,7 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={youtubeUrl}
-                    onChange={(e) => {
-                      setYoutubeUrl(e.target.value);
-                      triggerDebouncedAutoSave("general");
-                    }}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="https://youtube.com/@kickat"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -402,10 +338,7 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={twitterUrl}
-                    onChange={(e) => {
-                      setTwitterUrl(e.target.value);
-                      triggerDebouncedAutoSave("general");
-                    }}
+                    onChange={(e) => setTwitterUrl(e.target.value)}
                     placeholder="https://x.com/kickat"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -416,10 +349,7 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={linkedinUrl}
-                    onChange={(e) => {
-                      setLinkedinUrl(e.target.value);
-                      triggerDebouncedAutoSave("general");
-                    }}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
                     placeholder="https://linkedin.com/company/kickat"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -454,7 +384,7 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={codEnabled}
-                    onChange={(e) => toggleCodEnabled(e.target.checked)}
+                    onChange={(e) => setCodEnabled(e.target.checked)}
                     className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                   />
                 </label>
@@ -467,13 +397,9 @@ export default function SettingsPage() {
                     type="number"
                     min="0"
                     value={codExtraFee}
-                    onChange={(e) => {
-                      const val = Math.max(0, Number(e.target.value) || 0);
-                      setCodExtraFee(val);
-                      triggerDebouncedAutoSave("payment");
-                    }}
+                    onChange={(e) => setCodExtraFee(Math.max(0, Number(e.target.value) || 0))}
                     placeholder="40"
-                    className="w-full sm:w-64 rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none mt-1"
+                    className="w-full sm:w-64 rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none mt-1 focus:border-orange-400 transition"
                   />
                 </div>
               )}
@@ -490,7 +416,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={upiEnabled}
-                  onChange={(e) => toggleUpiEnabled(e.target.checked)}
+                  onChange={(e) => setUpiEnabled(e.target.checked)}
                   className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                 />
               </div>
@@ -507,7 +433,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={cardEnabled}
-                  onChange={(e) => toggleCardEnabled(e.target.checked)}
+                  onChange={(e) => setCardEnabled(e.target.checked)}
                   className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                 />
               </div>
@@ -533,7 +459,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={gstEnabled}
-                  onChange={(e) => toggleGstEnabled(e.target.checked)}
+                  onChange={(e) => setGstEnabled(e.target.checked)}
                   className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                 />
               </label>
@@ -546,10 +472,7 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     value={gstNumber}
-                    onChange={(e) => {
-                      setGstNumber(e.target.value);
-                      triggerDebouncedAutoSave("tax");
-                    }}
+                    onChange={(e) => setGstNumber(e.target.value)}
                     placeholder="27AABCU9603R1ZM"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -562,11 +485,7 @@ export default function SettingsPage() {
                     min="0"
                     max="100"
                     value={gstPercentage}
-                    onChange={(e) => {
-                      const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                      setGstPercentage(val);
-                      triggerDebouncedAutoSave("tax");
-                    }}
+                    onChange={(e) => setGstPercentage(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
                     placeholder="18"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
@@ -594,7 +513,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={deliveryFeeEnabled}
-                  onChange={(e) => toggleDeliveryFeeEnabled(e.target.checked)}
+                  onChange={(e) => setDeliveryFeeEnabled(e.target.checked)}
                   className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                 />
               </label>
@@ -607,11 +526,7 @@ export default function SettingsPage() {
                   type="number"
                   min="0"
                   value={deliveryFee}
-                  onChange={(e) => {
-                    const val = Math.max(0, Number(e.target.value) || 0);
-                    setDeliveryFee(val);
-                    triggerDebouncedAutoSave("delivery");
-                  }}
+                  onChange={(e) => setDeliveryFee(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="50"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
@@ -623,11 +538,7 @@ export default function SettingsPage() {
                   type="number"
                   min="0"
                   value={freeDeliveryThreshold}
-                  onChange={(e) => {
-                    const val = Math.max(0, Number(e.target.value) || 0);
-                    setFreeDeliveryThreshold(val);
-                    triggerDebouncedAutoSave("delivery");
-                  }}
+                  onChange={(e) => setFreeDeliveryThreshold(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="499"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
@@ -647,9 +558,30 @@ export default function SettingsPage() {
             </div>
           </section>
 
+          {/* Bottom Floating Save Button Bar */}
+          <div className="pt-4 border-t border-slate-200/80 flex items-center justify-end">
+            <button
+              type="submit"
+              disabled={saving || loading}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span>Saving Settings...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>Save Settings</span>
+                </>
+              )}
+            </button>
+          </div>
+
         </div>
       )}
 
-    </div>
+    </form>
   );
 }
