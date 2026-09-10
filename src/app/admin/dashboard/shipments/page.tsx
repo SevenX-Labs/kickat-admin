@@ -16,13 +16,11 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
-  Plus,
   Package,
-  ArrowUpDown,
   Navigation,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 import {
   AdminShipmentItem,
   AdminShipmentSummary,
@@ -75,7 +73,7 @@ export default function ShipmentsPage() {
   const [limit, setLimit] = useState(10);
 
   // Modals
-  const [trackingShipmentId, setTrackingShipmentId] = useState<string | null>(null);
+  const [selectedTrackingShipment, setSelectedTrackingShipment] = useState<AdminShipmentItem | null>(null);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   const [assignShipment, setAssignShipment] = useState<AdminShipmentItem | null>(null);
@@ -132,8 +130,8 @@ export default function ShipmentsPage() {
     fetchShipments();
   }, [fetchShipments]);
 
-  const handleOpenTracking = (id: string) => {
-    setTrackingShipmentId(id);
+  const handleOpenTracking = (shp: AdminShipmentItem) => {
+    setSelectedTrackingShipment(shp);
     setIsTrackingModalOpen(true);
   };
 
@@ -146,6 +144,18 @@ export default function ShipmentsPage() {
     setUpdateStatusShipment(shp);
     setIsUpdateStatusModalOpen(true);
   };
+
+  // Safe fallback counts so numbers NEVER render blank/undefined
+  const pendingPickupCount =
+    summary.pendingPickup ?? summary.pendingAssignmentCount ?? 0;
+  const inTransitCount =
+    summary.shippedCount ?? summary.inTransitCount ?? 0;
+  const outForDeliveryCount = summary.outForDeliveryCount ?? 0;
+  const deliveredCount = summary.deliveredCount ?? 0;
+  const rtoCount = summary.rtoCount ?? 0;
+  const totalCount =
+    summary.totalShipments ??
+    (pendingPickupCount + inTransitCount + outForDeliveryCount + deliveredCount + rtoCount);
 
   const getStatusBadge = (status: ShipmentStatus) => {
     switch (status) {
@@ -201,9 +211,9 @@ export default function ShipmentsPage() {
         </div>
       </div>
 
-      {/* 5 Interactive Semantic Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 w-full min-w-0">
-        {/* Total Shipments */}
+      {/* 6 Interactive Semantic Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 w-full min-w-0">
+        {/* 1. All Shipments */}
         <button
           type="button"
           onClick={() => {
@@ -211,24 +221,24 @@ export default function ShipmentsPage() {
             setPage(1);
           }}
           className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
-            statusFilter === "ALL" ? "ring-2 ring-slate-700 border-slate-700 shadow-md" : ""
+            statusFilter === "ALL" ? "ring-2 ring-slate-700 border-slate-700 shadow-md" : "hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-slate-500 text-xs w-full">
-            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
               All Shipments
             </span>
             <Package className="h-4 w-4 text-slate-400 shrink-0" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
-              {summary.totalShipments}
+              {totalCount}
             </p>
             <p className="text-[10px] text-slate-500 font-medium truncate">Total recorded</p>
           </div>
         </button>
 
-        {/* Pending Pickup / Packed */}
+        {/* 2. Pending Pickup */}
         <button
           type="button"
           onClick={() => {
@@ -236,24 +246,24 @@ export default function ShipmentsPage() {
             setPage(1);
           }}
           className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
-            statusFilter === "PACKED" ? "ring-2 ring-orange-500 border-orange-500 shadow-md" : ""
+            statusFilter === "PACKED" ? "ring-2 ring-orange-500 border-orange-500 shadow-md" : "hover:border-orange-300"
           }`}
         >
           <div className="flex items-center justify-between text-orange-600 text-xs w-full">
-            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
               Pending Pickup
             </span>
             <Clock className="h-4 w-4 text-orange-500 shrink-0" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
-              {summary.pendingPickup}
+              {pendingPickupCount}
             </p>
             <p className="text-[10px] text-orange-600 font-medium truncate">Ready for courier</p>
           </div>
         </button>
 
-        {/* In Transit / Shipped */}
+        {/* 3. In Transit */}
         <button
           type="button"
           onClick={() => {
@@ -261,24 +271,24 @@ export default function ShipmentsPage() {
             setPage(1);
           }}
           className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
-            statusFilter === "SHIPPED" ? "ring-2 ring-indigo-500 border-indigo-500 shadow-md" : ""
+            statusFilter === "SHIPPED" ? "ring-2 ring-indigo-500 border-indigo-500 shadow-md" : "hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-indigo-600 text-xs w-full">
-            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
               In Transit
             </span>
             <Truck className="h-4 w-4 text-indigo-500 shrink-0" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
-              {summary.shippedCount}
+              {inTransitCount}
             </p>
             <p className="text-[10px] text-indigo-600 font-medium truncate">Handed to courier</p>
           </div>
         </button>
 
-        {/* Out For Delivery */}
+        {/* 4. Out for Delivery */}
         <button
           type="button"
           onClick={() => {
@@ -286,47 +296,70 @@ export default function ShipmentsPage() {
             setPage(1);
           }}
           className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
-            statusFilter === "OUT_FOR_DELIVERY" ? "ring-2 ring-amber-500 border-amber-500 shadow-md" : ""
+            statusFilter === "OUT_FOR_DELIVERY" ? "ring-2 ring-amber-500 border-amber-500 shadow-md" : "hover:border-amber-300"
           }`}
         >
           <div className="flex items-center justify-between text-amber-600 text-xs w-full">
-            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
               Out for Delivery
             </span>
             <Navigation className="h-4 w-4 text-amber-500 shrink-0" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
-              {summary.outForDeliveryCount}
+              {outForDeliveryCount}
             </p>
             <p className="text-[10px] text-amber-600 font-medium truncate">Reaching today</p>
           </div>
         </button>
 
-        {/* Delivered */}
+        {/* 5. Delivered */}
         <button
           type="button"
           onClick={() => {
             setStatusFilter((prev) => (prev === "DELIVERED" ? "ALL" : "DELIVERED"));
             setPage(1);
           }}
-          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer col-span-2 lg:col-span-1 ${
-            statusFilter === "DELIVERED" ? "ring-2 ring-emerald-500 border-emerald-500 shadow-md" : ""
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "DELIVERED" ? "ring-2 ring-emerald-500 border-emerald-500 shadow-md" : "hover:border-emerald-300"
           }`}
         >
           <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
-            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
               Delivered
             </span>
             <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
-              {summary.deliveredCount}
+              {deliveredCount}
             </p>
-            <p className="text-[10px] text-emerald-600 font-medium truncate">
-              {summary.rtoCount > 0 ? `${summary.rtoCount} RTO` : "100% SLA"}
+            <p className="text-[10px] text-emerald-600 font-medium truncate">Fulfilled safely</p>
+          </div>
+        </button>
+
+        {/* 6. Returns / RTO */}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter((prev) => (prev === "RETURN_INITIATED" ? "ALL" : "RETURN_INITIATED"));
+            setPage(1);
+          }}
+          className={`clay-card p-3 sm:p-3.5 text-left min-h-[92px] flex flex-col justify-between transition active:scale-[0.98] cursor-pointer ${
+            statusFilter === "RETURN_INITIATED" ? "ring-2 ring-rose-500 border-rose-500 shadow-md" : "hover:border-rose-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-rose-600 text-xs w-full">
+            <span className="font-bold text-[10px] uppercase tracking-wider font-mono-eyebrow truncate">
+              Returns / RTO
+            </span>
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+              {rtoCount}
             </p>
+            <p className="text-[10px] text-rose-500 font-medium truncate">Return requests</p>
           </div>
         </button>
       </div>
@@ -374,7 +407,7 @@ export default function ShipmentsPage() {
             </select>
           </div>
 
-          {/* Status Filter Reset button if filtered */}
+          {/* Reset button if filtered */}
           {(statusFilter !== "ALL" || courierFilter !== "ALL" || search) && (
             <button
               type="button"
@@ -469,9 +502,21 @@ export default function ShipmentsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-mono font-bold text-slate-900">
-                        {shp.awbNumber || "Pending AWB"}
-                      </span>
+                      {hasAwb ? (
+                        <span className="text-xs font-mono font-bold text-slate-900">
+                          {shp.awbNumber}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAssign(shp)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+                        >
+                          <span>Pending AWB</span>
+                          <Sparkles className="h-3 w-3 text-amber-600" />
+                        </button>
+                      )}
+
                       {shp.trackingUrl && (
                         <a
                           href={shp.trackingUrl}
@@ -508,16 +553,16 @@ export default function ShipmentsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                    <span className="font-mono text-slate-600">
+                    <span className="font-mono text-slate-600 truncate mr-2">
                       {shp.orderNumber} • {shp.customer.name}
                     </span>
-                    <span className="font-bold text-slate-700">
+                    <span className="font-bold text-slate-700 shrink-0">
                       {shp.estimatedDelivery
                         ? new Date(shp.estimatedDelivery).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                           })
-                        : "SLA Standard"}
+                        : "Standard"}
                     </span>
                   </div>
                 </div>
@@ -526,8 +571,8 @@ export default function ShipmentsPage() {
                 <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => handleOpenTracking(shp.id)}
-                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => handleOpenTracking(shp)}
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                   >
                     <Truck className="h-3.5 w-3.5 text-orange-600" />
                     <span>Track</span>
@@ -536,7 +581,7 @@ export default function ShipmentsPage() {
                   <button
                     type="button"
                     onClick={() => handleOpenAssign(shp)}
-                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                   >
                     <PackageCheck className="h-3.5 w-3.5 text-indigo-600" />
                     <span>{hasAwb ? "Reassign" : "Assign"}</span>
@@ -545,7 +590,7 @@ export default function ShipmentsPage() {
                   <button
                     type="button"
                     onClick={() => handleOpenUpdateStatus(shp)}
-                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                   >
                     <RefreshCw className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Status</span>
@@ -574,100 +619,116 @@ export default function ShipmentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {shipments.map((shp) => (
-                  <tr key={shp.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                      <div className="flex items-center gap-1.5">
-                        <span>{shp.awbNumber || "Pending"}</span>
-                        {shp.trackingUrl && (
-                          <a
-                            href={shp.trackingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-orange-600 hover:text-orange-700"
-                            title="Open courier portal"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <p className="font-bold text-slate-900">
-                        {shp.courierPartner || "Unassigned"}
-                      </p>
-                      <p className="text-[10.5px] font-mono text-slate-500">
-                        {shp.orderNumber}
-                      </p>
-                    </td>
-                    <td className="py-3 px-4">
-                      <p className="font-bold text-slate-800">{shp.customer.name}</p>
-                      <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
-                        <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                        <span>
-                          {shp.destination?.city || shp.customer.city || "Destination"},{" "}
-                          {shp.destination?.pincode || shp.customer.pincode || ""}
+                {shipments.map((shp) => {
+                  const hasAwb = !!shp.awbNumber;
+                  return (
+                    <tr key={shp.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                        <div className="flex items-center gap-1.5">
+                          {hasAwb ? (
+                            <span>{shp.awbNumber}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAssign(shp)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+                              title="Click to assign AWB"
+                            >
+                              <span>Pending AWB</span>
+                              <Sparkles className="h-2.5 w-2.5 text-amber-600" />
+                            </button>
+                          )}
+
+                          {shp.trackingUrl && (
+                            <a
+                              href={shp.trackingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-orange-600 hover:text-orange-700"
+                              title="Open courier portal"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-bold text-slate-900">
+                          {shp.courierPartner || "Unassigned"}
+                        </p>
+                        <p className="text-[10.5px] font-mono text-slate-500">
+                          {shp.orderNumber}
+                        </p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-bold text-slate-800">{shp.customer.name}</p>
+                        <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                          <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                          <span>
+                            {shp.destination?.city || shp.customer.city || "Destination"},{" "}
+                            {shp.destination?.pincode || shp.customer.pincode || ""}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-500">
+                        {new Date(shp.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800">
+                        {shp.estimatedDelivery
+                          ? new Date(shp.estimatedDelivery).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                            })
+                          : "Standard"}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadge(
+                            shp.status
+                          )}`}
+                        >
+                          {shp.status.replace(/_/g, " ")}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-500">
-                      {new Date(shp.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="py-3 px-4 font-bold text-slate-800">
-                      {shp.estimatedDelivery
-                        ? new Date(shp.estimatedDelivery).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                          })
-                        : "Standard"}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadge(
-                          shp.status
-                        )}`}
-                      >
-                        {shp.status.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenTracking(shp.id)}
-                          className="h-8 px-2.5 rounded-lg bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                          title="Live Tracking Timeline"
-                        >
-                          <Truck className="h-3 w-3 text-orange-600" />
-                          <span>Track</span>
-                        </button>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTracking(shp)}
+                            className="h-8 px-2.5 rounded-lg bg-[#F8F5F1] hover:bg-orange-50 hover:text-orange-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                            title="Tracking Timeline"
+                          >
+                            <Truck className="h-3 w-3 text-orange-600" />
+                            <span>Track</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAssign(shp)}
-                          className="h-8 px-2 rounded-lg bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                          title="Assign Courier"
-                        >
-                          <PackageCheck className="h-3 w-3 text-indigo-600" />
-                          <span>Assign</span>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAssign(shp)}
+                            className="h-8 px-2.5 rounded-lg bg-[#F8F5F1] hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                            title="Assign Courier & AWB"
+                          >
+                            <PackageCheck className="h-3 w-3 text-indigo-600" />
+                            <span>{hasAwb ? "Reassign" : "Assign"}</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpdateStatus(shp)}
-                          className="h-8 px-2 rounded-lg bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                          title="Update Status Milestone"
-                        >
-                          <RefreshCw className="h-3 w-3 text-emerald-600" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenUpdateStatus(shp)}
+                            className="h-8 px-2 rounded-lg bg-[#F8F5F1] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                            title="Update Status Milestone"
+                          >
+                            <RefreshCw className="h-3 w-3 text-emerald-600" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -736,11 +797,11 @@ export default function ShipmentsPage() {
 
       {/* Modals */}
       <ShipmentTrackingModal
-        shipmentId={trackingShipmentId}
+        shipment={selectedTrackingShipment}
         isOpen={isTrackingModalOpen}
         onClose={() => {
           setIsTrackingModalOpen(false);
-          setTrackingShipmentId(null);
+          setSelectedTrackingShipment(null);
         }}
       />
 
