@@ -130,16 +130,16 @@ export const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
         <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto no-scrollbar flex-1">
           {/* Spam Alert Banner */}
           {review.isSpam && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-semibold gap-2">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                <ShieldAlert className="h-4 w-4 text-slate-700 shrink-0" />
                 <span>Flagged as spam — Hidden from customer storefront</span>
               </div>
               <button
                 type="button"
                 onClick={() => onToggleSpam(review)}
                 disabled={isActionLoading}
-                className="self-start sm:self-auto px-3 py-1.5 min-h-[36px] text-xs font-bold text-rose-700 hover:bg-rose-100 rounded-lg transition cursor-pointer border border-rose-200"
+                className="self-start sm:self-auto px-3 py-1.5 min-h-[36px] text-xs font-bold text-slate-700 hover:bg-slate-200 rounded-lg transition cursor-pointer border border-slate-300"
               >
                 Unflag Spam
               </button>
@@ -306,8 +306,8 @@ export const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
               disabled={isActionLoading}
               className={`h-11 min-h-[44px] flex-1 sm:flex-initial px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
                 review.isSpam
-                  ? "bg-rose-100 text-rose-700 hover:bg-rose-200"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-slate-800 text-white hover:bg-slate-900 border-slate-800"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
               }`}
             >
               <ShieldAlert className="h-3.5 w-3.5" />

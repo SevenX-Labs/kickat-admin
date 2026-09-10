@@ -44,7 +44,7 @@ export const ReviewSortDropdown: React.FC<ReviewSortDropdownProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`h-11 min-h-[44px] rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${
+        className={`h-10 min-h-[40px] rounded-xl border border-slate-200/80 bg-white hover:bg-[#FAF7F2] px-3 text-xs text-left transition flex items-center justify-between gap-1.5 cursor-pointer text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${
           isOpen ? "ring-2 ring-orange-500/20 border-orange-400" : ""
         }`}
         aria-haspopup="listbox"

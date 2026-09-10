@@ -232,7 +232,7 @@ export const ReviewFilterSheet: React.FC<ReviewFilterSheetProps> = ({
                     className={`min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center text-center cursor-pointer active:scale-95 ${
                       isSelected
                         ? sp.value === "SPAM"
-                          ? "bg-rose-600 text-white shadow-xs"
+                          ? "bg-slate-800 text-white shadow-xs"
                           : "bg-[#FF7A00] text-white shadow-xs"
                         : "bg-[#F8F5F1] text-slate-700 hover:bg-slate-200/60 border border-slate-200/70"
                     }`}

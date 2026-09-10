@@ -166,7 +166,7 @@ export function Sidebar({
                         w-full justify-between px-3.5 py-2 text-xs font-semibold
                         ${isCollapsed ? "lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:px-0" : ""}
                         ${isActive 
-                          ? "clay-pill-purple text-white shadow-md" 
+                          ? "clay-pill-orange text-white shadow-md" 
                           : "text-slate-600 hover:bg-[#F7F3EE] hover:text-slate-900"
                         }
                       `}
@@ -214,7 +214,7 @@ export function Sidebar({
                 w-full justify-between px-3.5 py-2 text-xs font-semibold
                 ${isCollapsed ? "lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:px-0" : ""}
                 ${pathname === "/admin/dashboard/profile"
-                  ? "clay-pill-purple text-white shadow-md"
+                  ? "clay-pill-orange text-white shadow-md"
                   : "text-slate-600 hover:bg-[#F7F3EE] hover:text-slate-900"
                 }
               `}
@@ -243,7 +243,7 @@ export function Sidebar({
         <div className={`border-t border-slate-100/80 p-2.5 shrink-0 ${isCollapsed ? "lg:hidden block" : "block"}`}>
           <div className="flex items-center justify-between rounded-2xl bg-[#F7F3EE] p-2 border border-white/60">
             <Link href="/admin/dashboard/profile" onClick={onClose} className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#635BFF] text-white text-xs font-bold shadow-[0_2px_4px_rgba(99,91,255,0.25)]">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FF7A00] text-white text-xs font-bold shadow-[0_2px_4px_rgba(255,122,0,0.25)]">
                 AD
               </div>
               <div className="min-w-0 flex-1 text-left">
@@ -269,7 +269,7 @@ export function Sidebar({
             <Link 
               href="/admin/dashboard/profile" 
               title="Admin User (admin@kickat.in)"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#635BFF] text-white text-xs font-bold shadow-[0_2px_6px_rgba(99,91,255,0.3)] hover:scale-105 active:scale-95 transition-transform"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FF7A00] text-white text-xs font-bold shadow-[0_2px_6px_rgba(255,122,0,0.3)] hover:scale-105 active:scale-95 transition-transform"
             >
               AD
             </Link>
