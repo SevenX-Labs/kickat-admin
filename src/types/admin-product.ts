@@ -81,6 +81,8 @@ export interface ProductVariant {
   stock: number;
   attributes?: VariantAttributes;
   imageUrl?: string | null;
+  images?: string[];
+  isDefault?: boolean;
 }
 
 export interface ProductMedia {
@@ -213,6 +215,8 @@ export interface CreateProductDto {
     stock: number;
     attributes?: VariantAttributes;
     imageUrl?: string | null;
+    images?: string[];
+    isDefault?: boolean;
   }>;
 }
 
@@ -226,6 +230,8 @@ export interface UpdateProductDto extends Partial<CreateProductDto> {
     stock: number;
     attributes?: VariantAttributes;
     imageUrl?: string | null;
+    images?: string[];
+    isDefault?: boolean;
   }>;
 }
 

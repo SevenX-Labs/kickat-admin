@@ -1361,6 +1361,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                       onChange={(updated) => handleUpdateOption(idx, updated)}
                       onDuplicate={() => handleDuplicateOption(idx)}
                       onRemove={() => handleRemoveOption(idx)}
+                      onSetDefault={() => {
+                        setOptions((prev) =>
+                          prev.map((o, i) => ({
+                            ...o,
+                            isDefault: i === idx,
+                          }))
+                        );
+                      }}
                       canRemove={options.length > 1}
                       errors={{
                         name: errors[`option_${idx}_name`],

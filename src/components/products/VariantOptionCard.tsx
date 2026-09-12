@@ -23,6 +23,8 @@ export interface OptionItemData {
   stock: number | "";
   attributes: VariantAttributes;
   imageUrl?: string | null;
+  images?: string[];
+  isDefault?: boolean;
 }
 
 export interface VariantOptionCardProps {
@@ -33,6 +35,7 @@ export interface VariantOptionCardProps {
   onChange: (updated: OptionItemData) => void;
   onDuplicate: () => void;
   onRemove: () => void;
+  onSetDefault?: () => void;
   canRemove: boolean;
   errors?: {
     name?: string;
@@ -59,6 +62,7 @@ export function VariantOptionCard({
   onChange,
   onDuplicate,
   onRemove,
+  onSetDefault,
   canRemove,
   errors,
 }: VariantOptionCardProps) {
@@ -176,6 +180,27 @@ export function VariantOptionCard({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {onSetDefault && (
+            <button
+              type="button"
+              onClick={onSetDefault}
+              title="Make this variant default"
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                option.isDefault
+                  ? "border-emerald-400 bg-emerald-50 text-emerald-700 font-bold"
+                  : "border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <input
+                type="radio"
+                checked={!!option.isDefault}
+                onChange={() => {}}
+                className="h-3 w-3 text-[#FF7A00] focus:ring-[#FF7A00]"
+              />
+              <span>{option.isDefault ? "Default Variant" : "Make Default"}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onDuplicate}
@@ -447,74 +472,105 @@ export function VariantOptionCard({
         </div>
       </div>
 
-      {/* Option Photo Selection */}
+      {/* Option Photos Selection */}
       <div className="pt-2 border-t border-slate-100">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-700">Option Photo</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700">Option Photos (Multiple)</span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              ({(option.images && option.images.length > 0) ? option.images.length : (option.imageUrl ? 1 : 0)} selected)
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => setShowImagePicker(!showImagePicker)}
             className="text-xs font-semibold text-[#FF7A00] hover:text-orange-700 cursor-pointer select-none"
           >
-            {showImagePicker ? "Hide Photos" : option.imageUrl ? "Change Photo" : "Select Photo"}
+            {showImagePicker ? "Done selecting" : ((option.images && option.images.length > 0) || option.imageUrl) ? "Manage Photos" : "Select Photos"}
           </button>
         </div>
 
-        {/* Selected Image Thumbnail preview */}
-        {option.imageUrl && !showImagePicker && (
-          <div className="flex items-center gap-3 mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80 w-fit">
-            <img
-              src={option.imageUrl}
-              alt="Option"
-              className="h-10 w-10 rounded-lg object-contain bg-white border border-slate-200"
-            />
-            <span className="text-xs text-slate-600 font-medium">Assigned Photo</span>
-            <button
-              type="button"
-              onClick={() => onChange({ ...option, imageUrl: null })}
-              className="text-slate-400 hover:text-rose-500 p-1 cursor-pointer"
-              title="Remove assigned photo"
-              aria-label="Remove assigned photo"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+        {/* Selected Images Thumbnails preview */}
+        {((option.images && option.images.length > 0) || option.imageUrl) && !showImagePicker && (
+          <div className="flex flex-wrap gap-2 mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+            {(option.images && option.images.length > 0 ? option.images : [option.imageUrl!]).map((img, i) => (
+              <div key={img + i} className="relative group flex items-center justify-center h-12 w-12 rounded-lg bg-white border border-slate-200 p-0.5">
+                <img
+                  src={img}
+                  alt={`Option photo ${i + 1}`}
+                  className="h-full w-full object-contain rounded-md"
+                />
+                {i === 0 && (
+                  <span className="absolute -top-1.5 -left-1.5 px-1 py-0.2 bg-[#FF7A00] text-white text-[9px] font-bold rounded-md shadow-xs">
+                    Primary
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentImgs = option.images && option.images.length > 0 ? option.images : (option.imageUrl ? [option.imageUrl] : []);
+                    const updated = currentImgs.filter((_, idx) => idx !== i);
+                    onChange({
+                      ...option,
+                      images: updated,
+                      imageUrl: updated[0] || null,
+                    });
+                  }}
+                  className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition cursor-pointer shadow-xs"
+                  title="Remove photo"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Photo Picker Drawer */}
+        {/* Multi-Photo Picker Drawer */}
         {showImagePicker && (
           <div className="mt-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <p className="text-[11px] text-slate-500 font-medium">
-              Choose a photo from Step 2 Product Photos to represent this option:
+              Select multiple photos from Step 2 Product Photos for this option (First selected is Primary):
             </p>
 
             {availableImages.length > 0 ? (
               <div className="flex flex-wrap gap-2 items-center">
-                {/* None button */}
+                {/* Clear all button */}
                 <button
                   type="button"
                   onClick={() => {
-                    onChange({ ...option, imageUrl: null });
-                    setShowImagePicker(false);
+                    onChange({ ...option, images: [], imageUrl: null });
                   }}
                   className={`h-12 px-3 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                    !option.imageUrl
+                    (!option.images || option.images.length === 0) && !option.imageUrl
                       ? "border-[#FF7A00] bg-orange-50 text-[#FF7A00] font-bold"
                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  No Photo
+                  Clear All
                 </button>
 
                 {availableImages.map((imgUrl, i) => {
-                  const isSelected = option.imageUrl === imgUrl;
+                  const currentImgs = option.images && option.images.length > 0 ? option.images : (option.imageUrl ? [option.imageUrl] : []);
+                  const isSelected = currentImgs.includes(imgUrl);
+                  const selIndex = currentImgs.indexOf(imgUrl);
+
                   return (
                     <button
                       key={imgUrl + i}
                       type="button"
                       onClick={() => {
-                        onChange({ ...option, imageUrl: imgUrl });
-                        setShowImagePicker(false);
+                        let updated: string[];
+                        if (isSelected) {
+                          updated = currentImgs.filter((url) => url !== imgUrl);
+                        } else {
+                          updated = [...currentImgs, imgUrl];
+                        }
+                        onChange({
+                          ...option,
+                          images: updated,
+                          imageUrl: updated[0] || null,
+                        });
                       }}
                       className={`relative h-12 w-12 rounded-lg border overflow-hidden p-0.5 transition cursor-pointer ${
                         isSelected
@@ -529,7 +585,9 @@ export function VariantOptionCard({
                       />
                       {isSelected && (
                         <div className="absolute inset-0 bg-[#FF7A00]/20 flex items-center justify-center">
-                          <Check className="h-4 w-4 text-white stroke-[3] drop-shadow-xs" />
+                          <span className="h-5 w-5 rounded-full bg-[#FF7A00] text-white font-bold text-[10px] flex items-center justify-center shadow-xs">
+                            {selIndex + 1}
+                          </span>
                         </div>
                       )}
                     </button>
