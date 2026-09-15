@@ -242,24 +242,18 @@ export function CategorySelector({
     setIsRootOpen(false);
     setRootSearchQuery("");
 
-    // Check if this root category has subcategories
     const childSubs = allCategories.filter((c) => c.parentId === rootCat.id);
-
     if (childSubs.length > 0) {
-      // Must select a subcategory! Product will belong to subcategory only.
+      // Must select a subcategory! Clear selected sub & form categoryId until chosen
       setSelectedSubId("");
       onChange("", undefined, "");
-      // Automatically open the subcategory selector
-      setTimeout(() => {
-        setIsSubOpen(true);
-        subSearchInputRef.current?.focus();
-      }, 60);
     } else {
-      // Standalone root category with no subcategories
+      // Standalone root with NO subcategories: assign directly
       setSelectedSubId("");
       onChange(rootCat.id, rootCat, rootCat.name);
-      setIsSubOpen(false);
     }
+
+    setIsSubOpen(false);
   };
 
   // Action: Clear Root Category Selection
@@ -536,20 +530,7 @@ export function CategorySelector({
             </div>
             <ChevronDown className="h-4 w-4 text-slate-300" />
           </div>
-        ) : subcategories.length === 0 ? (
-          /* State 2: Root category has NO subcategories */
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 text-xs text-amber-800 flex items-start gap-2.5 animate-fade-in">
-            <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <p className="font-bold">
-                No subcategories exist under &ldquo;{selectedRootCat.name}&rdquo;
-              </p>
-              <p className="text-[11px] text-amber-700/90 leading-relaxed">
-                This root category has no subcategories. The product will be placed directly under &ldquo;{selectedRootCat.name}&rdquo;.
-              </p>
-            </div>
-          </div>
-        ) : (
+        ) : subcategories.length === 0 ? null : (
           /* State 3: Root category HAS subcategories -> Select Subcategory */
           <>
             <button

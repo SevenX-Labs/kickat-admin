@@ -564,6 +564,10 @@ export function VariantOptionCard({
                         if (isSelected) {
                           updated = currentImgs.filter((url) => url !== imgUrl);
                         } else {
+                          if (currentImgs.length >= 5) {
+                            alert("A maximum of 5 photos per variant option is allowed.");
+                            return;
+                          }
                           updated = [...currentImgs, imgUrl];
                         }
                         onChange({

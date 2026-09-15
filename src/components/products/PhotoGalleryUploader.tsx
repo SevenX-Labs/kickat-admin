@@ -35,9 +35,9 @@ export function PhotoGalleryUploader({
     if (!files || files.length === 0) return;
     setUploadError(null);
 
-    const availableSlots = 9 - images.length;
+    const availableSlots = 5 - images.length;
     if (availableSlots <= 0) {
-      setUploadError("Maximum 9 product photos allowed. Please remove a photo before adding more.");
+      setUploadError("Maximum 5 product photos allowed. Please remove a photo before adding more.");
       return;
     }
 
@@ -58,8 +58,10 @@ export function PhotoGalleryUploader({
         setUploadError(`"${f.name}" is not a supported image format. Please select JPG, PNG, WebP, GIF, or SVG.`);
         return;
       }
-      if (f.size > 10 * 1024 * 1024) {
-        setUploadError(`"${f.name}" exceeds the 10MB size limit.`);
+      const maxSize = 10 * 1024 * 1024;
+      const sizeMb = (f.size / (1024 * 1024)).toFixed(2);
+      if (f.size > maxSize) {
+        setUploadError(`"${f.name}" (${sizeMb} MB) exceeds the maximum allowed 10MB limit.`);
         return;
       }
       validFiles.push(f);
@@ -126,23 +128,23 @@ export function PhotoGalleryUploader({
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <span
             className={`px-3 py-1 rounded-full text-xs font-bold transition ${
-              images.length === 9
+              images.length === 5
                 ? "bg-rose-100 text-rose-700"
                 : images.length > 0
                 ? "bg-emerald-100 text-emerald-800"
                 : "bg-slate-100 text-slate-600"
             }`}
           >
-            {images.length} / 9 photos
+            {images.length} / 5 photos
           </span>
           <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-            (9 photos maximum)
+            (5 photos maximum)
           </span>
         </div>
       </div>
 
       {/* Upload & Drop Zone */}
-      {images.length < 9 && (
+      {images.length < 5 && (
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -176,7 +178,7 @@ export function PhotoGalleryUploader({
                 Click to add photos or drag &amp; drop
               </p>
               <p className="text-xs text-slate-400">
-                PNG, JPG, WEBP, GIF, SVG up to 10MB per image
+                PNG, JPG, WEBP, GIF, SVG (Up to 10MB per photo)
               </p>
             </div>
 

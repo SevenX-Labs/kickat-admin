@@ -365,7 +365,7 @@ const SPECIES_OPTIONS: {
   { value: "CAT", label: "Cat", icon: Cat },
   { value: "BIRD", label: "Bird", icon: Bird },
   { value: "FISH", label: "Fish", icon: Fish },
-  { value: "RABBIT", label: "Rabbit", icon: Rabbit },
+
   { value: "OTHER", label: "Other Species", icon: PawPrint },
 ];
 

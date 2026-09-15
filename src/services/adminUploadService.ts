@@ -40,15 +40,21 @@ export const AdminUploadService = {
       throw new Error("Invalid file type. Please upload a valid image (PNG, JPG, WEBP, GIF, SVG).");
     }
 
-    // 2. Client-side size limit (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      throw new Error("Image size exceeds 10MB limit. Please upload a smaller image.");
+    // 2. Client-side size limit (0MB min, 10MB max)
+    const isProduct = folder === "products" || folder === "product";
+    const minSize = 0;
+    const maxSize = 10 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      throw new Error(`Image size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum allowed limit of 10MB.`);
     }
 
     // Attempt 1: Try backend upload API
     try {
       const formData = new FormData();
       formData.append("file", file);
+
+      const queryParams = `type=${folder}&minSizeMb=0&maxSizeMb=10`;
 
       const res = await apiClient.post<{
         success: boolean;
@@ -57,7 +63,7 @@ export const AdminUploadService = {
         size: number;
         mimetype: string;
         storageProvider?: string;
-      }>("/admin/upload?minSizeMb=0&maxSizeMb=10", formData, {
+      }>(`/admin/upload?${queryParams}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

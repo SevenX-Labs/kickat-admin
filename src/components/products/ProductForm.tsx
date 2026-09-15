@@ -68,8 +68,6 @@ const PET_SPECIES_OPTIONS: Array<{ id: PetSpecies; label: string; icon: React.Co
   { id: "CAT", label: "Cat", icon: Cat },
   { id: "BIRD", label: "Bird", icon: Bird },
   { id: "FISH", label: "Fish", icon: Fish },
-  { id: "RABBIT", label: "Rabbit", icon: Rabbit },
-  { id: "OTHER", label: "Other", icon: HelpCircle },
 ];
 
 export function ProductForm({ mode, initialProduct }: ProductFormProps) {
@@ -461,11 +459,21 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         newErrors.name = "Please enter a product name.";
       }
       if (!categoryId) {
-        newErrors.categoryId = "Please select a subcategory for this product.";
+        newErrors.categoryId = "Please select a category for this product.";
+      } else if (categories.length > 0) {
+        const selectedCat = categories.find((c) => c.id === categoryId);
+        if (selectedCat && !selectedCat.parentId) {
+          const hasSubcategories = categories.some((c) => c.parentId === selectedCat.id);
+          if (hasSubcategories) {
+            newErrors.categoryId = `Please select a subcategory under "${selectedCat.name}".`;
+          }
+        }
       }
     } else if (stepNumber === 2) {
       if (images.length === 0) {
         newErrors.images = "Please add at least one product photo.";
+      } else if (images.length > 5) {
+        newErrors.images = "A maximum of 5 product photos is allowed.";
       }
     } else if (stepNumber === 3) {
       if (sellingMode === "single") {
@@ -613,9 +621,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         ? options.map((opt) => {
             // Strictly preserve all existing key-value pairs in attributes
             const attrs = { ...opt.attributes };
-            const finalOptionImageUrl = opt.imageUrl
-              ? urlReplacementMap.get(opt.imageUrl) || opt.imageUrl
-              : null;
+            const rawImgs = Array.isArray(opt.images) && opt.images.length > 0
+              ? opt.images
+              : opt.imageUrl
+                ? [opt.imageUrl]
+                : [];
+
+            const finalOptionImages = rawImgs.map((url) => urlReplacementMap.get(url) || url).slice(0, 5);
+            const finalOptionImageUrl = finalOptionImages[0] || (opt.imageUrl ? urlReplacementMap.get(opt.imageUrl) || opt.imageUrl : null);
 
             return {
               ...(opt.id ? { id: opt.id } : {}),
@@ -631,6 +644,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               stock: typeof opt.stock === "number" ? opt.stock : 0,
               attributes: attrs,
               imageUrl: finalOptionImageUrl,
+              images: finalOptionImages,
+              isDefault: Boolean(opt.isDefault),
             };
           })
         : [];
