@@ -94,6 +94,7 @@ export default function ProductsPage() {
 
   // Quick Stock Modal State
   const [stockModalProduct, setStockModalProduct] = useState<AdminProductItem | null>(null);
+  const [viewModalProduct, setViewModalProduct] = useState<AdminProductItem | null>(null);
   const [stockInputValue, setStockInputValue] = useState<number>(0);
   const [variantStocks, setVariantStocks] = useState<{ variantId: string; name: string; sku: string; stock: number }[]>([]);
   const [updatingStock, setUpdatingStock] = useState(false);
@@ -2041,6 +2042,173 @@ export default function ProductsPage() {
               >
                 {updatingStock ? "Saving..." : "Update Stock"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* =========================================================
+          VIEW PRODUCT DETAILS MODAL
+          ========================================================= */}
+      {viewModalProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="clay-card w-full max-w-2xl p-5 sm:p-6 space-y-5 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-12 w-12 rounded-xl bg-orange-100 text-[#FF7A00] flex items-center justify-center shrink-0 font-bold overflow-hidden border border-orange-200/80">
+                  {viewModalProduct.imageUrl || viewModalProduct.images?.[0] ? (
+                    <img
+                      src={viewModalProduct.imageUrl || viewModalProduct.images?.[0]}
+                      alt={viewModalProduct.name}
+                      className="h-full w-full object-contain p-0.5"
+                    />
+                  ) : (
+                    <Package className="h-6 w-6" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E] truncate">
+                      {viewModalProduct.name}
+                    </h3>
+                    <span
+                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border bg-orange-50 text-orange-700 border-orange-200"
+                    >
+                      {viewModalProduct.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                    ID: {viewModalProduct.id} • Slug: /{viewModalProduct.slug}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setViewModalProduct(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              {/* Category & Pet Info */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Category &amp; Target Pet
+                </span>
+                <p className="font-bold text-slate-800">
+                  Category: <span className="text-[#FF7A00]">{viewModalProduct.category?.name || "Uncategorized"}</span>
+                </p>
+                <p className="text-slate-600">
+                  Species: <span className="font-semibold">{viewModalProduct.petSpecies || "General / All Pets"}</span>
+                </p>
+                {viewModalProduct.dietaryPreference && (
+                  <p className="text-slate-600">
+                    Dietary: <span className="font-semibold">{viewModalProduct.dietaryPreference}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Pricing & Stock Metrics */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Pricing &amp; Inventory
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-fraunces text-lg font-bold text-[#FF7A00]">
+                    ₹{viewModalProduct.discountPrice || viewModalProduct.price}
+                  </span>
+                  {viewModalProduct.discountPrice && (
+                    <span className="text-slate-400 line-through text-xs font-semibold">
+                      ₹{viewModalProduct.price}
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-600">
+                  Stock Quantity:{" "}
+                  <span className="font-bold text-emerald-700">
+                    {viewModalProduct.stock} units
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Description Preview */}
+            {viewModalProduct.description && (
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-slate-700">Product Description</span>
+                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/80 leading-relaxed max-h-32 overflow-y-auto">
+                  {viewModalProduct.description}
+                </p>
+              </div>
+            )}
+
+            {/* Option / Variant Breakdown */}
+            {viewModalProduct.variants && viewModalProduct.variants.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-700 block">
+                  Product Variants / Options ({viewModalProduct.variants.length})
+                </span>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {viewModalProduct.variants.map((v, i) => (
+                    <div
+                      key={v.id || i}
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200/80 bg-white text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {v.imageUrl ? (
+                          <img src={v.imageUrl} alt={v.name} className="h-8 w-8 object-contain rounded-md border border-slate-100" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-md bg-orange-50 text-[#FF7A00] flex items-center justify-center font-bold text-[10px]">
+                            Opt
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-800 block truncate">
+                            {v.name} {v.isDefault ? "(Default)" : ""}
+                          </span>
+                          <span className="text-[10.5px] text-slate-400 font-mono">
+                            SKU: {v.sku || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="font-bold text-slate-800 block">
+                          ₹{v.discountPrice || v.price}
+                        </span>
+                        <span className="text-[10.5px] text-emerald-600 font-semibold">
+                          {v.stock} in stock
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer Controls */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setViewModalProduct(null)}
+                className="clay-button px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer"
+              >
+                Close
+              </button>
+
+              <Link
+                href={"/admin/dashboard/products/" + viewModalProduct.id}
+                className="clay-btn-orange px-5 py-2 text-xs font-bold text-white rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+                <span>Edit Full Product</span>
+              </Link>
             </div>
           </div>
         </div>
