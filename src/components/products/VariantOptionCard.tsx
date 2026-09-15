@@ -168,15 +168,27 @@ export function VariantOptionCard({
   return (
     <div className="rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition p-4 sm:p-5 space-y-4">
       {/* Card Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <span className="h-6 w-6 rounded-full bg-orange-100 text-[#FF7A00] text-xs font-bold flex items-center justify-center">
+      <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="h-7 w-7 rounded-xl bg-[#FF7A00] text-white text-xs font-bold flex items-center justify-center shadow-xs shrink-0">
             {index + 1}
           </span>
-          <h4 className="text-sm font-bold text-slate-800">
-            Product Option {index + 1}
-            {option.name ? `: ${option.name}` : ""}
-          </h4>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="font-fraunces text-base font-bold text-[#2A241E] truncate">
+                Product Option {index + 1}{option.name ? ` — ${option.name}` : ""}
+              </h4>
+              {option.isDefault && (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/80 flex items-center gap-1">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                  <span>Default Option</span>
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+              SKU: {option.sku || `Auto SKU: KKT-OPT-${index + 1}`}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -235,9 +247,7 @@ export function VariantOptionCard({
             <label className="block text-xs font-bold text-slate-700">
               Option Name (What customers choose) *
             </label>
-            <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
-              Backend field: name
-            </span>
+            
           </div>
           <input
             type="text"

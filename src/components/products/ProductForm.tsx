@@ -170,7 +170,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   const [stock, setStock] = useState<number | "">(initialProduct?.stock ?? 0);
   const [options, setOptions] = useState<OptionItemData[]>(() => {
     if (initialProduct?.variants && initialProduct.variants.length > 0) {
-      return initialProduct.variants.map((v) => {
+      const hasDefinedDefault = initialProduct.variants.some((v) => v.isDefault);
+      return initialProduct.variants.map((v, idx) => {
         const rawAttrs = v.attributes || {};
         const safeAttrs: VariantAttributes = {};
         for (const [k, val] of Object.entries(rawAttrs)) {
@@ -187,6 +188,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           stock: v.stock ?? 0,
           attributes: safeAttrs,
           imageUrl: v.imageUrl || null,
+          images: Array.isArray(v.images) ? v.images : (v.imageUrl ? [v.imageUrl] : []),
+          isDefault: hasDefinedDefault ? Boolean(v.isDefault) : idx === 0,
         };
       });
     }
@@ -406,6 +409,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   // Option actions
   const handleAddOption = () => {
+    const isFirst = options.length === 0;
     const newOption: OptionItemData = {
       name: "",
       sku: "",
@@ -415,6 +419,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       stock: "",
       attributes: {},
       imageUrl: images[0] || null,
+      isDefault: isFirst,
     };
     setOptions([...options, newOption]);
   };
@@ -441,7 +446,12 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   };
 
   const handleRemoveOption = (index: number) => {
-    setOptions(options.filter((_, i) => i !== index));
+    const filtered = options.filter((_, i) => i !== index);
+    const hasDefault = filtered.some((o) => o.isDefault);
+    if (!hasDefault && filtered.length > 0) {
+      filtered[0].isDefault = true;
+    }
+    setOptions(filtered);
   };
 
   const handleUpdateOption = (index: number, updated: OptionItemData) => {
