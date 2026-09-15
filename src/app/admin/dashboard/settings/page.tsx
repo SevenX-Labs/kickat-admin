@@ -17,12 +17,14 @@ import {
   Building2,
   Clock,
   Wallet,
-  Landmark
+  Landmark,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { 
   AdminSettingsService, 
-  ConsolidatedSettings
+  AdminSettingsForm
 } from "@/services/adminSettingsService";
 
 export default function SettingsPage() {
@@ -30,10 +32,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // SECTION 1: General Settings
-  const [storeName, setStoreName] = useState("");
-  const [supportEmail, setSupportEmail] = useState("");
-  const [supportPhone, setSupportPhone] = useState("");
+  // Password visibility toggles
+  const [showKeySecret, setShowKeySecret] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+
+  // CARD 1: General Settings
+  const [storeName, setStoreName] = useState("KickAt");
+  const [supportEmail, setSupportEmail] = useState("support@kickat.co.in");
+  const [supportPhone, setSupportPhone] = useState("+91 98765 43210");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
@@ -41,39 +47,43 @@ export default function SettingsPage() {
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 
-  // SECTION 2: Payment Methods
-  // Razorpay Gateway
+  // CARD 2: Payment Methods
+  // Subsection 2A: Razorpay
   const [razorpayEnabled, setRazorpayEnabled] = useState(true);
   const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
   const [razorpayWebhookSecret, setRazorpayWebhookSecret] = useState("");
   
-  // Cash on Delivery (COD)
+  // Subsection 2B: Cash on Delivery (COD)
   const [codEnabled, setCodEnabled] = useState(true);
   const [codMinOrderAmount, setCodMinOrderAmount] = useState<number>(200);
   const [codMaxOrderAmount, setCodMaxOrderAmount] = useState<number>(10000);
-  const [codExtraFeeEnabled, setCodExtraFeeEnabled] = useState(false);
-  const [codExtraFee, setCodExtraFee] = useState<number>(0);
+  const [codExtraFeeEnabled, setCodExtraFeeEnabled] = useState(true);
+  const [codExtraFee, setCodExtraFee] = useState<number>(50);
 
-  // Payment Method Toggles
+  // Method Toggles
   const [upiEnabled, setUpiEnabled] = useState(true);
   const [cardEnabled, setCardEnabled] = useState(true);
   const [walletEnabled, setWalletEnabled] = useState(true);
   const [netbankingEnabled, setNetbankingEnabled] = useState(true);
 
-  // SECTION 3: Tax & GST
+  // CARD 3: Tax & GST Computation Rules
   const [gstEnabled, setGstEnabled] = useState(true);
-  const [defaultTaxRate, setDefaultTaxRate] = useState<number>(18);
-  const [taxInclusive, setTaxInclusive] = useState(false);
   const [gstin, setGstin] = useState("");
+  const [gstPercentage, setGstPercentage] = useState<number>(18);
   const [gstAppliesToDelivery, setGstAppliesToDelivery] = useState(false);
+  const [taxInclusive, setTaxInclusive] = useState(false);
 
-  // SECTION 4: Delivery Settings
-  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
-  const [defaultShippingFee, setDefaultShippingFee] = useState<number>(50);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(499);
+  // CARD 4: Delivery & Shipping Fee Rules
+  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
+  const [deliveryFee, setDeliveryFee] = useState<number>(50);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number>(999);
   const [estimatedDays, setEstimatedDays] = useState<number>(3);
   const [courierDefault, setCourierDefault] = useState("Delhivery");
+  const [deliveryExtraFeeEnabled, setDeliveryExtraFeeEnabled] = useState(false);
+  const [deliveryExtraFeeName, setDeliveryExtraFeeName] = useState("Platform Fee");
+  const [deliveryExtraFeeAmount, setDeliveryExtraFeeAmount] = useState<number>(10);
+  const [isExtraFeeCompulsory, setIsExtraFeeCompulsory] = useState(true);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -88,7 +98,7 @@ export default function SettingsPage() {
 
       // General
       if (data.general) {
-        setStoreName(data.general.storeName || "");
+        setStoreName(data.general.storeName || "KickAt");
         setSupportEmail(data.general.supportEmail || "support@kickat.co.in");
         setSupportPhone(data.general.supportPhone || "+91 98765 43210");
         setMaintenanceMode(!!data.general.maintenanceMode);
@@ -114,8 +124,8 @@ export default function SettingsPage() {
           setCodEnabled(data.payment.cod.enabled ?? true);
           setCodMinOrderAmount(data.payment.cod.minOrderAmount ?? 200);
           setCodMaxOrderAmount(data.payment.cod.maxOrderAmount ?? 10000);
-          setCodExtraFeeEnabled(!!data.payment.cod.extraFeeEnabled);
-          setCodExtraFee(data.payment.cod.extraFee ?? 0);
+          setCodExtraFeeEnabled(data.payment.cod.extraFeeEnabled ?? true);
+          setCodExtraFee(data.payment.cod.extraFee ?? 50);
         }
 
         if (data.payment.upi) setUpiEnabled(data.payment.upi.enabled ?? true);
@@ -127,19 +137,23 @@ export default function SettingsPage() {
       // Tax
       if (data.tax) {
         setGstEnabled(data.tax.gstEnabled ?? true);
-        setDefaultTaxRate(data.tax.defaultTaxRate ?? data.tax.gstPercentage ?? 18);
-        setTaxInclusive(!!data.tax.taxInclusive);
-        setGstin(data.tax.gstin || data.tax.gstNumber || "");
+        setGstPercentage(data.tax.gstPercentage ?? 18);
         setGstAppliesToDelivery(!!data.tax.gstAppliesToDelivery);
+        setTaxInclusive(!!data.tax.taxInclusive);
+        setGstin(data.tax.gstNumber || "");
       }
 
       // Delivery
       if (data.delivery) {
-        setDeliveryEnabled(data.delivery.deliveryEnabled ?? data.delivery.deliveryFeeEnabled ?? true);
-        setDefaultShippingFee(data.delivery.defaultShippingFee ?? data.delivery.deliveryFee ?? 50);
-        setFreeShippingThreshold(data.delivery.freeShippingThreshold ?? data.delivery.freeDeliveryThreshold ?? 499);
+        setDeliveryFeeEnabled(data.delivery.deliveryFeeEnabled ?? true);
+        setDeliveryFee(data.delivery.deliveryFee ?? 50);
+        setFreeDeliveryThreshold(data.delivery.freeDeliveryThreshold ?? 999);
         setEstimatedDays(data.delivery.estimatedDays ?? 3);
         setCourierDefault(data.delivery.courierDefault || "Delhivery");
+        setDeliveryExtraFeeEnabled(!!data.delivery.extraFeeEnabled);
+        setDeliveryExtraFeeName(data.delivery.extraFeeName || "Platform Fee");
+        setDeliveryExtraFeeAmount(data.delivery.extraFeeAmount ?? 10);
+        setIsExtraFeeCompulsory(data.delivery.isExtraFeeCompulsory ?? true);
       }
     } catch (err: any) {
       console.error("Failed to load settings:", err);
@@ -156,10 +170,22 @@ export default function SettingsPage() {
   // Manual Save Function for All Settings
   const handleSaveAllSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Frontend validation
+    if (deliveryFeeEnabled && deliveryExtraFeeEnabled && (!deliveryExtraFeeName || deliveryExtraFeeName.trim() === "")) {
+      showToast("Extra Fee Name cannot be empty when extra fee is enabled.");
+      return;
+    }
+
+    if (gstEnabled && (gstPercentage < 0 || gstPercentage > 100)) {
+      showToast("GST percentage must be between 0 and 100.");
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const payload: ConsolidatedSettings = {
+      const payload: AdminSettingsForm = {
         general: {
           storeName,
           supportEmail,
@@ -193,28 +219,27 @@ export default function SettingsPage() {
           netbanking: { enabled: netbankingEnabled },
         },
         tax: {
-          defaultTaxRate: Number(defaultTaxRate) || 0,
-          taxInclusive,
-          gstin,
           gstEnabled,
-          gstNumber: gstin,
-          gstPercentage: Number(defaultTaxRate) || 0,
+          gstNumber: gstin || null,
+          gstPercentage: Number(gstPercentage) || 0,
           gstAppliesToDelivery,
+          taxInclusive,
         },
         delivery: {
-          deliveryEnabled,
-          deliveryFeeEnabled: deliveryEnabled,
-          defaultShippingFee: Number(defaultShippingFee) || 0,
-          deliveryFee: Number(defaultShippingFee) || 0,
-          freeShippingThreshold: Number(freeShippingThreshold) || 0,
-          freeDeliveryThreshold: Number(freeShippingThreshold) || 0,
+          deliveryFeeEnabled,
+          deliveryFee: Number(deliveryFee) || 0,
+          freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
           estimatedDays: Number(estimatedDays) || 0,
           courierDefault,
+          extraFeeEnabled: deliveryExtraFeeEnabled,
+          extraFeeName: deliveryExtraFeeName,
+          extraFeeAmount: Number(deliveryExtraFeeAmount) || 0,
+          isExtraFeeCompulsory,
         },
       };
 
       await AdminSettingsService.updateAll(payload);
-      showToast("Store settings saved successfully!");
+      showToast("Store settings updated successfully!");
     } catch (err: any) {
       console.error("Save error:", err);
       // Fallback attempt with individual group updates
@@ -253,26 +278,25 @@ export default function SettingsPage() {
             netbanking: { enabled: netbankingEnabled },
           }),
           AdminSettingsService.updateTax({
-            defaultTaxRate: Number(defaultTaxRate) || 0,
-            taxInclusive,
-            gstin,
             gstEnabled,
-            gstNumber: gstin,
-            gstPercentage: Number(defaultTaxRate) || 0,
+            gstNumber: gstin || null,
+            gstPercentage: Number(gstPercentage) || 0,
             gstAppliesToDelivery,
+            taxInclusive,
           }),
           AdminSettingsService.updateDelivery({
-            deliveryEnabled,
-            deliveryFeeEnabled: deliveryEnabled,
-            defaultShippingFee: Number(defaultShippingFee) || 0,
-            deliveryFee: Number(defaultShippingFee) || 0,
-            freeShippingThreshold: Number(freeShippingThreshold) || 0,
-            freeDeliveryThreshold: Number(freeShippingThreshold) || 0,
+            deliveryFeeEnabled,
+            deliveryFee: Number(deliveryFee) || 0,
+            freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
             estimatedDays: Number(estimatedDays) || 0,
             courierDefault,
+            extraFeeEnabled: deliveryExtraFeeEnabled,
+            extraFeeName: deliveryExtraFeeName,
+            extraFeeAmount: Number(deliveryExtraFeeAmount) || 0,
+            isExtraFeeCompulsory,
           }),
         ]);
-        showToast("Store settings saved successfully!");
+        showToast("Store settings updated successfully!");
       } catch (fallbackErr: any) {
         const msg = fallbackErr?.response?.data?.message || err?.response?.data?.message || "Failed to save settings.";
         showToast(Array.isArray(msg) ? msg[0] : msg);
@@ -300,7 +324,7 @@ export default function SettingsPage() {
             Store & System Settings
           </h1>
           <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Configure platform identity, payment gateways & methods, GST computation, and shipping rules.
+            Configure platform identity, payment gateways & methods, GST computation rules, and shipping fees.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -341,7 +365,7 @@ export default function SettingsPage() {
       ) : (
         <div className="space-y-6 sm:space-y-8">
           
-          {/* SECTION 1: GENERAL & MAINTENANCE */}
+          {/* CARD 1: GENERAL & IDENTITY SETTINGS */}
           <section className="clay-card p-5 sm:p-7 space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
               <div className="flex items-center gap-2.5">
@@ -372,7 +396,7 @@ export default function SettingsPage() {
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-3 text-amber-900 text-xs">
                 <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
                 <div>
-                  <span className="font-bold">Maintenance Mode is active.</span> Public website access may be restricted to administrative users.
+                  <span className="font-bold">Maintenance Mode is active.</span> Enable to display maintenance banner to customers and pause checkouts.
                 </div>
               </div>
             )}
@@ -384,7 +408,7 @@ export default function SettingsPage() {
                   type="text"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="Kickat Pet Care"
+                  placeholder="KickAt"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
               </div>
@@ -406,7 +430,7 @@ export default function SettingsPage() {
                   type="text"
                   value={supportPhone}
                   onChange={(e) => setSupportPhone(e.target.value)}
-                  placeholder="+919876543210"
+                  placeholder="+91 98765 43210"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
               </div>
@@ -477,7 +501,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* SECTION 2: PAYMENT GATEWAY & METHOD CONFIGURATION */}
+          {/* CARD 2: PAYMENT GATEWAY CONFIGURATION */}
           <section className="clay-card p-5 sm:p-7 space-y-6">
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
@@ -485,13 +509,13 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                  Payment Gateway & Payment Methods
+                  Payment Gateway Configuration
                 </h2>
-                <p className="text-[11px] text-slate-500">Configure Razorpay credentials, enabled payment methods & COD handling fees</p>
+                <p className="text-[11px] text-slate-500">Configure Razorpay credentials and Cash on Delivery order limits & handling fees</p>
               </div>
             </div>
 
-            {/* Payment Method Toggles */}
+            {/* Sub-toggles for methods */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="clay-inset p-4 flex items-center justify-between cursor-pointer gap-3">
                 <div>
@@ -552,12 +576,12 @@ export default function SettingsPage() {
               </label>
             </div>
 
-            {/* Razorpay Gateway Box */}
+            {/* Subsection 2A: Razorpay Integration */}
             <div className="clay-inset p-4 sm:p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Key className="h-4 w-4 text-blue-600" />
-                  <h3 className="text-xs font-bold text-slate-800">Razorpay Integration Credentials</h3>
+                  <h3 className="text-xs font-bold text-slate-800">Razorpay Integration</h3>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-xs font-bold text-slate-700">Enable Razorpay</span>
@@ -570,51 +594,72 @@ export default function SettingsPage() {
                 </label>
               </div>
 
-              {razorpayEnabled && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">Razorpay Key ID</label>
-                    <input
-                      type="text"
-                      value={razorpayKeyId}
-                      onChange={(e) => setRazorpayKeyId(e.target.value)}
-                      placeholder="rzp_live_..."
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition"
-                    />
-                  </div>
+              <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 transition-all duration-200 ${!razorpayEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Razorpay Key ID</label>
+                  <input
+                    type="text"
+                    disabled={!razorpayEnabled}
+                    value={razorpayKeyId}
+                    onChange={(e) => setRazorpayKeyId(e.target.value)}
+                    placeholder="rzp_live_..."
+                    className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span>Key Secret</span>
-                      <Lock className="h-3 w-3 text-slate-400" />
-                    </label>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Key Secret</span>
+                    <Lock className="h-3 w-3 text-slate-400" />
+                  </label>
+                  <div className="relative">
                     <input
-                      type="password"
+                      type={showKeySecret ? "text" : "password"}
+                      disabled={!razorpayEnabled}
                       value={razorpayKeySecret}
                       onChange={(e) => setRazorpayKeySecret(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 pr-9 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                     />
+                    <button
+                      type="button"
+                      disabled={!razorpayEnabled}
+                      onClick={() => setShowKeySecret(!showKeySecret)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      {showKeySecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span>Webhook Secret</span>
-                      <Lock className="h-3 w-3 text-slate-400" />
-                    </label>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Webhook Secret</span>
+                    <Lock className="h-3 w-3 text-slate-400" />
+                  </label>
+                  <div className="relative">
                     <input
-                      type="password"
+                      type={showWebhookSecret ? "text" : "password"}
+                      disabled={!razorpayEnabled}
                       value={razorpayWebhookSecret}
                       onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 pr-9 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                     />
+                    <button
+                      type="button"
+                      disabled={!razorpayEnabled}
+                      onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Cash On Delivery */}
+            {/* Subsection 2B: Cash on Delivery (COD) */}
             <div className="clay-inset p-4 sm:p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -632,72 +677,73 @@ export default function SettingsPage() {
                 </label>
               </div>
 
-              {codEnabled && (
-                <div className="space-y-4 pt-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-slate-700">Minimum COD Order Amount (₹)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={codMinOrderAmount}
-                        onChange={(e) => setCodMinOrderAmount(Math.max(0, Number(e.target.value) || 0))}
-                        placeholder="200"
-                        className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-slate-700">Maximum COD Order Limit (₹)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={codMaxOrderAmount}
-                        onChange={(e) => setCodMaxOrderAmount(Math.max(0, Number(e.target.value) || 0))}
-                        placeholder="10000"
-                        className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition"
-                      />
-                    </div>
+              <div className={`space-y-4 pt-2 transition-all duration-200 ${!codEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Minimum COD Order Amount (₹)</label>
+                    <input
+                      type="number"
+                      disabled={!codEnabled}
+                      min="0"
+                      value={codMinOrderAmount}
+                      onChange={(e) => setCodMinOrderAmount(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="200"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    />
                   </div>
 
-                  {/* COD Extra Fee Options */}
-                  <div className="p-3.5 rounded-xl bg-white border border-slate-200/60 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800">COD Handling Fee</h4>
-                        <p className="text-[11px] text-slate-500">Apply an extra fixed handling charge on Cash on Delivery orders</p>
-                      </div>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-xs font-bold text-slate-700">Enable Extra Fee</span>
-                        <input
-                          type="checkbox"
-                          checked={codExtraFeeEnabled}
-                          onChange={(e) => setCodExtraFeeEnabled(e.target.checked)}
-                          className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                        />
-                      </label>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Maximum COD Order Limit (₹)</label>
+                    <input
+                      type="number"
+                      disabled={!codEnabled}
+                      min="0"
+                      value={codMaxOrderAmount}
+                      onChange={(e) => setCodMaxOrderAmount(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="10000"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-bold text-slate-700">COD Extra Handling Fee (₹)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={codExtraFee}
-                          onChange={(e) => setCodExtraFee(Math.max(0, Number(e.target.value) || 0))}
-                          placeholder="50"
-                          className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition"
-                        />
-                      </div>
+                {/* COD Extra Fee Controls */}
+                <div className="p-3.5 rounded-xl bg-white border border-slate-200/60 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800">Enable Extra COD Handling Fee</h4>
+                      <p className="text-[11px] text-slate-500">Charge an additional handling fee when customers select Cash on Delivery.</p>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        disabled={!codEnabled}
+                        checked={codExtraFeeEnabled}
+                        onChange={(e) => setCodExtraFeeEnabled(e.target.checked)}
+                        className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                    </label>
+                  </div>
+
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 transition-all duration-200 ${(!codEnabled || !codExtraFeeEnabled) ? "opacity-50 pointer-events-none" : ""}`}>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-slate-700">Extra COD Fee Amount (₹)</label>
+                      <input
+                        type="number"
+                        disabled={!codEnabled || !codExtraFeeEnabled}
+                        min="0"
+                        value={codExtraFee}
+                        onChange={(e) => setCodExtraFee(Math.max(0, Number(e.target.value) || 0))}
+                        placeholder="50"
+                        className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </section>
 
-          {/* SECTION 3: TAX & GST COMPUTATION RULES */}
+          {/* CARD 3: TAX & GST COMPUTATION RULES */}
           <section className="clay-card p-5 sm:p-7 space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
               <div className="flex items-center gap-2.5">
@@ -708,13 +754,13 @@ export default function SettingsPage() {
                   <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
                     Tax & GST Computation Rules
                   </h2>
-                  <p className="text-[11px] text-slate-500">Configure GSTIN identity, default tax percentage, and inclusive pricing</p>
+                  <p className="text-[11px] text-slate-500">Configure GSTIN identity, default tax percentage, and tax inclusive pricing</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 shrink-0">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Enable GST</span>
+                  <span className="text-xs font-bold text-slate-700">Enable GST Calculation</span>
                   <input
                     type="checkbox"
                     checked={gstEnabled}
@@ -723,7 +769,7 @@ export default function SettingsPage() {
                   />
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Prices Tax Inclusive</span>
+                  <span className="text-xs font-bold text-slate-700">Prices are Tax Inclusive</span>
                   <input
                     type="checkbox"
                     checked={taxInclusive}
@@ -734,38 +780,58 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Building2 className="h-3.5 w-3.5 text-indigo-600" />
-                  <span>GSTIN Number</span>
-                </label>
-                <input
-                  type="text"
-                  value={gstin}
-                  onChange={(e) => setGstin(e.target.value)}
-                  placeholder="27AAAAA0000A1Z5"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:bg-white focus:border-orange-400 transition"
-                />
+            <div className={`space-y-4 transition-all duration-200 ${!gstEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>GSTIN Number</span>
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!gstEnabled}
+                    value={gstin}
+                    onChange={(e) => setGstin(e.target.value)}
+                    placeholder="27AAAAA0000A1Z5"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Default Tax Rate % (0 to 100)</label>
+                  <input
+                    type="number"
+                    disabled={!gstEnabled}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={gstPercentage}
+                    onChange={(e) => setGstPercentage(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                    placeholder="18"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Default Tax Rate % (0 to 100)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={defaultTaxRate}
-                  onChange={(e) => setDefaultTaxRate(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                  placeholder="18.0"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
+              <div className="pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    disabled={!gstEnabled}
+                    checked={gstAppliesToDelivery}
+                    onChange={(e) => setGstAppliesToDelivery(e.target.checked)}
+                    className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-800">Apply GST to Delivery Charges</span>
+                    <p className="text-[11px] text-slate-500">Calculate tax on shipping/delivery fees in addition to product subtotal.</p>
+                  </div>
+                </label>
               </div>
             </div>
           </section>
 
-          {/* SECTION 4: DELIVERY & SHIPPING FEE RULES */}
+          {/* CARD 4: DELIVERY & SHIPPING FEE RULES */}
           <section className="clay-card p-5 sm:p-7 space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
               <div className="flex items-center gap-2.5">
@@ -783,76 +849,134 @@ export default function SettingsPage() {
                 <span className="text-xs font-bold text-slate-700">Delivery Enabled</span>
                 <input
                   type="checkbox"
-                  checked={deliveryEnabled}
-                  onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                  checked={deliveryFeeEnabled}
+                  onChange={(e) => setDeliveryFeeEnabled(e.target.checked)}
                   className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                 />
               </label>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Default Shipping Fee (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={defaultShippingFee}
-                  onChange={(e) => setDefaultShippingFee(Math.max(0, Number(e.target.value) || 0))}
-                  placeholder="50"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
+            <div className={`space-y-6 transition-all duration-200 ${!deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Default Shipping Fee (₹)</label>
+                  <input
+                    type="number"
+                    disabled={!deliveryFeeEnabled}
+                    min="0"
+                    value={deliveryFee}
+                    onChange={(e) => setDeliveryFee(Math.max(0, Number(e.target.value) || 0))}
+                    placeholder="50"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Free Shipping Threshold (₹)</label>
+                  <input
+                    type="number"
+                    disabled={!deliveryFeeEnabled}
+                    min="0"
+                    value={freeDeliveryThreshold}
+                    onChange={(e) => setFreeDeliveryThreshold(Math.max(0, Number(e.target.value) || 0))}
+                    placeholder="999"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    Orders with subtotal equal to or above this amount qualify for free delivery.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Estimated Days</span>
+                  </label>
+                  <input
+                    type="number"
+                    disabled={!deliveryFeeEnabled}
+                    min="1"
+                    max="30"
+                    value={estimatedDays}
+                    onChange={(e) => setEstimatedDays(Math.max(1, Number(e.target.value) || 1))}
+                    placeholder="3"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Default Courier</label>
+                  <input
+                    type="text"
+                    disabled={!deliveryFeeEnabled}
+                    value={courierDefault}
+                    onChange={(e) => setCourierDefault(e.target.value)}
+                    placeholder="Delhivery"
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Free Shipping Threshold (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={freeShippingThreshold}
-                  onChange={(e) => setFreeShippingThreshold(Math.max(0, Number(e.target.value) || 0))}
-                  placeholder="499"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
-              </div>
+              {/* Extra Platform / Handling Fee Subsection */}
+              <div className="p-4 rounded-2xl bg-[#F8F5F1] border border-slate-200/60 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-800">Extra Platform / Handling Fee</h3>
+                    <p className="text-[11px] text-slate-500">Configure optional or compulsory platform handling charges per order</p>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-xs font-bold text-slate-700">Enable Extra Handling Fee</span>
+                    <input
+                      type="checkbox"
+                      disabled={!deliveryFeeEnabled}
+                      checked={deliveryExtraFeeEnabled}
+                      onChange={(e) => setDeliveryExtraFeeEnabled(e.target.checked)}
+                      className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                  </label>
+                </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Estimated Days</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={estimatedDays}
-                  onChange={(e) => setEstimatedDays(Math.max(1, Number(e.target.value) || 1))}
-                  placeholder="3"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
-              </div>
+                <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 transition-all duration-200 ${(!deliveryFeeEnabled || !deliveryExtraFeeEnabled) ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Extra Fee Name *</label>
+                    <input
+                      type="text"
+                      disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
+                      value={deliveryExtraFeeName}
+                      onChange={(e) => setDeliveryExtraFeeName(e.target.value)}
+                      placeholder="Platform Fee"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Default Courier</label>
-                <input
-                  type="text"
-                  value={courierDefault}
-                  onChange={(e) => setCourierDefault(e.target.value)}
-                  placeholder="Delhivery"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Extra Fee Amount (₹)</label>
+                    <input
+                      type="number"
+                      disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
+                      min="0"
+                      value={deliveryExtraFeeAmount}
+                      onChange={(e) => setDeliveryExtraFeeAmount(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="10"
+                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="flex items-end pb-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
+                        checked={isExtraFeeCompulsory}
+                        onChange={(e) => setIsExtraFeeCompulsory(e.target.checked)}
+                        className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Is Extra Fee Compulsory</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {freeShippingThreshold === 0 ? (
-              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-emerald-800 text-xs font-bold animate-fade-in">
-                <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>⚡ Free Delivery is enabled on ALL orders regardless of cart total!</span>
-              </div>
-            ) : (
-              <p className="text-[11px] text-slate-400 font-medium">
-                Orders with subtotal equal to or above ₹{freeShippingThreshold} qualify for free delivery.
-              </p>
-            )}
           </section>
 
           {/* Bottom Floating Save Button Bar */}
