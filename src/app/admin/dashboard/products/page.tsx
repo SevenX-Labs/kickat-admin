@@ -1691,15 +1691,17 @@ export default function ProductsPage() {
                       </div>
 
                       {/* Actions Strip */}
-                      <div className="flex items-center gap-2 pt-0.5">
+                      <div className="flex items-center gap-1.5 pt-0.5">
                         <button
-                          onClick={() => handleOpenStockModal(p)}
-                          className="clay-button h-9 px-3 text-xs font-semibold text-slate-700 hover:text-indigo-600 flex items-center justify-center gap-1.5 rounded-xl transition cursor-pointer flex-1"
-                          title="Quick Stock Update"
+                          type="button"
+                          onClick={() => setViewModalProduct(p)}
+                          className="clay-button h-9 w-9 flex items-center justify-center text-slate-600 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50/50 rounded-xl transition cursor-pointer shrink-0"
+                          title="View Details"
                         >
-                          <Boxes className="h-3.5 w-3.5" />
-                          <span>Stock</span>
+                          <Eye className="h-4 w-4 text-sky-600" />
                         </button>
+
+
 
                         <Link
                           href={`/admin/dashboard/products/${p.id}`}

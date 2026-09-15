@@ -410,7 +410,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   // Option actions
   const handleAddOption = () => {
     const isFirst = options.length === 0;
+    const initialImg = images[0] || null;
     const newOption: OptionItemData = {
+      id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: "",
       sku: "",
       price: price !== "" ? price : "",
@@ -418,7 +420,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         discountPrice !== "" && discountPrice !== null ? discountPrice : "",
       stock: "",
       attributes: {},
-      imageUrl: images[0] || null,
+      imageUrl: initialImg,
+      images: initialImg ? [initialImg] : [],
       isDefault: isFirst,
     };
     setOptions([...options, newOption]);
@@ -426,20 +429,32 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
   const handleDuplicateOption = (index: number) => {
     const source = options[index];
-    const newIndex = options.length + 1;
-    const cleanName = `${source.name} (Copy)`;
-    const newSku = source.sku
-      ? `${source.sku.replace(/-(COPY|\d+)$/i, "")}-COPY`
-      : generateProductSku(name, cleanName, newIndex);
+    const nextNumber = options.length + 1;
+    const cleanName = source.name ? `${source.name} (Copy)` : "";
+    
+    // Auto-generate fresh unique SKU suffix (-01, -02, -03...)
+    const baseSku = source.sku
+      ? source.sku.replace(/-\d+$/i, "")
+      : generateProductSku(name, cleanName || `Option ${nextNumber}`, nextNumber).replace(/-\d+$/i, "");
+    const uniqueSku = `${baseSku}-${String(nextNumber).padStart(2, "0")}`;
+
+    // Deep clone selected images & attributes to break shared object references
+    const clonedImages = Array.isArray(source.images) ? [...source.images] : (source.imageUrl ? [source.imageUrl] : []);
+    const clonedAttributes = source.attributes ? { ...source.attributes } : {};
+
     const duplicated: OptionItemData = {
+      id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: cleanName,
-      sku: newSku,
+      sku: uniqueSku,
       price: source.price,
       discountPrice: source.discountPrice,
       stock: source.stock,
-      attributes: { ...source.attributes },
-      imageUrl: source.imageUrl || null,
+      attributes: clonedAttributes,
+      images: clonedImages,
+      imageUrl: clonedImages[0] || source.imageUrl || null,
+      isDefault: false, // Ensure duplicate is not marked as default
     };
+
     const updated = [...options];
     updated.splice(index + 1, 0, duplicated);
     setOptions(updated);
@@ -640,8 +655,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
             const finalOptionImages = rawImgs.map((url) => urlReplacementMap.get(url) || url).slice(0, 5);
             const finalOptionImageUrl = finalOptionImages[0] || (opt.imageUrl ? urlReplacementMap.get(opt.imageUrl) || opt.imageUrl : null);
 
+            const isUuid =
+              Boolean(opt.id) &&
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                opt.id!
+              );
+
             return {
-              ...(opt.id ? { id: opt.id } : {}),
+              ...(mode === "edit" && isUuid ? { id: opt.id } : {}),
               name: opt.name.trim(),
               sku: opt.sku?.trim() || null,
               price: Number(opt.price),
@@ -1182,9 +1203,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               onChange={(m) => {
                 setSellingMode(m);
                 if (m === "options" && options.length === 0) {
-                  // Initialize with a single blank option carrying over single-mode pricing/stock if entered, or empty
+                  const initialImg = images[0] || null;
                   setOptions([
                     {
+                      id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                       name: "",
                       sku: "",
                       price: price !== "" ? price : "",
@@ -1194,7 +1216,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                           : "",
                       stock: stock !== "" ? Number(stock) : "",
                       attributes: {},
-                      imageUrl: images[0] || null,
+                      imageUrl: initialImg,
+                      images: initialImg ? [initialImg] : [],
+                      isDefault: true,
                     },
                   ]);
                 }
@@ -1378,7 +1402,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 <div className="space-y-4">
                   {options.map((opt, idx) => (
                     <VariantOptionCard
-                      key={idx}
+                      key={opt.id || `opt-${idx}`}
                       index={idx}
                       option={opt}
                       availableImages={images}

@@ -58,5 +58,15 @@ export function generateProductSku(
     return `${prefix}${idxPart}`;
   }
 
-  return `${prefix}-${cleanOption}${idxPart}`;
+  let formattedOption = cleanOption;
+  if (formattedOption.length > 12) {
+    const optParts = formattedOption.split("-").filter(Boolean);
+    if (optParts.length >= 2) {
+      formattedOption = `${optParts[0].slice(0, 4)}-${optParts[1].slice(0, 4)}`;
+    } else {
+      formattedOption = formattedOption.slice(0, 10);
+    }
+  }
+
+  return `${prefix}-${formattedOption}${idxPart}`;
 }

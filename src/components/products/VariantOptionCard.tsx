@@ -66,8 +66,11 @@ export function VariantOptionCard({
   canRemove,
   errors,
 }: VariantOptionCardProps) {
-  const [showImagePicker, setShowImagePicker] = useState(false);
   const [isSkuCustomized, setIsSkuCustomized] = useState(false);
+
+  const currentImgs = Array.isArray(option.images) && option.images.length > 0
+    ? option.images
+    : (option.imageUrl ? [option.imageUrl] : []);
 
   const handleNameChange = (newName: string) => {
     let newSku = option.sku;
@@ -483,136 +486,106 @@ export function VariantOptionCard({
       </div>
 
       {/* Option Photos Selection */}
-      <div className="pt-2 border-t border-slate-100">
+      <div className="pt-3 border-t border-slate-100 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-700">Option Photos (Multiple)</span>
-            <span className="text-[11px] text-slate-500 font-medium">
-              ({(option.images && option.images.length > 0) ? option.images.length : (option.imageUrl ? 1 : 0)} selected)
+            <span className="text-xs font-bold text-slate-700">Option Photos</span>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border ${
+              currentImgs.length > 0
+                ? "bg-orange-50 text-[#FF7A00] border-orange-200"
+                : "bg-slate-100 text-slate-500 border-slate-200"
+            }`}>
+              {currentImgs.length}/5 selected
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowImagePicker(!showImagePicker)}
-            className="text-xs font-semibold text-[#FF7A00] hover:text-orange-700 cursor-pointer select-none"
-          >
-            {showImagePicker ? "Done selecting" : ((option.images && option.images.length > 0) || option.imageUrl) ? "Manage Photos" : "Select Photos"}
-          </button>
+
+          {currentImgs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...option, images: [], imageUrl: null })}
+              className="text-[11px] font-medium text-slate-400 hover:text-rose-500 transition cursor-pointer"
+            >
+              Clear Photos
+            </button>
+          )}
         </div>
 
-        {/* Selected Images Thumbnails preview */}
-        {((option.images && option.images.length > 0) || option.imageUrl) && !showImagePicker && (
-          <div className="flex flex-wrap gap-2 mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
-            {(option.images && option.images.length > 0 ? option.images : [option.imageUrl!]).map((img, i) => (
-              <div key={img + i} className="relative group flex items-center justify-center h-12 w-12 rounded-lg bg-white border border-slate-200 p-0.5">
-                <img
-                  src={img}
-                  alt={`Option photo ${i + 1}`}
-                  className="h-full w-full object-contain rounded-md"
-                />
-                {i === 0 && (
-                  <span className="absolute -top-1.5 -left-1.5 px-1 py-0.2 bg-[#FF7A00] text-white text-[9px] font-bold rounded-md shadow-xs">
-                    Primary
-                  </span>
-                )}
+        <p className="text-[11px] text-slate-500 font-medium">
+          Select photos from Step 2 gallery for this option. The first selected (<span className="font-bold text-[#FF7A00]">#1</span>) is used as the primary photo. Max 5 photos.
+        </p>
+
+        {availableImages.length > 0 ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {availableImages.map((imgUrl, i) => {
+              const isSelected = currentImgs.includes(imgUrl);
+              const selIndex = currentImgs.indexOf(imgUrl);
+
+              return (
                 <button
+                  key={imgUrl + i}
                   type="button"
                   onClick={() => {
-                    const currentImgs = option.images && option.images.length > 0 ? option.images : (option.imageUrl ? [option.imageUrl] : []);
-                    const updated = currentImgs.filter((_, idx) => idx !== i);
+                    let updated: string[];
+                    if (isSelected) {
+                      updated = currentImgs.filter((url) => url !== imgUrl);
+                    } else {
+                      if (currentImgs.length >= 5) {
+                        return;
+                      }
+                      updated = [...currentImgs, imgUrl];
+                    }
                     onChange({
                       ...option,
                       images: updated,
                       imageUrl: updated[0] || null,
                     });
                   }}
-                  className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition cursor-pointer shadow-xs"
-                  title="Remove photo"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Multi-Photo Picker Drawer */}
-        {showImagePicker && (
-          <div className="mt-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <p className="text-[11px] text-slate-500 font-medium">
-              Select multiple photos from Step 2 Product Photos for this option (First selected is Primary):
-            </p>
-
-            {availableImages.length > 0 ? (
-              <div className="flex flex-wrap gap-2 items-center">
-                {/* Clear all button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ ...option, images: [], imageUrl: null });
-                  }}
-                  className={`h-12 px-3 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                    (!option.images || option.images.length === 0) && !option.imageUrl
-                      ? "border-[#FF7A00] bg-orange-50 text-[#FF7A00] font-bold"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                  className={`group relative h-14 w-14 rounded-xl border-2 transition-all cursor-pointer overflow-hidden p-0.5 bg-white ${
+                    isSelected
+                      ? "border-[#FF7A00] ring-2 ring-[#FF7A00]/20 shadow-xs"
+                      : currentImgs.length >= 5
+                        ? "border-slate-200 opacity-40 hover:opacity-60"
+                        : "border-slate-200 hover:border-slate-400"
                   }`}
+                  title={
+                    isSelected
+                      ? `Selected #${selIndex + 1} (${selIndex === 0 ? "Primary" : "Gallery"}). Click to deselect.`
+                      : currentImgs.length >= 5
+                        ? "Maximum 5 photos selected"
+                        : "Click to select for this option"
+                  }
                 >
-                  Clear All
+                  <img
+                    src={imgUrl}
+                    alt={`Option photo ${i + 1}`}
+                    className="h-full w-full object-contain rounded-lg"
+                  />
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-[#FF7A00]/15 flex items-center justify-center">
+                      <span
+                        className={`font-bold text-white flex items-center justify-center shadow-xs ${
+                          selIndex === 0
+                            ? "px-1 py-0.5 text-[8px] bg-[#FF7A00] rounded-md uppercase tracking-wider"
+                            : "h-5 w-5 text-[10px] bg-[#FF7A00] rounded-full"
+                        }`}
+                      >
+                        {selIndex === 0 ? "Primary" : selIndex + 1}
+                      </span>
+                    </div>
+                  )}
+                  {!isSelected && currentImgs.length < 5 && (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                      <Plus className="h-4 w-4 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
                 </button>
-
-                {availableImages.map((imgUrl, i) => {
-                  const currentImgs = option.images && option.images.length > 0 ? option.images : (option.imageUrl ? [option.imageUrl] : []);
-                  const isSelected = currentImgs.includes(imgUrl);
-                  const selIndex = currentImgs.indexOf(imgUrl);
-
-                  return (
-                    <button
-                      key={imgUrl + i}
-                      type="button"
-                      onClick={() => {
-                        let updated: string[];
-                        if (isSelected) {
-                          updated = currentImgs.filter((url) => url !== imgUrl);
-                        } else {
-                          if (currentImgs.length >= 5) {
-                            alert("A maximum of 5 photos per variant option is allowed.");
-                            return;
-                          }
-                          updated = [...currentImgs, imgUrl];
-                        }
-                        onChange({
-                          ...option,
-                          images: updated,
-                          imageUrl: updated[0] || null,
-                        });
-                      }}
-                      className={`relative h-12 w-12 rounded-lg border overflow-hidden p-0.5 transition cursor-pointer ${
-                        isSelected
-                          ? "border-[#FF7A00] ring-2 ring-[#FF7A00] shadow-xs"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}
-                    >
-                      <img
-                        src={imgUrl}
-                        alt={`Option photo ${i + 1}`}
-                        className="h-full w-full object-contain"
-                      />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-[#FF7A00]/20 flex items-center justify-center">
-                          <span className="h-5 w-5 rounded-full bg-[#FF7A00] text-white font-bold text-[10px] flex items-center justify-center shadow-xs">
-                            {selIndex + 1}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 italic">
-                No photos uploaded in Step 2 yet. Please add product photos first.
-              </p>
-            )}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-amber-700 text-xs flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>No product photos uploaded in Step 2 yet. Please upload photos in Step 2 first.</span>
           </div>
         )}
       </div>
