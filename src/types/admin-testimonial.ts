@@ -1,13 +1,16 @@
 export interface Testimonial {
   id: string;
-  name: string;
+  name?: string;
+  authorName?: string;
   role?: string | null;
+  authorTitle?: string | null;
+  authorAvatar?: string | null;
   rating: number;
   content: string;
   petName?: string | null;
   petType?: string | null;
   isActive: boolean;
-  isFeatured: boolean;
+  isFeatured?: boolean;
   order: number;
   deletedAt?: string | null;
   createdAt: string;
@@ -19,12 +22,14 @@ export interface TestimonialsMeta {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
 }
 
 export interface TestimonialsStats {
   total: number;
   active: number;
-  featured: number;
+  featured?: number;
   averageRating: number;
 }
 
@@ -45,10 +50,13 @@ export interface AdminTestimonialsQueryParams {
 }
 
 export interface CreateTestimonialInput {
-  name: string;
+  name?: string;
+  authorName?: string;
+  role?: string;
+  authorTitle?: string;
+  authorAvatar?: string | null;
   content: string;
   rating?: number;
-  role?: string;
   petName?: string;
   petType?: string;
   isActive?: boolean;
