@@ -36,7 +36,12 @@ export const AdminCategoryService = {
     if (Array.isArray(responseData)) {
       return responseData;
     }
-    if (responseData && typeof responseData === "object" && "tree" in responseData && Array.isArray((responseData as { tree?: AdminCategoryItem[] }).tree)) {
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "tree" in responseData &&
+      Array.isArray((responseData as { tree?: AdminCategoryItem[] }).tree)
+    ) {
       return (responseData as { tree: AdminCategoryItem[] }).tree;
     }
     return [];
@@ -47,7 +52,9 @@ export const AdminCategoryService = {
    * GET /api/v1/admin/categories/:id
    */
   async getCategoryById(id: string): Promise<AdminCategoryItem> {
-    const res = await apiClient.get<SingleCategoryResponse>(`/admin/categories/${encodeURIComponent(id)}`);
+    const res = await apiClient.get<SingleCategoryResponse>(
+      `/admin/categories/${encodeURIComponent(id)}`
+    );
     return res.data.data;
   },
 
@@ -100,7 +107,7 @@ export const AdminCategoryService = {
    * 8. Delete Category (with Integrity Protections)
    * DELETE /api/v1/admin/categories/:id
    */
-  async deleteCategory(id: string, permanent = true): Promise<{ success: boolean; message?: string }> {
+  async deleteCategory(id: string, permanent = false): Promise<{ success: boolean; message?: string }> {
     const res = await apiClient.delete<{ success: boolean; message?: string }>(
       `/admin/categories/${encodeURIComponent(id)}`,
       { params: { permanent } }
