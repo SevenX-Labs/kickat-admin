@@ -163,7 +163,7 @@ export default function CategoriesPage() {
   const [formName, setFormName] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [formOrder, setFormOrder] = useState<number>(0);
+  const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState<boolean>(true);
 
   // Image Upload State in Modal
@@ -270,6 +270,23 @@ export default function CategoriesPage() {
     return categories.filter((c) => !c.parentId);
   }, [categories]);
 
+  // Calculate Next Default Order Index (1, 2, 3...)
+  const calculateNextOrder = useCallback(
+    (parentId: string = ""): number => {
+      if (!parentId) {
+        if (rootCategories.length === 0) return 1;
+        const maxOrd = Math.max(...rootCategories.map((r) => r.order || 0));
+        return (isFinite(maxOrd) && maxOrd >= 0 ? maxOrd : rootCategories.length) + 1;
+      } else {
+        const subs = categories.filter((c) => c.parentId === parentId);
+        if (subs.length === 0) return 1;
+        const maxOrd = Math.max(...subs.map((s) => s.order || 0));
+        return (isFinite(maxOrd) && maxOrd >= 0 ? maxOrd : subs.length) + 1;
+      }
+    },
+    [categories, rootCategories]
+  );
+
   // Hierarchical Category Tree Construction
   const categoryTree = useMemo(() => {
     const roots = categories.filter((c) => !c.parentId);
@@ -298,7 +315,11 @@ export default function CategoriesPage() {
     setEditingCategory(null);
     setFormName("");
     setFormSlug("");
-    setFormOrder(0);
+    
+    // Auto calculate next sequential order index (1, 2, 3...)
+    const nextOrd = calculateNextOrder(defaultParentId);
+    setFormOrder(nextOrd);
+
     setFormIsActive(true);
     setModalParentId(defaultParentId);
     setIsSubcategoryMode(Boolean(defaultParentId));
@@ -314,7 +335,7 @@ export default function CategoriesPage() {
     setEditingCategory(cat);
     setFormName(cat.name);
     setFormSlug(cat.slug);
-    setFormOrder(cat.order);
+    setFormOrder(cat.order ?? 1);
     setFormIsActive(cat.isActive);
     setModalParentId(cat.parentId || "");
     setIsSubcategoryMode(Boolean(cat.parentId));
@@ -482,7 +503,7 @@ export default function CategoriesPage() {
           imageUrl: finalImageUrl,
           parentId,
           isActive: formIsActive,
-          order: Number(formOrder) || 0,
+          order: Number(formOrder) || 1,
         };
 
         await AdminCategoryService.updateCategory(editingCategory.id, payload);
@@ -494,7 +515,7 @@ export default function CategoriesPage() {
           imageUrl: finalImageUrl,
           parentId,
           isActive: formIsActive,
-          order: Number(formOrder) || 0,
+          order: Number(formOrder) || 1,
         };
 
         await AdminCategoryService.createCategory(payload);
@@ -1072,6 +1093,9 @@ export default function CategoriesPage() {
                     onClick={() => {
                       setIsSubcategoryMode(false);
                       setModalParentId("");
+                      if (!editingCategory) {
+                        setFormOrder(calculateNextOrder(""));
+                      }
                     }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
                       !isSubcategoryMode
@@ -1087,8 +1111,12 @@ export default function CategoriesPage() {
                     type="button"
                     onClick={() => {
                       setIsSubcategoryMode(true);
+                      const targetParent = modalParentId || (rootCategories.length > 0 ? rootCategories[0].id : "");
                       if (!modalParentId && rootCategories.length > 0) {
-                        setModalParentId(rootCategories[0].id);
+                        setModalParentId(targetParent);
+                      }
+                      if (!editingCategory) {
+                        setFormOrder(calculateNextOrder(targetParent));
                       }
                     }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
@@ -1119,7 +1147,13 @@ export default function CategoriesPage() {
                   <div className="relative">
                     <select
                       value={modalParentId}
-                      onChange={(e) => setModalParentId(e.target.value)}
+                      onChange={(e) => {
+                        const newParent = e.target.value;
+                        setModalParentId(newParent);
+                        if (!editingCategory) {
+                          setFormOrder(calculateNextOrder(newParent));
+                        }
+                      }}
                       className="w-full rounded-xl bg-white border border-slate-200 p-2.5 pr-8 text-xs font-bold text-slate-800 outline-none focus:border-[#FF7A00] cursor-pointer appearance-none"
                     >
                       {rootCategories.length === 0 ? (
@@ -1204,11 +1238,14 @@ export default function CategoriesPage() {
                   <label className="block text-slate-700 font-bold">Display Order #</label>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     value={formOrder}
-                    onChange={(e) => setFormOrder(Number(e.target.value) || 0)}
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-[#FF7A00] transition"
+                    onChange={(e) => setFormOrder(Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-[#FF7A00] transition font-bold"
                   />
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    Auto-calculated next sequence index ({formOrder})
+                  </p>
                 </div>
 
                 <div className="flex items-end pb-2">
