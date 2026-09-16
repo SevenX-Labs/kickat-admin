@@ -410,7 +410,6 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   // Option actions
   const handleAddOption = () => {
     const isFirst = options.length === 0;
-    const initialImg = images[0] || null;
     const newOption: OptionItemData = {
       id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: "",
@@ -420,11 +419,41 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         discountPrice !== "" && discountPrice !== null ? discountPrice : "",
       stock: "",
       attributes: {},
-      imageUrl: initialImg,
-      images: initialImg ? [initialImg] : [],
+      imageUrl: null,
+      images: [],
       isDefault: isFirst,
     };
     setOptions([...options, newOption]);
+  };
+
+  const handleAddOptionFiles = (optionIndex: number, files: FileList | File[]) => {
+    const currentOpt = options[optionIndex];
+    if (!currentOpt) return;
+
+    const currentImgs = Array.isArray(currentOpt.images) && currentOpt.images.length > 0
+      ? currentOpt.images
+      : (currentOpt.imageUrl ? [currentOpt.imageUrl] : []);
+
+    if (currentImgs.length >= 5) return;
+
+    const remainingSlots = 5 - currentImgs.length;
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+    const newBlobUrls: string[] = [];
+    for (const file of filesToProcess) {
+      const blobUrl = URL.createObjectURL(file);
+      pendingFilesRef.current.set(blobUrl, file);
+      newBlobUrls.push(blobUrl);
+    }
+
+    const updatedImgs = [...currentImgs, ...newBlobUrls];
+    const updatedOption: OptionItemData = {
+      ...currentOpt,
+      images: updatedImgs,
+      imageUrl: updatedImgs[0] || null,
+    };
+
+    handleUpdateOption(optionIndex, updatedOption);
   };
 
   const handleDuplicateOption = (index: number) => {
@@ -603,7 +632,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
 
       for (const [blobUrl, file] of pendingFilesRef.current.entries()) {
         const isUsedInImages = images.includes(blobUrl);
-        const isUsedInOptions = options.some((opt) => opt.imageUrl === blobUrl);
+        const isUsedInOptions = options.some(
+          (opt) => (Array.isArray(opt.images) && opt.images.includes(blobUrl)) || opt.imageUrl === blobUrl
+        );
         if (isUsedInImages || isUsedInOptions) {
           pendingList.push({ blobUrl, file });
         }
@@ -1203,7 +1234,6 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               onChange={(m) => {
                 setSellingMode(m);
                 if (m === "options" && options.length === 0) {
-                  const initialImg = images[0] || null;
                   setOptions([
                     {
                       id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -1216,8 +1246,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                           : "",
                       stock: stock !== "" ? Number(stock) : "",
                       attributes: {},
-                      imageUrl: initialImg,
-                      images: initialImg ? [initialImg] : [],
+                      imageUrl: null,
+                      images: [],
                       isDefault: true,
                     },
                   ]);
@@ -1418,6 +1448,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                           }))
                         );
                       }}
+                      onAddFiles={(files) => handleAddOptionFiles(idx, files)}
                       canRemove={options.length > 1}
                       errors={{
                         name: errors[`option_${idx}_name`],

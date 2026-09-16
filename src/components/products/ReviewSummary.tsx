@@ -259,9 +259,9 @@ export function ReviewSummary({
                   {options.map((opt, i) => (
                     <tr key={i} className="hover:bg-slate-50/80">
                       <td className="py-2.5 pr-3">
-                        {opt.imageUrl ? (
+                        {opt.imageUrl || (opt.images && opt.images[0]) ? (
                           <img
-                            src={opt.imageUrl}
+                            src={opt.imageUrl || (opt.images && opt.images[0])}
                             alt=""
                             className="h-9 w-9 rounded-lg object-contain bg-white border border-slate-200"
                           />
