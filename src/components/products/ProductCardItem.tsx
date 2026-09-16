@@ -209,31 +209,7 @@ export function ProductCardItem({
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#FF7A00] pointer-events-none" />
               </div>
 
-              {/* Quick Pills for 1-Click Toggle */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                {variants.map((v, vIdx) => {
-                  const isActive = vIdx === activeVariantIdx;
-                  return (
-                    <button
-                      key={v.id || vIdx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveVariantIdx(vIdx);
-                      }}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer shrink-0 border whitespace-nowrap ${
-                        isActive
-                          ? "bg-[#FF7A00] text-white border-[#FF7A00] shadow-2xs"
-                          : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:text-slate-800"
-                      }`}
-                      title={`Switch to ${v.name || `Option ${vIdx + 1}`}`}
-                    >
-                      {v.name || `Option ${vIdx + 1}`}
-                    </button>
-                  );
-                })}
               </div>
-            </div>
           )}
         </div>
       </div>
