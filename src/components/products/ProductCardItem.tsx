@@ -87,43 +87,45 @@ export function ProductCardItem({
     >
       {/* Top Media & Header Container */}
       <div>
-        {/* Product Image Box (Compact Sleek Height) */}
-        <div className="relative h-32 sm:h-36 w-full rounded-xl bg-[#FBF9F6] border border-slate-200/70 overflow-hidden flex items-center justify-center mb-2 group-hover:border-orange-200 transition-colors">
-          {/* Checkbox Selector */}
-          <div className="absolute top-2 left-2 z-10">
+        {/* Card Header Top Bar: Checkbox + Active Badge Dropdown */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1.5">
             <input
               type="checkbox"
               checked={isSelected}
               onChange={onToggleSelect}
               className="h-3.5 w-3.5 rounded accent-[#FF7A00] cursor-pointer bg-white shadow-xs border border-slate-300"
             />
+            <span className="text-[10px] font-mono text-slate-400 font-medium">
+              #{product.id.slice(-6)}
+            </span>
           </div>
 
-          {/* Unified Status Selector */}
-          <div className="absolute top-2 right-2 z-10">
-            <div className="relative">
-              <select
-                value={product.status}
-                disabled={isStatusUpdating}
-                onChange={(e) => onStatusChange(e.target.value as ProductStatus)}
-                className={`text-[10px] font-bold rounded-lg py-0.5 pl-2 pr-4 cursor-pointer appearance-none border shadow-2xs backdrop-blur-xs transition ${
-                  product.status === "ACTIVE"
-                    ? "bg-emerald-50/95 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                    : product.status === "DRAFT"
-                    ? "bg-amber-50/95 text-amber-700 border-amber-200 hover:bg-amber-100"
-                    : "bg-slate-100/95 text-slate-600 border-slate-200 hover:bg-slate-200"
-                } disabled:opacity-50`}
-                title="Change product status"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="DRAFT">Draft</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-              <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-2.5 w-2.5 text-slate-500 pointer-events-none" />
-            </div>
+          {/* Clean Active Status Dropdown (Outside Image Container) */}
+          <div className="relative">
+            <select
+              value={product.status}
+              disabled={isStatusUpdating}
+              onChange={(e) => onStatusChange(e.target.value as ProductStatus)}
+              className={`text-[10px] font-bold rounded-lg py-0.5 pl-2 pr-4 cursor-pointer appearance-none border shadow-2xs transition ${
+                product.status === "ACTIVE"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  : product.status === "DRAFT"
+                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+              } disabled:opacity-50`}
+              title="Change product status"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="DRAFT">Draft</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-2.5 w-2.5 text-slate-500 pointer-events-none" />
           </div>
+        </div>
 
-          {/* Product / Variant Image */}
+        {/* Product Image Box (Clean, Unobstructed Image View) */}
+        <div className="relative h-32 sm:h-36 w-full rounded-xl bg-[#FBF9F6] border border-slate-200/70 overflow-hidden flex items-center justify-center mb-2 group-hover:border-orange-200 transition-colors">
           {displayImage ? (
             <img
               src={displayImage}
@@ -189,30 +191,48 @@ export function ProductCardItem({
             <span className="truncate">SKU: {displaySku}</span>
           </div>
 
-          {/* Full-Width Variant Selector Pills (No redundant 2 VAR label) */}
+          {/* Product Variant Dropdown Selector */}
           {hasVariants && (
-            <div className="pt-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {variants.map((v, vIdx) => {
-                const isActive = vIdx === activeVariantIdx;
-                return (
-                  <button
-                    key={v.id || vIdx}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveVariantIdx(vIdx);
-                    }}
-                    className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-bold transition cursor-pointer shrink-0 border whitespace-nowrap ${
-                      isActive
-                        ? "bg-[#FF7A00] text-white border-[#FF7A00] shadow-2xs"
-                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:text-slate-800"
-                    }`}
-                    title={`Switch to ${v.name || `Option ${vIdx + 1}`}`}
-                  >
-                    {v.name || `Option ${vIdx + 1}`}
-                  </button>
-                );
-              })}
+            <div className="pt-1.5 space-y-1">
+              <div className="relative">
+                <select
+                  value={activeVariantIdx}
+                  onChange={(e) => setActiveVariantIdx(Number(e.target.value))}
+                  className="w-full text-[11px] font-bold text-[#FF7A00] bg-orange-50/90 border border-orange-200/90 rounded-lg px-2.5 py-1 appearance-none cursor-pointer pr-6 outline-none hover:bg-orange-100 transition shadow-2xs"
+                >
+                  {variants.map((v, vIdx) => (
+                    <option key={v.id || vIdx} value={vIdx}>
+                      {v.name || `Option ${vIdx + 1}`} ({v.price ? `₹${v.price}` : `₹${product.price}`} • {v.stock} in stock)
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#FF7A00] pointer-events-none" />
+              </div>
+
+              {/* Quick Pills for 1-Click Toggle */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                {variants.map((v, vIdx) => {
+                  const isActive = vIdx === activeVariantIdx;
+                  return (
+                    <button
+                      key={v.id || vIdx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveVariantIdx(vIdx);
+                      }}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer shrink-0 border whitespace-nowrap ${
+                        isActive
+                          ? "bg-[#FF7A00] text-white border-[#FF7A00] shadow-2xs"
+                          : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:text-slate-800"
+                      }`}
+                      title={`Switch to ${v.name || `Option ${vIdx + 1}`}`}
+                    >
+                      {v.name || `Option ${vIdx + 1}`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
