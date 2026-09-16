@@ -40,6 +40,8 @@ import {
   ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
+import { ProductCardVariants } from "@/components/products/ProductCardVariants";
+import { ProductCardItem } from "@/components/products/ProductCardItem";
 import {
   CategoryFilterDropdown,
   SpeciesFilterDropdown,
@@ -1365,7 +1367,7 @@ export default function ProductsPage() {
                         {hasVariants && (
                           <>
                             <span className="text-slate-300">•</span>
-                            <span className="shrink-0">{p.variants.length} var</span>
+                            <span className="text-[#FF7A00] font-bold shrink-0">{p.variants.length} var</span>
                           </>
                         )}
                       </div>
@@ -1392,6 +1394,15 @@ export default function ProductsPage() {
                         {p.status}
                       </span>
                     </div>
+
+                    {/* Expandable Product Variants */}
+                    {hasVariants && (
+                      <ProductCardVariants
+                        variants={p.variants}
+                        productFallbackImage={primaryImg}
+                        productName={p.name}
+                      />
+                    )}
 
                     {/* Bottom Line: Price + Stock + Actions */}
                     <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100/90">
@@ -1526,205 +1537,23 @@ export default function ProductsPage() {
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 relative z-0">
               {products.map((p) => {
                 const isSelected = selectedIds.has(p.id);
-                const hasVariants = p.variants && p.variants.length > 0;
-                const primaryImg = p.imageUrl || p.images?.[0];
-                const discountPct =
-                  p.discountPrice && p.discountPrice < p.price
-                    ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
-                    : null;
 
                 return (
-                  <div
+                  <ProductCardItem
                     key={p.id}
-                    className={`clay-card p-4 sm:p-4.5 flex flex-col justify-between h-full transition-all duration-200 relative group ${
-                      isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : "hover:border-slate-300"
-                    }`}
-                  >
-                    {/* Top Media & Header Container */}
-                    <div>
-                      <div className="relative aspect-square sm:h-52 w-full rounded-2xl bg-[#FBF9F6] border border-slate-200/70 overflow-hidden flex items-center justify-center mb-3 group-hover:border-orange-200 transition-colors">
-                        {/* Checkbox Selector */}
-                        <div className="absolute top-2.5 left-2.5 z-10">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelect(p.id)}
-                            className="h-4 w-4 rounded accent-[#FF7A00] cursor-pointer bg-white shadow-xs border border-slate-300"
-                          />
-                        </div>
-
-                        {/* Unified Status Selector: Status Display + Switcher in One */}
-                        <div className="absolute top-2.5 right-2.5 z-10">
-                          <div className="relative">
-                            <select
-                              value={p.status}
-                              disabled={statusUpdatingId === p.id}
-                              onChange={(e) => handleStatusChange(p, e.target.value as ProductStatus)}
-                              className={`text-[11px] font-bold rounded-lg py-1 pl-2 pr-5 cursor-pointer appearance-none border shadow-2xs backdrop-blur-xs transition ${
-                                p.status === "ACTIVE"
-                                ? "bg-emerald-50/95 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                                : p.status === "DRAFT"
-                                ? "bg-amber-50/95 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                : "bg-slate-100/95 text-slate-600 border-slate-200 hover:bg-slate-200"
-                              } disabled:opacity-50`}
-                              title="Change product status"
-                            >
-                              <option value="ACTIVE">Active</option>
-                              <option value="DRAFT">Draft</option>
-                              <option value="INACTIVE">Inactive</option>
-                            </select>
-                            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500 pointer-events-none" />
-                          </div>
-                        </div>
-
-                        {/* Product Image */}
-                        {primaryImg ? (
-                          <img
-                            src={primaryImg}
-                            alt={p.name}
-                            className="h-full w-full object-contain p-3 group-hover:scale-105 transition-transform duration-200"
-                            onError={(e) => {
-                              (e.currentTarget as any).src = "";
-                              e.currentTarget.className = "hidden";
-                            }}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-slate-300">
-                            <div className="p-3 rounded-2xl bg-white text-orange-500 mb-1 shadow-xs border border-slate-100">
-                              {renderSpeciesIcon(p.petSpecies, "h-7 w-7")}
-                            </div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                              KickAt Original
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product Metadata & Title */}
-                      <div className="space-y-1.5">
-                        {/* Category & Species Meta Line */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
-                          <span className="font-semibold text-slate-700 hover:text-orange-600 transition truncate max-w-[130px]">
-                            {p.category?.name || "Uncategorized"}
-                          </span>
-
-                          {p.petSpecies && (
-                            <>
-                              <span className="text-slate-300">•</span>
-                              <span className="flex items-center gap-1 text-slate-600 font-medium">
-                                {renderSpeciesIcon(p.petSpecies, "h-3 w-3 text-orange-600")}
-                                <span>{p.petSpecies}</span>
-                              </span>
-                            </>
-                          )}
-
-                          {hasVariants && (
-                            <>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-slate-500 font-medium">
-                                {p.variants.length} variant{p.variants.length > 1 ? "s" : ""}
-                              </span>
-                            </>
-                          )}
-
-                          {p.isBestSeller && (
-                            <span className="bg-amber-50 text-amber-800 border border-amber-200/60 font-bold text-[10px] px-1.5 py-0.2 rounded flex items-center gap-1">
-                              <Sparkles className="h-2.5 w-2.5 text-amber-600" /> Best Seller
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Product Name */}
-                        <h3 className="font-fraunces text-base font-bold text-slate-900 leading-snug line-clamp-2 hover:text-[#FF7A00] transition">
-                          <Link href={`/admin/dashboard/products/${p.id}`}>{p.name}</Link>
-                        </h3>
-
-                        {/* SKU & Slug */}
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
-                          <span>SKU: {p.variants?.[0]?.sku || p.id.slice(0, 8)}</span>
-                          <span>•</span>
-                          <span className="truncate">/{p.slug}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Bottom: Stock, Price & Actions */}
-                    <div className="pt-3 mt-3 border-t border-slate-100 space-y-2.5">
-                      {/* Stock Status & Price Row */}
-                      <div className="flex items-center justify-between gap-2">
-                        {/* Stock Status */}
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
-                          {p.stock === 0 ? (
-                            <span className="flex items-center gap-1.5 text-rose-700 font-semibold">
-                              <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-                              <span>Out of stock</span>
-                            </span>
-                          ) : p.stock <= 10 ? (
-                            <span className="flex items-center gap-1.5 text-amber-700 font-semibold">
-                              <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-                              <span>{p.stock} left (low)</span>
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                              <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                              <span>{p.stock} in stock</span>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Price Hierarchy */}
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                            ₹{(p.discountPrice ?? p.price).toLocaleString("en-IN")}
-                          </span>
-                          {p.discountPrice && p.discountPrice < p.price && (
-                            <span className="text-xs text-slate-400 line-through">
-                              ₹{p.price.toLocaleString("en-IN")}
-                            </span>
-                          )}
-                          {discountPct && (
-                            <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1 py-0.2 rounded">
-                              {discountPct}% OFF
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Actions Strip */}
-                      <div className="flex items-center gap-1.5 pt-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setViewModalProduct(p)}
-                          className="clay-button h-9 w-9 flex items-center justify-center text-slate-600 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50/50 rounded-xl transition cursor-pointer shrink-0"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4 text-sky-600" />
-                        </button>
-
-
-
-                        <Link
-                          href={`/admin/dashboard/products/${p.id}`}
-                          className="clay-btn-orange h-9 px-3.5 text-xs font-bold text-white flex items-center justify-center gap-1.5 rounded-xl transition cursor-pointer flex-1 shadow-xs hover:brightness-105"
-                          title="Edit Product Details"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                          <span>Edit</span>
-                        </Link>
-
-                        <button
-                          onClick={() => {
-                            setDeleteProductTarget(p);
-                            setDeletePermanent(false);
-                          }}
-                          className="clay-button h-9 w-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 rounded-xl transition cursor-pointer shrink-0"
-                          title="Delete Product"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    product={p}
+                    isSelected={isSelected}
+                    onToggleSelect={() => toggleSelect(p.id)}
+                    onStatusChange={(newStatus) => handleStatusChange(p, newStatus)}
+                    onViewDetails={() => setViewModalProduct(p)}
+                    onDelete={() => {
+                      setDeleteProductTarget(p);
+                      setDeletePermanent(false);
+                    }}
+                    onUpdateStock={() => handleOpenStockModal(p)}
+                    isStatusUpdating={statusUpdatingId === p.id}
+                    renderSpeciesIcon={renderSpeciesIcon}
+                  />
                 );
               })}
             </div>
