@@ -42,6 +42,7 @@ export const AdminTestimonialService = {
       content: item.content || "",
       petName: item.petName || null,
       petType: item.petType || null,
+      project: item.project || item.role || item.authorTitle || "General Store",
       isActive: item.isActive ?? true,
       isFeatured: !!item.isFeatured,
       order: Number(item.order) || 0,
@@ -92,7 +93,7 @@ export const AdminTestimonialService = {
     payload: CreateTestimonialInput
   ): Promise<SingleTestimonialResponse> {
     const nameVal = payload.name || payload.authorName || "";
-    const roleVal = payload.role || payload.authorTitle || "";
+    const roleVal = payload.project || payload.role || payload.authorTitle || "";
 
     const formattedPayload = {
       ...payload,
@@ -100,6 +101,7 @@ export const AdminTestimonialService = {
       authorName: nameVal,
       role: roleVal,
       authorTitle: roleVal,
+      project: roleVal,
     };
 
     const res = await apiClient.post<SingleTestimonialResponse>(
@@ -118,12 +120,12 @@ export const AdminTestimonialService = {
     payload: UpdateTestimonialInput
   ): Promise<SingleTestimonialResponse> {
     const nameVal = payload.name || payload.authorName;
-    const roleVal = payload.role || payload.authorTitle;
+    const roleVal = payload.project || payload.role || payload.authorTitle;
 
     const formattedPayload = {
       ...payload,
       ...(nameVal !== undefined && { name: nameVal, authorName: nameVal }),
-      ...(roleVal !== undefined && { role: roleVal, authorTitle: roleVal }),
+      ...(roleVal !== undefined && { role: roleVal, authorTitle: roleVal, project: roleVal }),
     };
 
     const res = await apiClient.patch<SingleTestimonialResponse>(

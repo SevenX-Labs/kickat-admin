@@ -81,14 +81,14 @@ export function ProductCardItem({
 
   return (
     <div
-      className={`clay-card p-3.5 sm:p-4 flex flex-col justify-between h-full transition-all duration-200 relative group ${
+      className={`clay-card p-3 sm:p-3.5 flex flex-col justify-between h-full transition-all duration-200 relative group ${
         isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : "hover:border-slate-300"
       }`}
     >
       {/* Top Media & Header Container */}
       <div>
-        {/* Product Image Box (Sleek Compact Height) */}
-        <div className="relative h-36 sm:h-40 w-full rounded-2xl bg-[#FBF9F6] border border-slate-200/70 overflow-hidden flex items-center justify-center mb-2.5 group-hover:border-orange-200 transition-colors">
+        {/* Product Image Box (Compact Sleek Height) */}
+        <div className="relative h-32 sm:h-36 w-full rounded-xl bg-[#FBF9F6] border border-slate-200/70 overflow-hidden flex items-center justify-center mb-2 group-hover:border-orange-200 transition-colors">
           {/* Checkbox Selector */}
           <div className="absolute top-2 left-2 z-10">
             <input
@@ -137,10 +137,10 @@ export function ProductCardItem({
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-slate-300">
-              <div className="p-2.5 rounded-2xl bg-white text-orange-500 mb-0.5 shadow-xs border border-slate-100">
-                {renderSpeciesIcon(product.petSpecies, "h-6 w-6")}
+              <div className="p-2 rounded-2xl bg-white text-orange-500 mb-0.5 shadow-xs border border-slate-100">
+                {renderSpeciesIcon(product.petSpecies, "h-5 w-5")}
               </div>
-              <span className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
                 KickAt Original
               </span>
             </div>
@@ -150,7 +150,7 @@ export function ProductCardItem({
         {/* Product Metadata & Title */}
         <div className="space-y-1">
           {/* Category & Species Meta Line */}
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 flex-wrap">
             <span className="font-semibold text-slate-700 hover:text-orange-600 transition truncate max-w-[110px]">
               {product.category?.name || "Uncategorized"}
             </span>
@@ -172,9 +172,16 @@ export function ProductCardItem({
             )}
           </div>
 
-          {/* Product Title */}
-          <h3 className="font-fraunces text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-1 hover:text-[#FF7A00] transition">
-            <Link href={`/admin/dashboard/products/${product.id}`}>{product.name}</Link>
+          {/* Product Title + Active Variant Name Tag */}
+          <h3 className="font-fraunces text-sm font-bold text-slate-900 leading-snug line-clamp-1 hover:text-[#FF7A00] transition">
+            <Link href={`/admin/dashboard/products/${product.id}`}>
+              {product.name}
+              {hasVariants && activeVariant?.name && activeVariant.name.toLowerCase() !== product.name.toLowerCase() && (
+                <span className="text-[#FF7A00] font-sans font-bold text-xs ml-1.5">
+                  ({activeVariant.name})
+                </span>
+              )}
+            </Link>
           </h3>
 
           {/* SKU Display */}
@@ -182,12 +189,9 @@ export function ProductCardItem({
             <span className="truncate">SKU: {displaySku}</span>
           </div>
 
-          {/* Compact Variant Selector Pills (Single-Line Horizontal Scroll / Flex) */}
+          {/* Full-Width Variant Selector Pills (No redundant 2 VAR label) */}
           {hasVariants && (
-            <div className="pt-1 flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              <span className="text-[9.5px] font-bold text-slate-400 uppercase shrink-0 mr-0.5">
-                {variants.length} Var:
-              </span>
+            <div className="pt-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {variants.map((v, vIdx) => {
                 const isActive = vIdx === activeVariantIdx;
                 return (
@@ -198,14 +202,14 @@ export function ProductCardItem({
                       e.stopPropagation();
                       setActiveVariantIdx(vIdx);
                     }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer shrink-0 border whitespace-nowrap ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-bold transition cursor-pointer shrink-0 border whitespace-nowrap ${
                       isActive
                         ? "bg-[#FF7A00] text-white border-[#FF7A00] shadow-2xs"
                         : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:text-slate-800"
                     }`}
                     title={`Switch to ${v.name || `Option ${vIdx + 1}`}`}
                   >
-                    {v.name || `Opt ${vIdx + 1}`}
+                    {v.name || `Option ${vIdx + 1}`}
                   </button>
                 );
               })}

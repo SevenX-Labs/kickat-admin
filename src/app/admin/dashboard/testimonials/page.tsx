@@ -33,6 +33,15 @@ import {
 } from "@/types/admin-testimonial";
 import AdminTestimonialService from "@/services/adminTestimonialService";
 
+const PROJECT_OPTIONS = [
+  "KickAt Food & Nutrition",
+  "KickAt Harness & Accessories",
+  "KickAt Grooming & Care",
+  "KickAt Mobile App",
+  "KickAt Web Store",
+  "General Store",
+];
+
 const AVATAR_GRADIENTS = [
   "bg-gradient-to-br from-amber-400 to-orange-500",
   "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -98,6 +107,7 @@ export default function TestimonialsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "FEATURED" | "ACTIVE" | "INACTIVE">("ALL");
   const [speciesFilter, setSpeciesFilter] = useState<string>("ALL");
+  const [projectFilter, setProjectFilter] = useState<string>("ALL");
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
   const [sortBy, setSortBy] = useState<
     "order_asc" | "order_desc" | "createdAt_desc" | "createdAt_asc" | "rating_desc"
@@ -113,6 +123,7 @@ export default function TestimonialsPage() {
   // Form Fields
   const [formName, setFormName] = useState("");
   const [formRole, setFormRole] = useState("");
+  const [formProject, setFormProject] = useState("KickAt Food & Nutrition");
   const [formAvatar, setFormAvatar] = useState("");
   const [formRating, setFormRating] = useState(5);
   const [formContent, setFormContent] = useState("");
@@ -182,6 +193,10 @@ export default function TestimonialsPage() {
           queryParams.isActive = false;
         }
 
+        if (projectFilter !== "ALL") {
+          queryParams.project = projectFilter;
+        }
+
         if (ratingFilter) {
           queryParams.rating = ratingFilter;
         }
@@ -202,7 +217,7 @@ export default function TestimonialsPage() {
         setRefreshing(false);
       }
     },
-    [currentPage, sortBy, debouncedSearch, statusFilter, ratingFilter, showToast]
+    [currentPage, sortBy, debouncedSearch, statusFilter, ratingFilter, projectFilter, showToast]
   );
 
   useEffect(() => {
@@ -215,6 +230,7 @@ export default function TestimonialsPage() {
     setDebouncedSearch("");
     setStatusFilter("ALL");
     setSpeciesFilter("ALL");
+    setProjectFilter("ALL");
     setRatingFilter(undefined);
     setSortBy("order_asc");
     setCurrentPage(1);
@@ -224,28 +240,39 @@ export default function TestimonialsPage() {
     debouncedSearch !== "" ||
     statusFilter !== "ALL" ||
     speciesFilter !== "ALL" ||
+    projectFilter !== "ALL" ||
     ratingFilter !== undefined;
 
   // Client-side species filtering if active
   const displayedTestimonials = useMemo(() => {
-    if (speciesFilter === "ALL") return testimonials;
-    return testimonials.filter((t) => {
-      const pType = (t.petType || "").toLowerCase();
-      if (speciesFilter === "Dogs") return pType.includes("dog");
-      if (speciesFilter === "Cats") return pType.includes("cat");
-      if (speciesFilter === "Birds") return pType.includes("bird") || pType.includes("parrot");
-      if (speciesFilter === "Other") {
-        return !pType.includes("dog") && !pType.includes("cat") && !pType.includes("bird");
-      }
-      return pType.includes(speciesFilter.toLowerCase());
-    });
-  }, [testimonials, speciesFilter]);
+    let items = testimonials;
+    if (speciesFilter !== "ALL") {
+      items = items.filter((t) => {
+        const pType = (t.petType || "").toLowerCase();
+        if (speciesFilter === "Dogs") return pType.includes("dog");
+        if (speciesFilter === "Cats") return pType.includes("cat");
+        if (speciesFilter === "Birds") return pType.includes("bird") || pType.includes("parrot");
+        if (speciesFilter === "Other") {
+          return !pType.includes("dog") && !pType.includes("cat") && !pType.includes("bird");
+        }
+        return pType.includes(speciesFilter.toLowerCase());
+      });
+    }
+    if (projectFilter !== "ALL") {
+      items = items.filter((t) => {
+        const proj = (t.project || t.role || "").toLowerCase();
+        return proj.includes(projectFilter.toLowerCase());
+      });
+    }
+    return items;
+  }, [testimonials, speciesFilter, projectFilter]);
 
   // Modal Open Handlers
   const handleOpenAdd = () => {
     setEditingItem(null);
     setFormName("");
     setFormRole("");
+    setFormProject("KickAt Food & Nutrition");
     setFormAvatar("");
     setFormRating(5);
     setFormContent("");
@@ -263,6 +290,7 @@ export default function TestimonialsPage() {
     setEditingItem(item);
     setFormName(item.name || item.authorName || "");
     setFormRole(item.role || item.authorTitle || "");
+    setFormProject(item.project || item.role || item.authorTitle || "KickAt Food & Nutrition");
     setFormAvatar(item.authorAvatar || "");
     setFormRating(item.rating || 5);
     setFormContent(item.content || "");
@@ -400,7 +428,8 @@ export default function TestimonialsPage() {
         const updatePayload: UpdateTestimonialInput = {
           name: formName.trim(),
           authorName: formName.trim(),
-          role: formRole.trim() || undefined,
+          role: formRole.trim() || formProject,
+          project: formProject,
           authorTitle: formRole.trim() || undefined,
           authorAvatar: formAvatar.trim() || null,
           rating: formRating,
@@ -422,7 +451,8 @@ export default function TestimonialsPage() {
         const createPayload: CreateTestimonialInput = {
           name: formName.trim(),
           authorName: formName.trim(),
-          role: formRole.trim() || undefined,
+          role: formRole.trim() || formProject,
+          project: formProject,
           authorTitle: formRole.trim() || undefined,
           authorAvatar: formAvatar.trim() || null,
           rating: formRating,
@@ -480,6 +510,22 @@ export default function TestimonialsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
         <div>
           <div className="flex items-center gap-2">
+                {/* Project Filter */}
+                <select
+                  value={projectFilter}
+                  onChange={(e) => {
+                    setProjectFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-xl bg-[#F8F5F1] border border-slate-200/60 px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-orange-400 transition cursor-pointer"
+                >
+                  <option value="ALL">All Projects</option>
+                  {PROJECT_OPTIONS.map((proj) => (
+                    <option key={proj} value={proj}>
+                      {proj}
+                    </option>
+                  ))}
+                </select>
             <h1 className="font-fraunces text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#2A241E]">
               Homepage Testimonials
             </h1>
@@ -792,13 +838,19 @@ export default function TestimonialsPage() {
                       </div>
 
                       {/* Pet Tag */}
-                      {(item.petName || item.petType) && (
-                        <div className="flex items-center gap-1.5 pt-1">
+{/* Project & Pet Badge */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        {item.project && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/60">
+                            📁 {item.project}
+                          </span>
+                        )}
+                        {(item.petName || item.petType) && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-[#FF7A00] text-[10px] font-bold">
                             🐾 {item.petName ? item.petName : ""} {item.petType ? `(${item.petType})` : ""}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {/* Card Footer Actions */}
@@ -930,6 +982,21 @@ export default function TestimonialsPage() {
                     placeholder="Priya Sharma"
                     className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Project / Product Line</label>
+                  <select
+                    value={formProject}
+                    onChange={(e) => setFormProject(e.target.value)}
+                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition font-medium"
+                  >
+                    {PROJECT_OPTIONS.map((proj) => (
+                      <option key={proj} value={proj}>
+                        {proj}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">

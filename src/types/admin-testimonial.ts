@@ -9,6 +9,7 @@ export interface Testimonial {
   content: string;
   petName?: string | null;
   petType?: string | null;
+  project?: string | null;
   isActive: boolean;
   isFeatured?: boolean;
   order: number;
@@ -46,6 +47,7 @@ export interface AdminTestimonialsQueryParams {
   isActive?: boolean;
   isFeatured?: boolean;
   rating?: number;
+  project?: string;
   sort?: "order_asc" | "order_desc" | "createdAt_desc" | "createdAt_asc" | "rating_desc" | "rating_asc";
 }
 
@@ -59,6 +61,7 @@ export interface CreateTestimonialInput {
   rating?: number;
   petName?: string;
   petType?: string;
+  project?: string;
   isActive?: boolean;
   isFeatured?: boolean;
   order?: number;
