@@ -21,7 +21,12 @@ import {
   UserCheck, 
   UserX,
   PawPrint,
-  ArrowUp
+  ArrowUp,
+  Filter,
+  ShoppingBag,
+  IndianRupee,
+  Sparkles,
+  CheckSquare
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
@@ -59,7 +64,8 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Bulk Selection State (uniform with Products page)
+  // Bulk Selection & Mode State
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Status flags
@@ -96,7 +102,7 @@ export default function CustomersPage() {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchInput);
       setCurrentPage(1);
-    }, 400);
+    }, 350);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -255,11 +261,28 @@ export default function CustomersPage() {
     }
   };
 
+  // Helper for generating initial background colors
+  const getAvatarBg = (name: string) => {
+    const colors = [
+      "bg-orange-500 text-white",
+      "bg-indigo-500 text-white",
+      "bg-emerald-500 text-white",
+      "bg-blue-500 text-white",
+      "bg-rose-500 text-white",
+      "bg-purple-500 text-white",
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-5 pb-16 w-full min-w-0 no-scrollbar">
-      {/* Toast Notification */}
+    <div className="space-y-4 sm:space-y-6 pb-20 w-full min-w-0 no-scrollbar">
+      {/* Top Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in border border-slate-700">
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs sm:text-sm font-semibold shadow-2xl animate-fade-in border border-slate-700">
           <Check className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -276,13 +299,42 @@ export default function CustomersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          {/* Select Mode Toggle Button */}
+          <button
+            onClick={() => {
+              if (isSelectMode) {
+                setIsSelectMode(false);
+                setSelectedIds(new Set());
+              } else {
+                setIsSelectMode(true);
+              }
+            }}
+            className={`clay-button min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer active:scale-95 ${
+              isSelectMode
+                ? "bg-orange-50 text-orange-600 border border-orange-200/80 shadow-xs"
+                : "text-slate-700 hover:text-slate-900"
+            }`}
+            title="Toggle selection checkboxes mode"
+          >
+            {isSelectMode ? (
+              <>
+                <X className="h-4 w-4 text-orange-600" />
+                <span>Done</span>
+              </>
+            ) : (
+              <>
+                <CheckSquare className="h-4 w-4 text-slate-500" />
+                <span>Select</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => fetchCustomers()}
             disabled={loading}
-            className="clay-button min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer disabled:opacity-50 active:scale-95"
-            title="Refresh customer list"
-            aria-label="Refresh customer list"
+            className="clay-button min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer disabled:opacity-50 active:scale-95"
+            title="Refresh customer directory"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-[#FF7A00]" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
@@ -290,9 +342,8 @@ export default function CustomersPage() {
 
           <button 
             onClick={handleExportAllCSV}
-            className="clay-button min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer active:scale-95"
+            className="clay-button min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-slate-700 hover:text-slate-900 transition cursor-pointer active:scale-95"
             title="Export full directory as CSV"
-            aria-label="Export CSV"
           >
             <Download className="h-4 w-4 text-slate-500" />
             <span>Export CSV</span>
@@ -301,328 +352,195 @@ export default function CustomersPage() {
       </div>
 
       {/* =========================================================
-          1. STAT CARDS ROW (2x2 on mobile 375px, 4-col on desktop)
-          Clean, brand-consistent palette: Slate, Emerald, Brand Orange, Red
+          1. STAT CARDS ROW (Responsive Grid)
           ========================================================= */}
-      {loading ? (
-        <>
-          {/* Mobile 2x2 Metric Grid Skeleton (md:hidden) */}
-          <div className="grid grid-cols-2 gap-2 md:hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="clay-card p-3 space-y-2 min-h-[72px]">
-                <div className="flex justify-between items-center">
-                  <div className="h-3 w-16 bg-slate-200/80 rounded animate-pulse" />
-                  <div className="h-4 w-4 bg-slate-200/80 rounded-md animate-pulse" />
-                </div>
-                <div className="h-6 w-12 bg-slate-200/80 rounded animate-pulse" />
-              </div>
-            ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
+        {/* Metric 1: Total Customers */}
+        <button
+          type="button"
+          onClick={() => {
+            setFilterTab("ALL");
+            setCurrentPage(1);
+          }}
+          className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer min-w-0 ${
+            filterTab === "ALL" ? "ring-2 ring-slate-800/20 bg-slate-50/40" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-400 min-w-0">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Total Customers
+            </span>
+            <Users className="h-4 w-4 text-slate-400 shrink-0" />
           </div>
-          {/* Desktop Metric Cards Skeleton */}
-          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="clay-card p-4 space-y-2 min-h-[84px]">
-                <div className="flex justify-between items-center">
-                  <div className="h-3 w-20 bg-slate-200/80 rounded animate-pulse" />
-                  <div className="h-4 w-4 bg-slate-200/80 rounded-md animate-pulse" />
-                </div>
-                <div className="h-7 w-16 bg-slate-200/80 rounded animate-pulse" />
-              </div>
-            ))}
+          <p className="font-fraunces text-xl sm:text-2xl font-black text-[#2A241E] mt-1 truncate">
+            {summary.totalCustomers.toLocaleString()}
+          </p>
+          <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate block mt-0.5">
+            Registered directory
+          </span>
+        </button>
+
+        {/* Metric 2: Active Accounts */}
+        <button
+          type="button"
+          onClick={() => {
+            setFilterTab("ACTIVE");
+            setCurrentPage(1);
+          }}
+          className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer min-w-0 ${
+            filterTab === "ACTIVE" ? "ring-2 ring-emerald-500 bg-emerald-50/20" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-emerald-600 min-w-0">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Active Accounts
+            </span>
+            <UserCheck className="h-4 w-4 text-emerald-500 shrink-0" />
           </div>
-        </>
-      ) : (
-        <>
-          {/* Mobile High-Density 2x2 Metric Grid (md:hidden, large tap targets, high contrast) */}
-          <div className="grid grid-cols-2 gap-2 md:hidden">
-            {/* Metric 1: Total Customers */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("ALL");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3 min-h-[72px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "ALL" ? "ring-2 ring-slate-800/20 bg-slate-50/40" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Total
-                </span>
-                <Users className="h-4 w-4 text-slate-400 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl font-bold text-[#2A241E] mt-1">
-                {summary.totalCustomers.toLocaleString()}
-              </p>
-              <span className="text-[10px] font-medium text-slate-500 truncate block">
-                Registered
-              </span>
-            </button>
+          <p className="font-fraunces text-xl sm:text-2xl font-black text-emerald-600 mt-1 truncate">
+            {summary.activeCustomersCount.toLocaleString()}
+          </p>
+          <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700/80 truncate block mt-0.5">
+            In good standing
+          </span>
+        </button>
 
-            {/* Metric 2: Active Accounts (Emerald) */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("ACTIVE");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3 min-h-[72px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "ACTIVE" ? "ring-2 ring-emerald-500 bg-emerald-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between text-emerald-600">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Active
-                </span>
-                <UserCheck className="h-4 w-4 text-emerald-500 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl font-bold text-emerald-600 mt-1">
-                {summary.activeCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10px] font-medium text-emerald-700/80 truncate block">
-                Good standing
-              </span>
-            </button>
-
-            {/* Metric 3: Verified Profiles (Brand Orange) */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("VERIFIED");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3 min-h-[72px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "VERIFIED" ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between text-[#EA580C]">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Verified
-                </span>
-                <CheckCircle2 className="h-4 w-4 text-[#FF7A00] shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl font-bold text-[#EA580C] mt-1">
-                {summary.verifiedCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10px] font-medium text-orange-700/80 truncate block">
-                Verified contact
-              </span>
-            </button>
-
-            {/* Metric 4: Blocked Accounts (Standard Warning Red matching Products Out of Stock) */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("BLOCKED");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3 min-h-[72px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "BLOCKED" ? "ring-2 ring-rose-500 bg-rose-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between text-rose-600">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Blocked
-                </span>
-                <UserX className="h-4 w-4 text-rose-500 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl font-bold text-rose-600 mt-1">
-                {summary.blockedCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10px] font-medium text-rose-700/80 truncate block">
-                Restricted access
-              </span>
-            </button>
+        {/* Metric 3: Verified Profiles */}
+        <button
+          type="button"
+          onClick={() => {
+            setFilterTab("VERIFIED");
+            setCurrentPage(1);
+          }}
+          className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer min-w-0 ${
+            filterTab === "VERIFIED" ? "ring-2 ring-orange-500 bg-orange-50/20" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-orange-600 min-w-0">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Verified Profiles
+            </span>
+            <CheckCircle2 className="h-4 w-4 text-orange-500 shrink-0" />
           </div>
+          <p className="font-fraunces text-xl sm:text-2xl font-black text-orange-600 mt-1 truncate">
+            {summary.verifiedCustomersCount.toLocaleString()}
+          </p>
+          <span className="text-[10px] sm:text-[11px] font-semibold text-orange-700/80 truncate block mt-0.5">
+            Verified contact info
+          </span>
+        </button>
 
-          {/* Desktop Summary Cards (hidden md:grid) */}
-          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Metric 1: Total Customers */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("ALL");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "ALL" ? "ring-2 ring-slate-800/20 bg-slate-50/40" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1 text-slate-400">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Total Customers
-                </span>
-                <Users className="h-4 w-4 text-slate-400 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl sm:text-2xl font-bold text-[#2A241E] mt-1">
-                {summary.totalCustomers.toLocaleString()}
-              </p>
-              <span className="text-[10.5px] font-medium text-slate-500 truncate block mt-0.5">
-                Registered accounts
-              </span>
-            </button>
-
-            {/* Metric 2: Active Accounts */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("ACTIVE");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "ACTIVE" ? "ring-2 ring-emerald-500 bg-emerald-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1 text-emerald-600">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Active Accounts
-                </span>
-                <UserCheck className="h-4 w-4 text-emerald-500 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl sm:text-2xl font-bold text-emerald-600 mt-1">
-                {summary.activeCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10.5px] font-medium text-emerald-700/80 truncate block mt-0.5">
-                In good standing
-              </span>
-            </button>
-
-            {/* Metric 3: Verified Profiles */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("VERIFIED");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "VERIFIED" ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1 text-[#EA580C]">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Verified Profiles
-                </span>
-                <CheckCircle2 className="h-4 w-4 text-[#FF7A00] shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl sm:text-2xl font-bold text-[#EA580C] mt-1">
-                {summary.verifiedCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10.5px] font-medium text-orange-700/80 truncate block mt-0.5">
-                Verified email/phone
-              </span>
-            </button>
-
-            {/* Metric 4: Blocked Accounts */}
-            <button
-              type="button"
-              onClick={() => {
-                setFilterTab("BLOCKED");
-                setCurrentPage(1);
-              }}
-              className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer ${
-                filterTab === "BLOCKED" ? "ring-2 ring-rose-500 bg-rose-50/20" : ""
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1 text-rose-600">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
-                  Blocked Accounts
-                </span>
-                <UserX className="h-4 w-4 text-rose-500 shrink-0" />
-              </div>
-              <p className="font-fraunces text-xl sm:text-2xl font-bold text-rose-600 mt-1">
-                {summary.blockedCustomersCount.toLocaleString()}
-              </p>
-              <span className="text-[10.5px] font-medium text-rose-700/80 truncate block mt-0.5">
-                Restricted access
-              </span>
-            </button>
+        {/* Metric 4: Blocked Accounts */}
+        <button
+          type="button"
+          onClick={() => {
+            setFilterTab("BLOCKED");
+            setCurrentPage(1);
+          }}
+          className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer min-w-0 ${
+            filterTab === "BLOCKED" ? "ring-2 ring-rose-500 bg-rose-50/20" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-rose-600 min-w-0">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              Blocked Accounts
+            </span>
+            <UserX className="h-4 w-4 text-rose-500 shrink-0" />
           </div>
-        </>
-      )}
+          <p className="font-fraunces text-xl sm:text-2xl font-black text-rose-600 mt-1 truncate">
+            {summary.blockedCustomersCount.toLocaleString()}
+          </p>
+          <span className="text-[10px] sm:text-[11px] font-semibold text-rose-700/80 truncate block mt-0.5">
+            Restricted access
+          </span>
+        </button>
+      </div>
 
       {/* =========================================================
-          2. STICKY SEARCH, FILTER & SORT TOOLBAR
-          3-row mobile layout: No horizontal overflow at 375px
-          All interactive targets meet 44px min height
+          2. PREMIUM SEARCH & FILTER TOOLBAR PANEL
           ========================================================= */}
-      <div className="sticky top-0 z-30 bg-[#FAF4EC]/95 backdrop-blur-md -mx-4 px-4 pt-1.5 pb-2.5 border-b border-orange-100/60 md:static md:bg-transparent md:p-0 md:border-0 md:m-0 space-y-2">
-        <div className="clay-card p-2.5 sm:p-3.5 space-y-2.5 min-w-0">
-          {/* Row 1: Search Bar with 44px min height & short placeholder to fit 375px without truncation */}
-          <div className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search name, email, phone..."
-              className="w-full h-11 rounded-xl bg-[#F8F5F1] border border-slate-200/70 pl-9 pr-10 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition truncate"
-            />
-            {searchInput && (
-              <button
-                onClick={() => setSearchInput("")}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 h-9 w-9 flex items-center justify-center cursor-pointer"
-                title="Clear search"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+      <div className="clay-card p-3.5 sm:p-4 space-y-3.5 min-w-0 border border-slate-200/80 shadow-xs">
+        {/* Top Search Field */}
+        <div className="relative w-full">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search customer name, email address, or phone number..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 outline-hidden focus:bg-white focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
-          {/* Row 2: Filter Pills (4-column grid on mobile for 375px zero-overflow; 44px min touch target) */}
-          <div className="grid grid-cols-4 gap-1.5 w-full sm:flex sm:items-center sm:w-auto">
-            {(
-              [
-                { id: "ALL", label: "All" },
-                { id: "ACTIVE", label: "Active" },
-                { id: "VERIFIED", label: "Verified" },
-                { id: "BLOCKED", label: "Blocked" },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setFilterTab(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`
-                  min-h-[44px] px-1 sm:px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer active:scale-95 flex items-center justify-center border text-center select-none truncate
-                  ${filterTab === tab.id 
-                    ? "bg-[#FF7A00] text-white border-[#EA580C] shadow-xs" 
-                    : "clay-button text-slate-600 hover:text-slate-900 border-slate-200/70"
-                  }
-                `}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Row 3: Filter Summary / Reset + Sort Dropdown (Consistent with Categories and Products) */}
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/80 text-xs">
-            <div className="text-[11px] font-medium text-slate-500 truncate min-w-0">
-              {debouncedSearch || filterTab !== "ALL" ? (
+        {/* Filter Pills & Controls Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 border-t border-slate-100">
+          {/* Status Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: "ALL", label: "All Customers", count: summary.totalCustomers },
+              { id: "ACTIVE", label: "Active", count: summary.activeCustomersCount },
+              { id: "VERIFIED", label: "Verified", count: summary.verifiedCustomersCount },
+              { id: "BLOCKED", label: "Blocked", count: summary.blockedCustomersCount },
+            ].map((tab) => {
+              const isSelected = filterTab === tab.id;
+              return (
                 <button
+                  key={tab.id}
                   onClick={() => {
-                    setSearchInput("");
-                    setFilterTab("ALL");
+                    setFilterTab(tab.id as any);
                     setCurrentPage(1);
                   }}
-                  className="text-[#EA580C] hover:text-orange-700 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer min-h-[44px]"
-                  title="Reset active filters"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                    isSelected
+                      ? "bg-slate-900 text-white shadow-xs"
+                      : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
+                  }`}
                 >
-                  <X className="h-3.5 w-3.5 shrink-0" />
-                  <span>Reset filter</span>
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 text-[9.5px] font-mono rounded-full ${
+                      isSelected
+                        ? "bg-white/20 text-white font-extrabold"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
-              ) : (
-                <span className="text-slate-500 font-medium">
-                  {pagination.total} {pagination.total === 1 ? "customer" : "customers"}
-                </span>
-              )}
-            </div>
+              );
+            })}
+          </div>
 
-            {/* Sort Dropdown with 44px min height & consistent styling */}
+          {/* Right Controls: Filter Summary + Sort Dropdown */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+            {/* Active Filter Info & Reset Button */}
+            {(debouncedSearch || filterTab !== "ALL") ? (
+              <button
+                onClick={() => {
+                  setSearchInput("");
+                  setFilterTab("ALL");
+                  setCurrentPage(1);
+                }}
+                className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1 transition cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>Reset Filters</span>
+              </button>
+            ) : (
+              <span className="text-xs font-medium text-slate-500">
+                {pagination.total} {pagination.total === 1 ? "customer" : "customers"}
+              </span>
+            )}
+
+            {/* Sort Select Menu */}
             <div className="relative shrink-0">
               <select
                 value={sortOption}
@@ -630,85 +548,64 @@ export default function CustomersPage() {
                   setSortOption(e.target.value as AdminCustomerSortType);
                   setCurrentPage(1);
                 }}
-                className="min-h-[44px] h-11 w-auto max-w-[140px] sm:max-w-[160px] rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-2 pl-2.5 pr-7 text-xs font-bold text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] transition cursor-pointer appearance-none truncate"
-                title="Sort customers"
-                aria-label="Sort customers"
+                className="pl-3 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-hidden focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition cursor-pointer appearance-none"
               >
                 <option value="createdAt_desc">Newest First</option>
                 <option value="createdAt_asc">Oldest First</option>
                 <option value="name_asc">Name (A-Z)</option>
                 <option value="name_desc">Name (Z-A)</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             </div>
           </div>
         </div>
       </div>
 
       {/* =========================================================
-          3. BULK ACTIONS BAR (Fixed at bottom on mobile for thumb reach)
-          Consistent with Products page pattern
+          3. BULK SELECTION BAR (Active when items selected or select mode active with selection)
           ========================================================= */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-3 right-3 z-40 sm:sticky sm:top-3 sm:bottom-auto flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-[#2A241E] text-white shadow-2xl animate-slide-in-down border border-slate-700">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <label className="min-h-[44px] flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedIds.size === customers.length && customers.length > 0}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 rounded accent-[#FF7A00] cursor-pointer shrink-0"
-                aria-label="Select all customers on page"
-              />
-              <span className="text-xs sm:text-sm font-bold truncate">
-                {selectedIds.size} <span className="hidden sm:inline">of {customers.length}</span> selected
-              </span>
-            </label>
+      {(isSelectMode || selectedIds.size > 0) && (
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#2A241E] text-white shadow-xl flex items-center justify-between gap-3 text-xs sm:text-sm font-bold animate-fade-in border border-slate-700">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={selectedIds.size === customers.length && customers.length > 0}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded accent-orange-500 cursor-pointer"
+            />
+            <span>{selectedIds.size} of {customers.length} selected</span>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setSelectedIds(new Set())}
-              className="min-h-[44px] px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white cursor-pointer flex items-center"
+              onClick={() => {
+                setSelectedIds(new Set());
+                setIsSelectMode(false);
+              }}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white font-medium"
             >
-              Clear
+              Cancel
             </button>
-            <button
-              onClick={handleExportSelectedCSV}
-              className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              title="Export selected customers as CSV"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Export</span>
-            </button>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleExportSelectedCSV}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Export CSV</span>
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* =========================================================
-          4. CUSTOMER DIRECTORY LIST / TABLE
+          4. CUSTOMERS DIRECTORY LIST (Table on Desktop, Cards on Mobile)
           ========================================================= */}
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="clay-card p-4 rounded-2xl animate-pulse space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-2xl bg-slate-200/80 shrink-0" />
-                  <div className="space-y-1.5">
-                    <div className="h-3.5 w-32 rounded bg-slate-200/80" />
-                    <div className="h-2.5 w-24 rounded bg-slate-100" />
-                  </div>
-                </div>
-                <div className="h-5 w-14 rounded-full bg-slate-200/60" />
-              </div>
-              <div className="h-10 rounded-xl bg-slate-100/80" />
-              <div className="flex items-center justify-between pt-1">
-                <div className="h-3 w-36 rounded bg-slate-200/60" />
-                <div className="h-8 w-20 rounded-xl bg-slate-200/80" />
-              </div>
-            </div>
-          ))}
+        <div className="clay-card p-12 flex flex-col items-center justify-center text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+          <p className="text-xs font-bold text-slate-600">Loading customer directory...</p>
         </div>
       ) : error ? (
         <div className="clay-card p-8 flex flex-col items-center justify-center gap-3 text-center">
@@ -716,19 +613,21 @@ export default function CustomersPage() {
           <p className="text-sm font-bold text-slate-800">{error}</p>
           <button
             onClick={() => fetchCustomers()}
-            className="clay-button min-h-[44px] px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+            className="clay-button px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
           >
             Retry Loading
           </button>
         </div>
       ) : customers.length === 0 ? (
         <div className="clay-card p-12 flex flex-col items-center justify-center gap-3 text-center">
-          <Users className="h-10 w-10 text-slate-300" />
-          <h3 className="font-fraunces text-base font-bold text-slate-800">No customers found</h3>
-          <p className="text-xs text-slate-500 max-w-sm">
+          <div className="p-3 bg-slate-100 text-slate-400 rounded-full">
+            <Users className="h-8 w-8" />
+          </div>
+          <h3 className="font-fraunces text-base font-bold text-slate-800">No Customers Found</h3>
+          <p className="text-xs text-slate-500 max-w-sm font-medium">
             {debouncedSearch
-              ? `No customer matches "${debouncedSearch}". Try checking the spelling or resetting filters.`
-              : "No customers match the current filter selection."}
+              ? `No customer matches "${debouncedSearch}". Try resetting your search query.`
+              : "No customers match the selected filter category."}
           </p>
           {(debouncedSearch || filterTab !== "ALL") && (
             <button
@@ -737,308 +636,172 @@ export default function CustomersPage() {
                 setFilterTab("ALL");
                 setCurrentPage(1);
               }}
-              className="clay-button min-h-[44px] px-4 py-2 text-xs font-bold text-[#EA580C] hover:bg-orange-50 transition cursor-pointer mt-1"
+              className="clay-btn-orange inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white shadow-xs mt-1"
             >
-              Reset Filters
+              <X className="h-3.5 w-3.5" />
+              <span>Reset Filters</span>
             </button>
           )}
         </div>
       ) : (
         <>
-          {/* =========================================================
-              MOBILE CUSTOMER CARDS (< md)
-              Refined hierarchy: Top Identity -> Middle Bordered Metrics -> Bottom Contact & Actions
-              Meets 44x44px touch targets on all interactive elements
-              ========================================================= */}
-          <div className="grid grid-cols-1 gap-2.5 md:hidden">
-            {customers.map((cust) => {
-              const initials = cust.name
-                ? cust.name
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((n) => n[0].toUpperCase())
-                    .join("")
-                : "C";
-
-              const isSelected = selectedIds.has(cust.id);
-
-              return (
-                <div
-                  key={cust.id}
-                  className={`clay-card p-3 space-y-2.5 min-w-0 transition-all ${
-                    isSelected ? "ring-2 ring-[#FF7A00] bg-orange-50/20" : ""
-                  }`}
-                >
-                  {/* Top Row: Bulk Select Checkbox + Brand Orange Avatar + Name/Pet Badges + Status Badge */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 min-w-0 flex-1">
-                      {/* Checkbox for Bulk Actions (44x44px touch area) */}
-                      <label 
-                        className="min-h-[44px] min-w-[32px] flex items-center justify-center cursor-pointer shrink-0 -ml-1 -my-1.5"
-                        title={`Select ${cust.name}`}
-                      >
+          {/* DESKTOP TABLE VIEW (hidden on mobile, block on md+) */}
+          <div className="hidden md:block clay-card overflow-hidden border border-slate-200/80 shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-100/80 border-b border-slate-200/80 text-slate-500 uppercase text-[10px] font-bold font-mono-eyebrow tracking-wider">
+                  <tr>
+                    {/* Checkbox column only shown when isSelectMode is active */}
+                    {isSelectMode && (
+                      <th className="p-3.5 w-10 text-center animate-fade-in">
                         <input
                           type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelect(cust.id)}
-                          className="h-4 w-4 rounded accent-[#FF7A00] cursor-pointer bg-white border border-slate-300"
-                          aria-label={`Select ${cust.name}`}
+                          checked={selectedIds.size === customers.length && customers.length > 0}
+                          onChange={toggleSelectAll}
+                          className="h-4 w-4 rounded accent-orange-500 cursor-pointer"
                         />
-                      </label>
-
-                      {/* Brand Orange Avatar Placeholder */}
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FF7A00] to-[#EA580C] text-white text-xs font-bold shadow-xs select-none">
-                        {initials}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <h3 className="text-xs font-bold text-slate-900 truncate">
-                            {cust.name}
-                          </h3>
-                          {cust.isEmailVerified && (
-                            <span title="Verified Account & Email" className="inline-flex items-center shrink-0">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Pet Profile Badge with Paw Icon */}
-                        <div className="mt-0.5 flex items-center gap-1 text-[10.5px] text-slate-500 truncate">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800 border border-orange-100/80">
-                            <PawPrint className="h-2.5 w-2.5 text-[#FF7A00] shrink-0" />
-                            <span className="truncate">
-                              {cust.petsCount > 0 
-                                ? `${cust.petsCount} pet profile${cust.petsCount > 1 ? "s" : ""}` 
-                                : "No pets"}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status Badge: Active (Green) or Blocked (Red) */}
-                    <span
-                      className={`
-                        px-2 py-0.5 text-[9.5px] font-bold rounded-full shrink-0 uppercase tracking-wider border
-                        ${cust.isBlocked 
-                          ? "bg-rose-50 text-rose-700 border-rose-200" 
-                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        }
-                      `}
-                    >
-                      {cust.isBlocked ? "Blocked" : "Active"}
-                    </span>
-                  </div>
-
-                  {/* Middle Row: Key Business Metrics with Subtle Top & Bottom Dividers */}
-                  <div className="py-2 px-3 rounded-xl bg-[#F8F5F1]/80 border-y border-slate-200/70 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 font-mono-eyebrow block">
-                        Total Orders
-                      </span>
-                      <span className="font-extrabold text-slate-800 text-xs sm:text-sm">
-                        {cust.ordersCount} {cust.ordersCount === 1 ? "order" : "orders"}
-                      </span>
-                    </div>
-
-                    <div className="h-6 w-px bg-slate-200/70" />
-
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 font-mono-eyebrow block">
-                        Lifetime Spend
-                      </span>
-                      <span className="text-xs sm:text-sm font-black text-slate-900 font-fraunces">
-                        ₹{cust.totalSpent.toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Row: Contact Info + Security Action + Primary Profile Button */}
-                  <div className="flex items-center justify-between gap-1.5 pt-0.5 text-xs text-slate-500">
-                    <div className="flex items-center gap-1.5 min-w-0 max-w-[130px] truncate text-[11px]">
-                      <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate text-slate-600 font-medium" title={cust.email || cust.phone || "No contact info"}>
-                        {cust.email || cust.phone || "No contact info"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Security Action Button with Clear Tooltip and Explicit Label */}
-                      <button
-                        onClick={() => setSelectedCustomer(cust)}
-                        className={`min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 border cursor-pointer active:scale-95 ${
-                          cust.isBlocked
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-rose-50/70 text-rose-700 border-rose-200/70 hover:bg-rose-100/70"
-                        }`}
-                        title={cust.isBlocked ? "Unblock customer account" : "Manage account access (Block / Revoke sessions)"}
-                        aria-label={cust.isBlocked ? "Unblock customer account" : "Block customer account"}
-                      >
-                        {cust.isBlocked ? (
-                          <>
-                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                            <span>Unblock</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShieldAlert className="h-3.5 w-3.5 text-rose-600 shrink-0" />
-                            <span>Block</span>
-                          </>
-                        )}
-                      </button>
-
-                      {/* Primary Profile Action Button */}
-                      <Link
-                        href={`/admin/dashboard/customers/${cust.id}`}
-                        className="clay-button min-h-[44px] px-3.5 py-2 text-xs font-bold text-slate-800 hover:text-[#FF7A00] inline-flex items-center gap-1.5 shrink-0 rounded-xl transition active:scale-95 shadow-2xs"
-                        title={`View full profile for ${cust.name}`}
-                        aria-label={`View profile for ${cust.name}`}
-                      >
-                        <span>Profile</span>
-                        <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* =========================================================
-              DESKTOP RESPONSIVE CUSTOMERS TABLE (hidden < md)
-              ========================================================= */}
-          <div className="clay-card overflow-hidden hidden md:block">
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-400 font-mono-eyebrow text-[10px] uppercase tracking-wider">
-                    <th className="py-3 px-3.5 text-center w-10">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === customers.length && customers.length > 0}
-                        onChange={toggleSelectAll}
-                        className="h-4 w-4 rounded accent-[#FF7A00] cursor-pointer"
-                        aria-label="Select all customers on page"
-                      />
-                    </th>
-                    <th className="py-3 px-4 font-bold">Customer Name</th>
-                    <th className="py-3 px-4 font-bold">Contact Info</th>
-                    <th className="py-3 px-4 font-bold">Pets Registered</th>
-                    <th className="py-3 px-4 font-bold text-center">Orders</th>
-                    <th className="py-3 px-4 font-bold text-right">Lifetime Spend</th>
-                    <th className="py-3 px-4 font-bold text-center">Status</th>
-                    <th className="py-3 px-4 font-bold text-right">Actions</th>
+                      </th>
+                    )}
+                    <th className="p-3.5">Customer Name & Contact</th>
+                    <th className="p-3.5 text-center">Status</th>
+                    <th className="p-3.5 text-center">Registered Pets</th>
+                    <th className="p-3.5 text-center">Orders & Spend</th>
+                    <th className="p-3.5 text-center">Joined Date</th>
+                    <th className="p-3.5 text-right pr-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {customers.map((cust) => {
-                    const initials = cust.name
-                      ? cust.name
-                          .split(" ")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((n) => n[0].toUpperCase())
-                          .join("")
-                      : "C";
-
-                    const isSelected = selectedIds.has(cust.id);
-
+                <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                  {customers.map((c) => {
+                    const isSelected = selectedIds.has(c.id);
                     return (
-                      <tr 
-                        key={cust.id} 
-                        className={`hover:bg-[#FAF7F3]/70 transition-colors ${
-                          isSelected ? "bg-orange-50/20" : ""
+                      <tr
+                        key={c.id}
+                        className={`hover:bg-slate-50/80 transition ${
+                          isSelected ? "bg-orange-50/30" : ""
                         }`}
                       >
-                        <td className="py-3 px-3.5 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelect(cust.id)}
-                            className="h-4 w-4 rounded accent-[#FF7A00] cursor-pointer"
-                            aria-label={`Select ${cust.name}`}
-                          />
-                        </td>
+                        {/* Checkbox only shown when isSelectMode is active */}
+                        {isSelectMode && (
+                          <td className="p-3.5 text-center animate-fade-in">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelect(c.id)}
+                              className="h-4 w-4 rounded accent-orange-500 cursor-pointer"
+                            />
+                          </td>
+                        )}
 
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
-                            {/* Brand Orange Avatar Placeholder */}
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF7A00] to-[#EA580C] text-white text-xs font-bold shadow-xs select-none">
-                              {initials}
+                        {/* Customer Info & Contact */}
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${getAvatarBg(
+                                c.name
+                              )}`}
+                            >
+                              {c.name.slice(0, 2).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="font-bold text-slate-900 truncate">{cust.name}</p>
-                                {cust.isEmailVerified && (
-                                  <span title="Email Verified" className="inline-flex items-center shrink-0">
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                <Link
+                                  href={`/admin/dashboard/customers/${c.id}`}
+                                  className="font-bold text-slate-900 hover:text-orange-600 transition truncate"
+                                >
+                                  {c.name}
+                                </Link>
+                                {c.isEmailVerified && (
+                                  <span title="Verified Account">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-400">
-                                Joined {new Date(cust.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
-                              </p>
+                              <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5">
+                                {c.email && (
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Mail className="h-3 w-3 text-slate-400" />
+                                    {c.email}
+                                  </span>
+                                )}
+                                {c.phone && (
+                                  <span className="flex items-center gap-1 truncate font-mono">
+                                    <Phone className="h-3 w-3 text-slate-400" />
+                                    {c.phone}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-3 px-4">
-                          <p className="text-slate-800 truncate font-medium">{cust.email || "No email"}</p>
-                          <p className="text-[10.5px] text-slate-400">{cust.phone || "No phone"}</p>
+                        {/* Status Badge */}
+                        <td className="p-3.5 text-center whitespace-nowrap">
+                          {c.isBlocked ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              <UserX className="h-3 w-3" /> BLOCKED
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <UserCheck className="h-3 w-3" /> ACTIVE
+                            </span>
+                          )}
                         </td>
 
-                        <td className="py-3 px-4">
-                          <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-[10.5px] font-semibold text-orange-800 border border-orange-100 flex items-center gap-1 w-fit">
-                            <PawPrint className="h-2.5 w-2.5 text-[#FF7A00]" />
-                            {cust.petsCount > 0 ? `${cust.petsCount} pet${cust.petsCount > 1 ? "s" : ""}` : "0 pets"}
+                        {/* Pets Registered */}
+                        <td className="p-3.5 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 text-orange-700 border border-orange-200/70 font-bold text-xs">
+                            <PawPrint className="h-3.5 w-3.5" />
+                            <span>{c.petsCount} {c.petsCount === 1 ? "Pet" : "Pets"}</span>
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 text-center font-bold text-slate-700">
-                          {cust.ordersCount}
+                        {/* Orders & Lifetime Spend */}
+                        <td className="p-3.5 text-center whitespace-nowrap">
+                          <div className="flex flex-col items-center">
+                            <span className="font-bold text-slate-900 text-xs">
+                              ₹{c.totalSpent.toLocaleString("en-IN")}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              {c.ordersCount} {c.ordersCount === 1 ? "order" : "orders"}
+                            </span>
+                          </div>
                         </td>
 
-                        <td className="py-3 px-4 text-right font-black font-fraunces text-slate-900">
-                          ₹{cust.totalSpent.toLocaleString("en-IN")}
+                        {/* Joined Date */}
+                        <td className="p-3.5 text-center whitespace-nowrap text-slate-500 text-[11px]">
+                          {new Date(c.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </td>
 
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className={`
-                              px-2 py-0.5 text-[9.5px] font-bold rounded-full uppercase tracking-wider border
-                              ${cust.isBlocked 
-                                ? "bg-rose-50 text-rose-700 border-rose-200" 
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              }
-                            `}
-                          >
-                            {cust.isBlocked ? "Blocked" : "Active"}
-                          </span>
-                        </td>
-
-                        <td className="py-3 px-4 text-right">
+                        {/* Quick Actions */}
+                        <td className="p-3.5 text-right pr-4 whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => setSelectedCustomer(cust)}
-                              className={`p-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                cust.isBlocked 
-                                  ? "text-emerald-700 hover:text-emerald-900" 
-                                  : "text-slate-400 hover:text-rose-600"
-                              }`}
-                              title={cust.isBlocked ? "Unblock Account" : "Block Account"}
-                            >
-                              {cust.isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
-                            </button>
-
                             <Link
-                              href={`/admin/dashboard/customers/${cust.id}`}
-                              className="clay-button inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:text-[#FF7A00] transition"
+                              href={`/admin/dashboard/customers/${c.id}`}
+                              className="p-1.5 text-slate-500 hover:text-orange-600 rounded-xl hover:bg-slate-100 transition"
                               title="View Customer Profile"
                             >
-                              <Eye className="h-3.5 w-3.5" />
+                              <Eye className="h-4 w-4" />
                             </Link>
+
+                            <button
+                              onClick={() => setSelectedCustomer(c)}
+                              className={`p-1.5 rounded-xl transition ${
+                                c.isBlocked
+                                  ? "text-emerald-600 hover:bg-emerald-50"
+                                  : "text-rose-600 hover:bg-rose-50"
+                              }`}
+                              title={c.isBlocked ? "Unblock Account" : "Block Account"}
+                            >
+                              {c.isBlocked ? (
+                                <ShieldCheck className="h-4 w-4" />
+                              ) : (
+                                <ShieldAlert className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1049,29 +812,132 @@ export default function CustomersPage() {
             </div>
           </div>
 
+          {/* MOBILE CARDS VIEW (md:hidden) */}
+          <div className="space-y-3 md:hidden">
+            {customers.map((c) => {
+              const isSelected = selectedIds.has(c.id);
+              return (
+                <div
+                  key={c.id}
+                  className={`clay-card p-4 space-y-3 border transition ${
+                    isSelected ? "border-orange-300 bg-orange-50/20" : "border-slate-200/80"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {isSelectMode && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(c.id)}
+                          className="h-4 w-4 rounded accent-orange-500 cursor-pointer shrink-0"
+                        />
+                      )}
+                      <div
+                        className={`h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 ${getAvatarBg(
+                          c.name
+                        )}`}
+                      >
+                        {c.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/admin/dashboard/customers/${c.id}`}
+                            className="font-bold text-slate-900 truncate text-sm"
+                          >
+                            {c.name}
+                          </Link>
+                          {c.isEmailVerified && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          {c.email || c.phone || "No contact info"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {c.isBlocked ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                        BLOCKED
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Metrics grid */}
+                  <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-2xl text-center text-xs">
+                    <div>
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase block">Spent</span>
+                      <span className="font-bold text-slate-800 text-xs">₹{c.totalSpent.toLocaleString("en-IN")}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase block">Orders</span>
+                      <span className="font-bold text-slate-800 text-xs">{c.ordersCount}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase block">Pets</span>
+                      <span className="font-bold text-orange-600 text-xs">{c.petsCount}</span>
+                    </div>
+                  </div>
+
+                  {/* Card actions */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                    <span className="text-[10.5px] text-slate-400 font-medium">
+                      Joined {new Date(c.createdAt).toLocaleDateString("en-IN")}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedCustomer(c)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
+                          c.isBlocked
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                        }`}
+                      >
+                        {c.isBlocked ? "Unblock" : "Block"}
+                      </button>
+
+                      <Link
+                        href={`/admin/dashboard/customers/${c.id}`}
+                        className="px-3 py-1 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
+                      >
+                        Profile
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* =========================================================
               5. PAGINATION FOOTER
-              Scale-ready with 10/25/50/100 limit selector & 44px touch targets
               ========================================================= */}
-          <div className="clay-card p-3 sm:p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="text-slate-500 text-center sm:text-left">
+          <div className="clay-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium text-slate-600 border border-slate-200/80">
+            <span>
               Showing{" "}
-              <span className="font-bold text-slate-800">
+              <strong>
                 {pagination.total === 0
                   ? 0
                   : (pagination.page - 1) * pagination.limit + 1}
-              </span>{" "}
+              </strong>{" "}
               to{" "}
-              <span className="font-bold text-slate-800">
+              <strong>
                 {Math.min(pagination.page * pagination.limit, pagination.total)}
-              </span>{" "}
-              of <span className="font-bold text-slate-800">{pagination.total}</span> customers
-            </div>
+              </strong>{" "}
+              of <strong>{pagination.total}</strong> customers
+            </span>
 
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
-              {/* Limit Selector */}
+              {/* Page size selector */}
               <div className="flex items-center gap-1.5 text-slate-500">
-                <span className="text-slate-600 font-medium text-[11px]">Per page:</span>
+                <span className="text-slate-600 font-medium text-xs">Per page:</span>
                 <div className="relative">
                   <select
                     value={pageSize}
@@ -1079,9 +945,7 @@ export default function CustomersPage() {
                       setPageSize(Number(e.target.value));
                       setCurrentPage(1);
                     }}
-                    className="min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/70 py-1.5 pl-2.5 pr-7 text-xs font-bold text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-[#FF7A00] cursor-pointer appearance-none"
-                    title="Customers per page"
-                    aria-label="Customers per page"
+                    className="py-1 pl-2.5 pr-7 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-orange-500/20 outline-hidden cursor-pointer appearance-none"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
@@ -1092,28 +956,24 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              {/* Prev / Current / Next with 44px min tap targets */}
-              <div className="flex items-center gap-1">
+              {/* Prev / Next Page controls */}
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={!pagination.hasPrevPage || loading}
-                  className="clay-button min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-700 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer active:scale-95"
-                  title="Previous Page"
-                  aria-label="Previous Page"
+                  className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
 
-                <span className="px-2 text-xs font-bold text-slate-700 select-none">
+                <span className="px-2 text-xs font-bold text-slate-700">
                   {pagination.page} / {Math.max(1, pagination.totalPages)}
                 </span>
 
                 <button
                   onClick={() => setCurrentPage((p) => p + 1)}
                   disabled={!pagination.hasNextPage || loading}
-                  className="clay-button min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-700 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer active:scale-95"
-                  title="Next Page"
-                  aria-label="Next Page"
+                  className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -1123,25 +983,22 @@ export default function CustomersPage() {
         </>
       )}
 
-      {/* Floating Scroll-to-Top Button (Matches Products Page) */}
+      {/* Floating Scroll to Top button */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
           className="fixed bottom-5 right-4 z-30 h-11 w-11 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer"
           title="Scroll to top"
-          aria-label="Scroll to top"
         >
           <ArrowUp className="h-4 w-4" />
         </button>
       )}
 
-      {/* =========================================================
-          6. BLOCK / UNBLOCK MODAL
-          ========================================================= */}
+      {/* Block/Unblock Modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="clay-card w-full max-w-md p-5 sm:p-6 space-y-4 bg-white shadow-2xl">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="clay-card w-full max-w-md p-6 space-y-4 bg-white shadow-2xl rounded-3xl border border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 {selectedCustomer.isBlocked ? (
                   <ShieldCheck className="h-5 w-5 text-emerald-600" />
@@ -1149,7 +1006,7 @@ export default function CustomersPage() {
                   <ShieldAlert className="h-5 w-5 text-rose-600" />
                 )}
                 <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
-                  {selectedCustomer.isBlocked ? "Unblock Customer Account" : "Block Customer Account"}
+                  {selectedCustomer.isBlocked ? "Unblock Account" : "Block Account"}
                 </h3>
               </div>
               <button
@@ -1157,28 +1014,26 @@ export default function CustomersPage() {
                   setSelectedCustomer(null);
                   setBlockReason("");
                 }}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-                title="Close modal"
-                aria-label="Close modal"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
               {selectedCustomer.isBlocked ? (
                 <>
-                  Are you sure you want to restore access for <strong>{selectedCustomer.name}</strong>? They will be allowed to log into the mobile and web storefronts again.
+                  Are you sure you want to unblock <strong>{selectedCustomer.name}</strong>? They will be permitted to log in and place orders again.
                 </>
               ) : (
                 <>
-                  Blocking <strong>{selectedCustomer.name}</strong> will <strong>immediately revoke all active sessions</strong> across mobile and web apps, preventing further logins or checkouts.
+                  Blocking <strong>{selectedCustomer.name}</strong> will <strong>immediately terminate active sessions</strong> across web and mobile apps.
                 </>
               )}
             </p>
 
             {!selectedCustomer.isBlocked && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 uppercase font-mono-eyebrow">
                   Reason for Blocking (Optional)
                 </label>
@@ -1186,13 +1041,13 @@ export default function CustomersPage() {
                   rows={3}
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
-                  placeholder="e.g. Repeated fraudulent COD cancellations, abusive conduct..."
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20"
+                  placeholder="e.g. Fraudulent cancellations, abusive behavior..."
+                  className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 outline-hidden focus:bg-white focus:border-rose-500 transition"
                 />
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => {
@@ -1200,7 +1055,7 @@ export default function CustomersPage() {
                   setBlockReason("");
                 }}
                 disabled={actionLoading}
-                className="clay-button min-h-[44px] px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-2xl border border-slate-200 transition"
               >
                 Cancel
               </button>
@@ -1209,16 +1064,14 @@ export default function CustomersPage() {
                 type="button"
                 onClick={handleStatusUpdate}
                 disabled={actionLoading}
-                className={`
-                  min-h-[44px] flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50
-                  ${selectedCustomer.isBlocked
+                className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-2xl shadow-xs transition disabled:opacity-50 ${
+                  selectedCustomer.isBlocked
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-rose-600 hover:bg-rose-700"
-                  }
-                `}
+                }`}
               >
                 {actionLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>{selectedCustomer.isBlocked ? "Confirm Unblock" : "Confirm Block & Revoke"}</span>
+                <span>{selectedCustomer.isBlocked ? "Confirm Unblock" : "Confirm Block"}</span>
               </button>
             </div>
           </div>
