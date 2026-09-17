@@ -1,16 +1,14 @@
 "use client";
 
-import { 
-  Globe, 
-  CreditCard, 
-  Receipt, 
-  Truck, 
-  Check, 
+import {
+  Globe,
+  CreditCard,
+  Receipt,
+  Truck,
+  Check,
   RefreshCw,
-  Share2,
   ShieldAlert,
   Loader2,
-  Sparkles,
   Save,
   Key,
   Lock,
@@ -19,25 +17,46 @@ import {
   Wallet,
   Landmark,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+  Smartphone,
+  MessageSquare,
+  Share2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { 
-  AdminSettingsService, 
-  AdminSettingsForm
+import {
+  AdminSettingsService,
+  AdminSettingsForm,
 } from "@/services/adminSettingsService";
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<
+    "all" | "general" | "payment" | "tax" | "delivery" | "security"
+  >("all");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Password visibility toggles
-  const [showKeySecret, setShowKeySecret] = useState(false);
-  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Password Change Form State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // CARD 1: General Settings
-  const [storeName, setStoreName] = useState("KickAt");
+  const [storeName, setStoreName] = useState("Kickat");
   const [supportEmail, setSupportEmail] = useState("support@kickat.co.in");
   const [supportPhone, setSupportPhone] = useState("+91 98765 43210");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -53,13 +72,13 @@ export default function SettingsPage() {
   const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
   const [razorpayWebhookSecret, setRazorpayWebhookSecret] = useState("");
-  
+
   // Subsection 2B: Cash on Delivery (COD)
   const [codEnabled, setCodEnabled] = useState(true);
-  const [codMinOrderAmount, setCodMinOrderAmount] = useState<number>(200);
-  const [codMaxOrderAmount, setCodMaxOrderAmount] = useState<number>(10000);
-  const [codExtraFeeEnabled, setCodExtraFeeEnabled] = useState(true);
-  const [codExtraFee, setCodExtraFee] = useState<number>(50);
+  const [codMinOrderAmount, setCodMinOrderAmount] = useState<number>(0);
+  const [codMaxOrderAmount, setCodMaxOrderAmount] = useState<number>(50000);
+  const [codExtraFeeEnabled, setCodExtraFeeEnabled] = useState(false);
+  const [codExtraFee, setCodExtraFee] = useState<number>(0);
 
   // Method Toggles
   const [upiEnabled, setUpiEnabled] = useState(true);
@@ -68,26 +87,26 @@ export default function SettingsPage() {
   const [netbankingEnabled, setNetbankingEnabled] = useState(true);
 
   // CARD 3: Tax & GST Computation Rules
-  const [gstEnabled, setGstEnabled] = useState(true);
+  const [gstEnabled, setGstEnabled] = useState(false);
   const [gstin, setGstin] = useState("");
-  const [gstPercentage, setGstPercentage] = useState<number>(18);
+  const [gstPercentage, setGstPercentage] = useState<number>(0);
   const [gstAppliesToDelivery, setGstAppliesToDelivery] = useState(false);
   const [taxInclusive, setTaxInclusive] = useState(false);
 
   // CARD 4: Delivery & Shipping Fee Rules
   const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState<number>(50);
-  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number>(999);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number>(499);
   const [estimatedDays, setEstimatedDays] = useState<number>(3);
   const [courierDefault, setCourierDefault] = useState("Delhivery");
   const [deliveryExtraFeeEnabled, setDeliveryExtraFeeEnabled] = useState(false);
-  const [deliveryExtraFeeName, setDeliveryExtraFeeName] = useState("Platform Fee");
-  const [deliveryExtraFeeAmount, setDeliveryExtraFeeAmount] = useState<number>(10);
+  const [deliveryExtraFeeName, setDeliveryExtraFeeName] = useState("");
+  const [deliveryExtraFeeAmount, setDeliveryExtraFeeAmount] = useState<number>(0);
   const [isExtraFeeCompulsory, setIsExtraFeeCompulsory] = useState(true);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const showToast = (text: string, type: "success" | "error" = "success") => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   const loadAllSettings = useCallback(async () => {
@@ -98,10 +117,10 @@ export default function SettingsPage() {
 
       // General
       if (data.general) {
-        setStoreName(data.general.storeName || "KickAt");
+        setStoreName(data.general.storeName || "Kickat");
         setSupportEmail(data.general.supportEmail || "support@kickat.co.in");
         setSupportPhone(data.general.supportPhone || "+91 98765 43210");
-        setMaintenanceMode(!!data.general.maintenanceMode);
+        setMaintenanceMode(Boolean(data.general.maintenanceMode));
         if (data.general.socialLinks) {
           setInstagramUrl(data.general.socialLinks.instagram || "");
           setFacebookUrl(data.general.socialLinks.facebook || "");
@@ -122,24 +141,25 @@ export default function SettingsPage() {
 
         if (data.payment.cod) {
           setCodEnabled(data.payment.cod.enabled ?? true);
-          setCodMinOrderAmount(data.payment.cod.minOrderAmount ?? 200);
-          setCodMaxOrderAmount(data.payment.cod.maxOrderAmount ?? 10000);
-          setCodExtraFeeEnabled(data.payment.cod.extraFeeEnabled ?? true);
-          setCodExtraFee(data.payment.cod.extraFee ?? 50);
+          setCodMinOrderAmount(data.payment.cod.minOrderAmount ?? 0);
+          setCodMaxOrderAmount(data.payment.cod.maxOrderAmount ?? 50000);
+          setCodExtraFeeEnabled(Boolean(data.payment.cod.extraFeeEnabled));
+          setCodExtraFee(data.payment.cod.extraFee ?? 0);
         }
 
         if (data.payment.upi) setUpiEnabled(data.payment.upi.enabled ?? true);
         if (data.payment.card) setCardEnabled(data.payment.card.enabled ?? true);
         if (data.payment.wallet) setWalletEnabled(data.payment.wallet.enabled ?? true);
-        if (data.payment.netbanking) setNetbankingEnabled(data.payment.netbanking.enabled ?? true);
+        if (data.payment.netbanking)
+          setNetbankingEnabled(data.payment.netbanking.enabled ?? true);
       }
 
       // Tax
       if (data.tax) {
-        setGstEnabled(data.tax.gstEnabled ?? true);
-        setGstPercentage(data.tax.gstPercentage ?? 18);
-        setGstAppliesToDelivery(!!data.tax.gstAppliesToDelivery);
-        setTaxInclusive(!!data.tax.taxInclusive);
+        setGstEnabled(Boolean(data.tax.gstEnabled));
+        setGstPercentage(data.tax.gstPercentage ?? 0);
+        setGstAppliesToDelivery(Boolean(data.tax.gstAppliesToDelivery));
+        setTaxInclusive(Boolean(data.tax.taxInclusive));
         setGstin(data.tax.gstNumber || "");
       }
 
@@ -147,17 +167,19 @@ export default function SettingsPage() {
       if (data.delivery) {
         setDeliveryFeeEnabled(data.delivery.deliveryFeeEnabled ?? true);
         setDeliveryFee(data.delivery.deliveryFee ?? 50);
-        setFreeDeliveryThreshold(data.delivery.freeDeliveryThreshold ?? 999);
+        setFreeDeliveryThreshold(data.delivery.freeDeliveryThreshold ?? 499);
         setEstimatedDays(data.delivery.estimatedDays ?? 3);
         setCourierDefault(data.delivery.courierDefault || "Delhivery");
-        setDeliveryExtraFeeEnabled(!!data.delivery.extraFeeEnabled);
-        setDeliveryExtraFeeName(data.delivery.extraFeeName || "Platform Fee");
-        setDeliveryExtraFeeAmount(data.delivery.extraFeeAmount ?? 10);
+        setDeliveryExtraFeeEnabled(Boolean(data.delivery.extraFeeEnabled));
+        setDeliveryExtraFeeName(data.delivery.extraFeeName || "");
+        setDeliveryExtraFeeAmount(data.delivery.extraFeeAmount ?? 0);
         setIsExtraFeeCompulsory(data.delivery.isExtraFeeCompulsory ?? true);
       }
     } catch (err: any) {
-      console.error("Failed to load settings:", err);
-      showToast("Failed to load store settings");
+      showToast(
+        AdminSettingsService.extractErrorMessage(err, "Failed to load store settings"),
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -172,13 +194,20 @@ export default function SettingsPage() {
     e.preventDefault();
 
     // Frontend validation
-    if (deliveryFeeEnabled && deliveryExtraFeeEnabled && (!deliveryExtraFeeName || deliveryExtraFeeName.trim() === "")) {
-      showToast("Extra Fee Name cannot be empty when extra fee is enabled.");
+    if (
+      deliveryFeeEnabled &&
+      deliveryExtraFeeEnabled &&
+      (!deliveryExtraFeeName || deliveryExtraFeeName.trim() === "")
+    ) {
+      showToast(
+        "extraFeeName is required and cannot be empty when extra fee is enabled",
+        "error"
+      );
       return;
     }
 
     if (gstEnabled && (gstPercentage < 0 || gstPercentage > 100)) {
-      showToast("GST percentage must be between 0 and 100.");
+      showToast("GST percentage must be between 0 and 100.", "error");
       return;
     }
 
@@ -187,24 +216,24 @@ export default function SettingsPage() {
     try {
       const payload: AdminSettingsForm = {
         general: {
-          storeName,
-          supportEmail,
-          supportPhone,
+          storeName: storeName.trim(),
+          supportEmail: supportEmail.trim(),
+          supportPhone: supportPhone.trim(),
           maintenanceMode,
           socialLinks: {
-            instagram: instagramUrl,
-            facebook: facebookUrl,
-            youtube: youtubeUrl,
-            twitter: twitterUrl,
-            linkedin: linkedinUrl,
+            instagram: instagramUrl.trim(),
+            facebook: facebookUrl.trim(),
+            youtube: youtubeUrl.trim(),
+            twitter: twitterUrl.trim(),
+            linkedin: linkedinUrl.trim(),
           },
         },
         payment: {
           razorpay: {
             enabled: razorpayEnabled,
-            keyId: razorpayKeyId,
-            keySecret: razorpayKeySecret,
-            webhookSecret: razorpayWebhookSecret,
+            ...(razorpayKeyId && { keyId: razorpayKeyId.trim() }),
+            ...(razorpayKeySecret && { keySecret: razorpayKeySecret.trim() }),
+            ...(razorpayWebhookSecret && { webhookSecret: razorpayWebhookSecret.trim() }),
           },
           cod: {
             enabled: codEnabled,
@@ -220,7 +249,7 @@ export default function SettingsPage() {
         },
         tax: {
           gstEnabled,
-          gstNumber: gstin || null,
+          gstNumber: gstin.trim() || null,
           gstPercentage: Number(gstPercentage) || 0,
           gstAppliesToDelivery,
           taxInclusive,
@@ -230,9 +259,9 @@ export default function SettingsPage() {
           deliveryFee: Number(deliveryFee) || 0,
           freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
           estimatedDays: Number(estimatedDays) || 0,
-          courierDefault,
+          courierDefault: courierDefault.trim(),
           extraFeeEnabled: deliveryExtraFeeEnabled,
-          extraFeeName: deliveryExtraFeeName,
+          extraFeeName: deliveryExtraFeeEnabled ? deliveryExtraFeeName.trim() || null : null,
           extraFeeAmount: Number(deliveryExtraFeeAmount) || 0,
           isExtraFeeCompulsory,
         },
@@ -241,79 +270,73 @@ export default function SettingsPage() {
       await AdminSettingsService.updateAll(payload);
       showToast("Store settings updated successfully!");
     } catch (err: any) {
-      console.error("Save error:", err);
-      // Fallback attempt with individual group updates
-      try {
-        await Promise.all([
-          AdminSettingsService.updateGeneral({
-            storeName,
-            supportEmail,
-            supportPhone,
-            maintenanceMode,
-            socialLinks: {
-              instagram: instagramUrl,
-              facebook: facebookUrl,
-              youtube: youtubeUrl,
-              twitter: twitterUrl,
-              linkedin: linkedinUrl,
-            },
-          }),
-          AdminSettingsService.updatePayment({
-            razorpay: {
-              enabled: razorpayEnabled,
-              keyId: razorpayKeyId,
-              keySecret: razorpayKeySecret,
-              webhookSecret: razorpayWebhookSecret,
-            },
-            cod: {
-              enabled: codEnabled,
-              minOrderAmount: Number(codMinOrderAmount) || 0,
-              maxOrderAmount: Number(codMaxOrderAmount) || 0,
-              extraFeeEnabled: codExtraFeeEnabled,
-              extraFee: Number(codExtraFee) || 0,
-            },
-            upi: { enabled: upiEnabled },
-            card: { enabled: cardEnabled },
-            wallet: { enabled: walletEnabled },
-            netbanking: { enabled: netbankingEnabled },
-          }),
-          AdminSettingsService.updateTax({
-            gstEnabled,
-            gstNumber: gstin || null,
-            gstPercentage: Number(gstPercentage) || 0,
-            gstAppliesToDelivery,
-            taxInclusive,
-          }),
-          AdminSettingsService.updateDelivery({
-            deliveryFeeEnabled,
-            deliveryFee: Number(deliveryFee) || 0,
-            freeDeliveryThreshold: Number(freeDeliveryThreshold) || 0,
-            estimatedDays: Number(estimatedDays) || 0,
-            courierDefault,
-            extraFeeEnabled: deliveryExtraFeeEnabled,
-            extraFeeName: deliveryExtraFeeName,
-            extraFeeAmount: Number(deliveryExtraFeeAmount) || 0,
-            isExtraFeeCompulsory,
-          }),
-        ]);
-        showToast("Store settings updated successfully!");
-      } catch (fallbackErr: any) {
-        const msg = fallbackErr?.response?.data?.message || err?.response?.data?.message || "Failed to save settings.";
-        showToast(Array.isArray(msg) ? msg[0] : msg);
-      }
+      showToast(
+        AdminSettingsService.extractErrorMessage(err, "Failed to save settings."),
+        "error"
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  // Change Password Handler
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      showToast("Please enter your current password", "error");
+      return;
+    }
+    if (!newPassword) {
+      showToast("Please enter a new password", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("New password and confirm password do not match", "error");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      showToast("New password must be different from current password", "error");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await AdminSettingsService.changePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      showToast(res.message || "Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      showToast(
+        AdminSettingsService.extractErrorMessage(err, "Failed to change password"),
+        "error"
+      );
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSaveAllSettings} className="space-y-6 sm:space-y-8 w-full min-w-0 pb-24">
-      
-      {/* Toast */}
+    <div className="space-y-6 sm:space-y-8 w-full min-w-0 pb-24">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in">
-          <Check className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
+        <div
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl px-5 py-3.5 text-xs sm:text-sm font-bold shadow-2xl animate-fade-in ${
+            toastMessage.type === "error"
+              ? "bg-rose-600 text-white"
+              : "bg-[#2A241E] text-white"
+          }`}
+        >
+          {toastMessage.type === "error" ? (
+            <AlertCircle className="h-5 w-5 text-rose-200 shrink-0" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          )}
+          <span>{toastMessage.text}</span>
         </div>
       )}
 
@@ -324,23 +347,24 @@ export default function SettingsPage() {
             Store & System Settings
           </h1>
           <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Configure platform identity, payment gateways & methods, GST computation rules, and shipping fees.
+            Configure platform branding, payment gateways, GST tax computation, shipping fees, and security.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
           <button
             type="button"
             onClick={loadAllSettings}
             disabled={loading || saving}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-orange-600" : ""}`} />
             <span>Reload</span>
           </button>
           <button
-            type="submit"
+            type="button"
+            onClick={handleSaveAllSettings}
             disabled={saving || loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-500/20 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="clay-btn-orange inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition cursor-pointer disabled:opacity-60"
           >
             {saving ? (
               <>
@@ -357,541 +381,528 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl overflow-x-auto text-xs font-bold no-scrollbar">
+        {[
+          { id: "all", label: "All Settings", icon: Globe },
+          { id: "general", label: "General & Branding", icon: Building2 },
+          { id: "payment", label: "Payments & Gateway", icon: CreditCard },
+          { id: "tax", label: "Tax & GST", icon: Receipt },
+          { id: "delivery", label: "Shipping & Handling", icon: Truck },
+          { id: "security", label: "Security & Password", icon: ShieldCheck },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition whitespace-nowrap ${
+                isActive
+                  ? "bg-white text-slate-900 shadow-xs font-extrabold"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="clay-card p-12 flex flex-col items-center justify-center text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
           <p className="text-xs font-bold text-slate-600">Loading store settings...</p>
         </div>
       ) : (
-        <div className="space-y-6 sm:space-y-8">
-          
-          {/* CARD 1: GENERAL & IDENTITY SETTINGS */}
-          <section className="clay-card p-5 sm:p-7 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
-                  <Globe className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                    General & Identity Settings
-                  </h2>
-                  <p className="text-[11px] text-slate-500">Store branding, customer support touchpoints & maintenance mode</p>
-                </div>
-              </div>
-              
-              {/* Maintenance Mode Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                <span className="text-xs font-bold text-slate-700">Maintenance Mode</span>
-                <input
-                  type="checkbox"
-                  checked={maintenanceMode}
-                  onChange={(e) => setMaintenanceMode(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
-            </div>
-
-            {maintenanceMode && (
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-3 text-amber-900 text-xs">
-                <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
-                <div>
-                  <span className="font-bold">Maintenance Mode is active.</span> Enable to display maintenance banner to customers and pause checkouts.
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Store Name</label>
-                <input
-                  type="text"
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="KickAt"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Support Email</label>
-                <input
-                  type="email"
-                  value={supportEmail}
-                  onChange={(e) => setSupportEmail(e.target.value)}
-                  placeholder="support@kickat.co.in"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Support Phone</label>
-                <input
-                  type="text"
-                  value={supportPhone}
-                  onChange={(e) => setSupportPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                />
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="space-y-3 pt-3 border-t border-slate-100">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono-eyebrow flex items-center gap-1.5">
-                <Share2 className="h-3.5 w-3.5" />
-                <span>Social Media Handles</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-600">Instagram URL</label>
-                  <input
-                    type="url"
-                    value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
-                    placeholder="https://instagram.com/kickat_india"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-600">Facebook URL</label>
-                  <input
-                    type="url"
-                    value={facebookUrl}
-                    onChange={(e) => setFacebookUrl(e.target.value)}
-                    placeholder="https://facebook.com/kickatindia"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-600">YouTube URL</label>
-                  <input
-                    type="url"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://youtube.com/@kickat"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-600">Twitter / X URL</label>
-                  <input
-                    type="url"
-                    value={twitterUrl}
-                    onChange={(e) => setTwitterUrl(e.target.value)}
-                    placeholder="https://x.com/kickat"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                  />
-                </div>
-
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-600">LinkedIn URL</label>
-                  <input
-                    type="url"
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                    placeholder="https://linkedin.com/company/kickat"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* CARD 2: PAYMENT GATEWAY CONFIGURATION */}
-          <section className="clay-card p-5 sm:p-7 space-y-6">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                  Payment Gateway Configuration
-                </h2>
-                <p className="text-[11px] text-slate-500">Configure Razorpay credentials and Cash on Delivery order limits & handling fees</p>
-              </div>
-            </div>
-
-            {/* Sub-toggles for methods */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="clay-inset p-4 flex items-center justify-between cursor-pointer gap-3">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-800">UPI Instant Payment</h3>
-                  <p className="text-[11px] text-slate-500">Google Pay, PhonePe, Paytm & BHIM</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={upiEnabled}
-                  onChange={(e) => setUpiEnabled(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
-
-              <label className="clay-inset p-4 flex items-center justify-between cursor-pointer gap-3">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-800">Card Payment (Credit/Debit)</h3>
-                  <p className="text-[11px] text-slate-500">Visa, Mastercard, RuPay & Diners</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={cardEnabled}
-                  onChange={(e) => setCardEnabled(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
-
-              <label className="clay-inset p-4 flex items-center justify-between cursor-pointer gap-3">
-                <div className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-purple-600" />
+        <form onSubmit={handleSaveAllSettings} className="space-y-6 sm:space-y-8">
+          {/* SECTION 1: GENERAL & BRANDING */}
+          {(activeTab === "all" || activeTab === "general") && (
+            <section className="clay-card p-5 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
+                    <Globe className="h-5 w-5" />
+                  </div>
                   <div>
-                    <h3 className="text-xs font-bold text-slate-800">Digital Wallets</h3>
-                    <p className="text-[11px] text-slate-500">Mobikwik, Freecharge, etc.</p>
+                    <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                      General & Identity Settings
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Store branding, customer support touchpoints & maintenance mode
+                    </p>
                   </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={walletEnabled}
-                  onChange={(e) => setWalletEnabled(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
 
-              <label className="clay-inset p-4 flex items-center justify-between cursor-pointer gap-3">
-                <div className="flex items-center gap-2">
-                  <Landmark className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-800">Net Banking</h3>
-                    <p className="text-[11px] text-slate-500">Major Indian banks online banking</p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={netbankingEnabled}
-                  onChange={(e) => setNetbankingEnabled(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
-            </div>
-
-            {/* Subsection 2A: Razorpay Integration */}
-            <div className="clay-inset p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Key className="h-4 w-4 text-blue-600" />
-                  <h3 className="text-xs font-bold text-slate-800">Razorpay Integration</h3>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Enable Razorpay</span>
+                {/* Maintenance Mode Toggle */}
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs font-bold text-slate-700">Maintenance Mode</span>
                   <input
                     type="checkbox"
-                    checked={razorpayEnabled}
-                    onChange={(e) => setRazorpayEnabled(e.target.checked)}
+                    checked={maintenanceMode}
+                    onChange={(e) => setMaintenanceMode(e.target.checked)}
                     className="rounded text-orange-600 h-4 w-4 cursor-pointer"
                   />
                 </label>
               </div>
 
-              <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 transition-all duration-200 ${!razorpayEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+              {maintenanceMode && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center gap-3 text-amber-900 text-xs">
+                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-bold">Maintenance Mode is active.</span> Enable to display maintenance banner to customers and pause customer checkouts.
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Razorpay Key ID</label>
+                  <label className="block text-xs font-bold text-slate-700">Store Name *</label>
                   <input
                     type="text"
-                    disabled={!razorpayEnabled}
-                    value={razorpayKeyId}
-                    onChange={(e) => setRazorpayKeyId(e.target.value)}
-                    placeholder="rzp_live_..."
-                    className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    required
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="Kickat"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-800 outline-hidden focus:bg-white focus:border-orange-500 transition"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Key Secret</span>
-                    <Lock className="h-3 w-3 text-slate-400" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showKeySecret ? "text" : "password"}
-                      disabled={!razorpayEnabled}
-                      value={razorpayKeySecret}
-                      onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 pr-9 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    />
-                    <button
-                      type="button"
-                      disabled={!razorpayEnabled}
-                      onClick={() => setShowKeySecret(!showKeySecret)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
-                    >
-                      {showKeySecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Webhook Secret</span>
-                    <Lock className="h-3 w-3 text-slate-400" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showWebhookSecret ? "text" : "password"}
-                      disabled={!razorpayEnabled}
-                      value={razorpayWebhookSecret}
-                      onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 pr-9 text-xs text-slate-800 font-mono outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    />
-                    <button
-                      type="button"
-                      disabled={!razorpayEnabled}
-                      onClick={() => setShowWebhookSecret(!showWebhookSecret)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
-                    >
-                      {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Subsection 2B: Cash on Delivery (COD) */}
-            <div className="clay-inset p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-800">Cash on Delivery (COD)</h3>
-                  <p className="text-[11px] text-slate-500">Set min & max order thresholds eligible for cash payment & handling charges</p>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Enable COD</span>
+                  <label className="block text-xs font-bold text-slate-700">Support Email *</label>
                   <input
-                    type="checkbox"
-                    checked={codEnabled}
-                    onChange={(e) => setCodEnabled(e.target.checked)}
-                    className="rounded text-orange-600 h-4 w-4 cursor-pointer"
+                    type="email"
+                    required
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    placeholder="support@kickat.co.in"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-800 outline-hidden focus:bg-white focus:border-orange-500 transition"
                   />
-                </label>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">Support Phone *</label>
+                  <input
+                    type="text"
+                    required
+                    value={supportPhone}
+                    onChange={(e) => setSupportPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-800 outline-hidden focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
               </div>
 
-              <div className={`space-y-4 pt-2 transition-all duration-200 ${!codEnabled ? "opacity-50 pointer-events-none" : ""}`}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Social Links Subsection */}
+              <div className="pt-3 border-t border-slate-100 space-y-3">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono-eyebrow">
+                  Social Media Links
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">Minimum COD Order Amount (₹)</label>
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                      <Share2 className="h-3.5 w-3.5 text-pink-600" />
+                      <span>Instagram</span>
+                    </label>
                     <input
-                      type="number"
-                      disabled={!codEnabled}
-                      min="0"
-                      value={codMinOrderAmount}
-                      onChange={(e) => setCodMinOrderAmount(Math.max(0, Number(e.target.value) || 0))}
-                      placeholder="200"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      type="url"
+                      value={instagramUrl}
+                      onChange={(e) => setInstagramUrl(e.target.value)}
+                      placeholder="https://instagram.com/kickat"
+                      className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">Maximum COD Order Limit (₹)</label>
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                      <Share2 className="h-3.5 w-3.5 text-blue-600" />
+                      <span>Facebook</span>
+                    </label>
                     <input
-                      type="number"
-                      disabled={!codEnabled}
-                      min="0"
-                      value={codMaxOrderAmount}
-                      onChange={(e) => setCodMaxOrderAmount(Math.max(0, Number(e.target.value) || 0))}
-                      placeholder="10000"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      type="url"
+                      value={facebookUrl}
+                      onChange={(e) => setFacebookUrl(e.target.value)}
+                      placeholder="https://facebook.com/kickat"
+                      className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                      <Share2 className="h-3.5 w-3.5 text-rose-600" />
+                      <span>YouTube</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://youtube.com/@kickat"
+                      className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                      <Share2 className="h-3.5 w-3.5 text-sky-500" />
+                      <span>Twitter / X</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={twitterUrl}
+                      onChange={(e) => setTwitterUrl(e.target.value)}
+                      placeholder="https://x.com/kickat"
+                      className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                      <Share2 className="h-3.5 w-3.5 text-blue-700" />
+                      <span>LinkedIn</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="https://linkedin.com/company/kickat"
+                      className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
                     />
                   </div>
                 </div>
+              </div>
+            </section>
+          )}
 
-                {/* COD Extra Fee Controls */}
-                <div className="p-3.5 rounded-xl bg-white border border-slate-200/60 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800">Enable Extra COD Handling Fee</h4>
-                      <p className="text-[11px] text-slate-500">Charge an additional handling fee when customers select Cash on Delivery.</p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        disabled={!codEnabled}
-                        checked={codExtraFeeEnabled}
-                        onChange={(e) => setCodExtraFeeEnabled(e.target.checked)}
-                        className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
-                      />
-                    </label>
+          {/* SECTION 2: PAYMENT METHODS & GATEWAYS */}
+          {(activeTab === "all" || activeTab === "payment") && (
+            <section className="clay-card p-5 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                    <CreditCard className="h-5 w-5" />
                   </div>
+                  <div>
+                    <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                      Payment Methods & Gateways
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Razorpay keys, Cash on Delivery (COD) limits & checkout payment options
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 transition-all duration-200 ${(!codEnabled || !codExtraFeeEnabled) ? "opacity-50 pointer-events-none" : ""}`}>
+              {/* Razorpay Subsection */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                    <Key className="h-4 w-4 text-indigo-600" />
+                    <span>Razorpay Integration</span>
+                  </h3>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-xs font-bold text-slate-700">Enable Razorpay</span>
+                    <input
+                      type="checkbox"
+                      checked={razorpayEnabled}
+                      onChange={(e) => setRazorpayEnabled(e.target.checked)}
+                      className="rounded text-indigo-600 h-4 w-4 cursor-pointer"
+                    />
+                  </label>
+                </div>
+
+                {razorpayEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div className="space-y-1">
-                      <label className="block text-xs font-bold text-slate-700">Extra COD Fee Amount (₹)</label>
+                      <label className="block text-[11px] font-bold text-slate-700">Key ID</label>
+                      <input
+                        type="text"
+                        value={razorpayKeyId}
+                        onChange={(e) => setRazorpayKeyId(e.target.value)}
+                        placeholder="rzp_live_..."
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700">Key Secret</label>
+                      <input
+                        type="password"
+                        value={razorpayKeySecret}
+                        onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700">Webhook Secret</label>
+                      <input
+                        type="password"
+                        value={razorpayWebhookSecret}
+                        onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* COD Subsection */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-emerald-600" />
+                    <span>Cash on Delivery (COD) Rules</span>
+                  </h3>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-xs font-bold text-slate-700">Enable COD</span>
+                    <input
+                      type="checkbox"
+                      checked={codEnabled}
+                      onChange={(e) => setCodEnabled(e.target.checked)}
+                      className="rounded text-emerald-600 h-4 w-4 cursor-pointer"
+                    />
+                  </label>
+                </div>
+
+                {codEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-xs">
+                    <div className="space-y-1">
+                      <label className="block font-semibold text-slate-700">Min Order Amount (₹)</label>
                       <input
                         type="number"
-                        disabled={!codEnabled || !codExtraFeeEnabled}
                         min="0"
-                        value={codExtraFee}
-                        onChange={(e) => setCodExtraFee(Math.max(0, Number(e.target.value) || 0))}
-                        placeholder="50"
-                        className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                        value={codMinOrderAmount}
+                        onChange={(e) => setCodMinOrderAmount(Number(e.target.value) || 0)}
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-medium text-slate-800"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="block font-semibold text-slate-700">Max Order Amount (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={codMaxOrderAmount}
+                        onChange={(e) => setCodMaxOrderAmount(Number(e.target.value) || 0)}
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block font-semibold text-slate-700">Extra Fee (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        disabled={!codExtraFeeEnabled}
+                        value={codExtraFee}
+                        onChange={(e) => setCodExtraFee(Number(e.target.value) || 0)}
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-medium text-slate-800 disabled:opacity-50"
+                      />
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={codExtraFeeEnabled}
+                          onChange={(e) => setCodExtraFeeEnabled(e.target.checked)}
+                          className="rounded text-emerald-600 h-4 w-4 cursor-pointer"
+                        />
+                        <span className="font-bold text-slate-700">Extra Fee Enabled</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Other Payment Toggles */}
+              <div className="pt-2">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono-eyebrow mb-2.5">
+                  Enabled Checkout Payment Methods
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  {[
+                    { label: "UPI Payments", state: upiEnabled, setter: setUpiEnabled, icon: Smartphone },
+                    { label: "Credit/Debit Cards", state: cardEnabled, setter: setCardEnabled, icon: CreditCard },
+                    { label: "Mobile Wallets", state: walletEnabled, setter: setWalletEnabled, icon: Wallet },
+                    { label: "Net Banking", state: netbankingEnabled, setter: setNetbankingEnabled, icon: Landmark },
+                  ].map((m) => {
+                    const Icon = m.icon;
+                    return (
+                      <label
+                        key={m.label}
+                        className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition ${
+                          m.state
+                            ? "bg-emerald-50/50 border-emerald-200 text-emerald-900 font-bold"
+                            : "bg-slate-50 border-slate-200 text-slate-500"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span>{m.label}</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={m.state}
+                          onChange={(e) => m.setter(e.target.checked)}
+                          className="rounded text-emerald-600 h-4 w-4"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* SECTION 3: TAX & GST */}
+          {(activeTab === "all" || activeTab === "tax") && (
+            <section className="clay-card p-5 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                    <Receipt className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                      Tax & GST Computation Rules
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      GSTIN registration, percentage rates, inclusive tax & shipping GST rules
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </section>
 
-          {/* CARD 3: TAX & GST COMPUTATION RULES */}
-          <section className="clay-card p-5 sm:p-7 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                  <Receipt className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                    Tax & GST Computation Rules
-                  </h2>
-                  <p className="text-[11px] text-slate-500">Configure GSTIN identity, default tax percentage, and tax inclusive pricing</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 shrink-0">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Enable GST Calculation</span>
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs font-bold text-slate-700">Enable GST Tax</span>
                   <input
                     type="checkbox"
                     checked={gstEnabled}
                     onChange={(e) => setGstEnabled(e.target.checked)}
-                    className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                  />
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">Prices are Tax Inclusive</span>
-                  <input
-                    type="checkbox"
-                    checked={taxInclusive}
-                    onChange={(e) => setTaxInclusive(e.target.checked)}
-                    className="rounded text-orange-600 h-4 w-4 cursor-pointer"
+                    className="rounded text-blue-600 h-4 w-4 cursor-pointer"
                   />
                 </label>
               </div>
-            </div>
 
-            <div className={`space-y-4 transition-all duration-200 ${!gstEnabled ? "opacity-50 pointer-events-none" : ""}`}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-indigo-600" />
-                    <span>GSTIN Number</span>
-                  </label>
+                  <label className="block font-bold text-slate-700">GSTIN Registration Number</label>
                   <input
                     type="text"
                     disabled={!gstEnabled}
                     value={gstin}
-                    onChange={(e) => setGstin(e.target.value)}
+                    onChange={(e) => setGstin(e.target.value.toUpperCase())}
                     placeholder="27AAAAA0000A1Z5"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 font-mono outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 font-mono text-slate-800 disabled:opacity-50"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Default Tax Rate % (0 to 100)</label>
+                  <label className="block font-bold text-slate-700">Default GST Rate (%)</label>
                   <input
                     type="number"
                     disabled={!gstEnabled}
                     min="0"
                     max="100"
-                    step="0.1"
                     value={gstPercentage}
-                    onChange={(e) => setGstPercentage(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                    onChange={(e) => setGstPercentage(Number(e.target.value) || 0)}
                     placeholder="18"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 font-medium text-slate-800 disabled:opacity-50"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                <label className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    disabled={!gstEnabled}
+                    checked={taxInclusive}
+                    onChange={(e) => setTaxInclusive(e.target.checked)}
+                    className="rounded text-blue-600 h-4 w-4"
+                  />
+                  <div>
+                    <span className="font-bold text-slate-800 block">Tax Inclusive Prices</span>
+                    <span className="text-[10px] text-slate-500">
+                      Product catalog prices already include GST.
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer">
                   <input
                     type="checkbox"
                     disabled={!gstEnabled}
                     checked={gstAppliesToDelivery}
                     onChange={(e) => setGstAppliesToDelivery(e.target.checked)}
-                    className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                    className="rounded text-blue-600 h-4 w-4"
                   />
                   <div>
-                    <span className="text-xs font-bold text-slate-800">Apply GST to Delivery Charges</span>
-                    <p className="text-[11px] text-slate-500">Calculate tax on shipping/delivery fees in addition to product subtotal.</p>
+                    <span className="font-bold text-slate-800 block">Apply GST to Shipping</span>
+                    <span className="text-[10px] text-slate-500">
+                      Apply tax calculation to delivery and handling charges.
+                    </span>
                   </div>
                 </label>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* CARD 4: DELIVERY & SHIPPING FEE RULES */}
-          <section className="clay-card p-5 sm:p-7 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                  <Truck className="h-5 w-5" />
+          {/* SECTION 4: SHIPPING & DELIVERY */}
+          {(activeTab === "all" || activeTab === "delivery") && (
+            <section className="clay-card p-5 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                      Shipping & Delivery Rules
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Standard shipping fees, free delivery threshold & platform handling charges
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
-                    Delivery & Shipping Fee Rules
-                  </h2>
-                  <p className="text-[11px] text-slate-500">Set shipping fees, free delivery threshold, default courier & estimated ETAs</p>
-                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs font-bold text-slate-700">Enable Shipping Fee</span>
+                  <input
+                    type="checkbox"
+                    checked={deliveryFeeEnabled}
+                    onChange={(e) => setDeliveryFeeEnabled(e.target.checked)}
+                    className="rounded text-orange-600 h-4 w-4 cursor-pointer"
+                  />
+                </label>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                <span className="text-xs font-bold text-slate-700">Delivery Enabled</span>
-                <input
-                  type="checkbox"
-                  checked={deliveryFeeEnabled}
-                  onChange={(e) => setDeliveryFeeEnabled(e.target.checked)}
-                  className="rounded text-orange-600 h-4 w-4 cursor-pointer"
-                />
-              </label>
-            </div>
 
-            <div className={`space-y-6 transition-all duration-200 ${!deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}`}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Default Shipping Fee (₹)</label>
+                  <label className="block font-bold text-slate-700">Default Shipping Fee (₹)</label>
                   <input
                     type="number"
                     disabled={!deliveryFeeEnabled}
                     min="0"
                     value={deliveryFee}
                     onChange={(e) => setDeliveryFee(Math.max(0, Number(e.target.value) || 0))}
-                    placeholder="50"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 font-medium text-slate-800 disabled:opacity-50"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Free Shipping Threshold (₹)</label>
+                  <label className="block font-bold text-slate-700">Free Delivery Threshold (₹)</label>
                   <input
                     type="number"
                     disabled={!deliveryFeeEnabled}
                     min="0"
                     value={freeDeliveryThreshold}
                     onChange={(e) => setFreeDeliveryThreshold(Math.max(0, Number(e.target.value) || 0))}
-                    placeholder="999"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 font-medium text-slate-800 disabled:opacity-50"
                   />
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Orders with subtotal equal to or above this amount qualify for free delivery.
-                  </p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Estimated Days</span>
-                  </label>
+                  <label className="block font-bold text-slate-700">Estimated Days</label>
                   <input
                     type="number"
                     disabled={!deliveryFeeEnabled}
@@ -899,110 +910,243 @@ export default function SettingsPage() {
                     max="30"
                     value={estimatedDays}
                     onChange={(e) => setEstimatedDays(Math.max(1, Number(e.target.value) || 1))}
-                    placeholder="3"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 font-medium text-slate-800 disabled:opacity-50"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Default Courier</label>
+                  <label className="block font-bold text-slate-700">Default Courier Partner</label>
                   <input
                     type="text"
                     disabled={!deliveryFeeEnabled}
                     value={courierDefault}
                     onChange={(e) => setCourierDefault(e.target.value)}
                     placeholder="Delhivery"
-                    className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 disabled:opacity-50"
                   />
                 </div>
               </div>
 
-              {/* Extra Platform / Handling Fee Subsection */}
-              <div className="p-4 rounded-2xl bg-[#F8F5F1] border border-slate-200/60 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-800">Extra Platform / Handling Fee</h3>
-                    <p className="text-[11px] text-slate-500">Configure optional or compulsory platform handling charges per order</p>
-                  </div>
+              {/* Extra Handling Fee Subsection */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800">Extra Platform / Handling Charge</h3>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="text-xs font-bold text-slate-700">Enable Extra Handling Fee</span>
+                    <span className="text-xs font-bold text-slate-700">Enable Extra Fee</span>
                     <input
                       type="checkbox"
                       disabled={!deliveryFeeEnabled}
                       checked={deliveryExtraFeeEnabled}
                       onChange={(e) => setDeliveryExtraFeeEnabled(e.target.checked)}
-                      className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                      className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:opacity-50"
                     />
                   </label>
                 </div>
 
-                <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 transition-all duration-200 ${(!deliveryFeeEnabled || !deliveryExtraFeeEnabled) ? "opacity-50 pointer-events-none" : ""}`}>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">Extra Fee Name *</label>
-                    <input
-                      type="text"
-                      disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
-                      value={deliveryExtraFeeName}
-                      onChange={(e) => setDeliveryExtraFeeName(e.target.value)}
-                      placeholder="Platform Fee"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">Extra Fee Amount (₹)</label>
-                    <input
-                      type="number"
-                      disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
-                      min="0"
-                      value={deliveryExtraFeeAmount}
-                      onChange={(e) => setDeliveryExtraFeeAmount(Math.max(0, Number(e.target.value) || 0))}
-                      placeholder="10"
-                      className="w-full rounded-xl bg-white border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:border-orange-400 transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="flex items-end pb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                {deliveryExtraFeeEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                    <div className="space-y-1">
+                      <label className="block font-bold text-slate-700">Extra Fee Name *</label>
                       <input
-                        type="checkbox"
-                        disabled={!deliveryFeeEnabled || !deliveryExtraFeeEnabled}
-                        checked={isExtraFeeCompulsory}
-                        onChange={(e) => setIsExtraFeeCompulsory(e.target.checked)}
-                        className="rounded text-orange-600 h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                        type="text"
+                        required
+                        value={deliveryExtraFeeName}
+                        onChange={(e) => setDeliveryExtraFeeName(e.target.value)}
+                        placeholder="Platform Fee"
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-medium text-slate-800"
                       />
-                      <span className="text-xs font-bold text-slate-700">Is Extra Fee Compulsory</span>
-                    </label>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block font-bold text-slate-700">Extra Fee Amount (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={deliveryExtraFeeAmount}
+                        onChange={(e) => setDeliveryExtraFeeAmount(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isExtraFeeCompulsory}
+                          onChange={(e) => setIsExtraFeeCompulsory(e.target.checked)}
+                          className="rounded text-orange-600 h-4 w-4 cursor-pointer"
+                        />
+                        <span className="font-bold text-slate-700">Compulsory Charge</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Save Bar */}
+          {(activeTab === "all" || activeTab !== "security") && (
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={saving || loading}
+                className="clay-btn-orange inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition cursor-pointer disabled:opacity-60"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>Save All Settings</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </form>
+      )}
+
+      {/* SECTION 5: SECURITY & ADMIN PASSWORD CHANGE */}
+      {(activeTab === "all" || activeTab === "security") && (
+        <section className="clay-card p-5 sm:p-7 space-y-6 border border-slate-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-rose-50 text-rose-600">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                  Security & Admin Password Change
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Update your authenticated administrator account password
+                </p>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Bottom Floating Save Button Bar */}
-          <div className="pt-4 border-t border-slate-200/80 flex items-center justify-end">
+          <form onSubmit={handleChangePassword} className="space-y-4 max-w-xl">
+            {/* Current Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 font-mono-eyebrow">
+                Current Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:border-rose-500 outline-hidden transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 font-mono-eyebrow">
+                New Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:border-rose-500 outline-hidden transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 font-mono-eyebrow">
+                Confirm New Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:border-rose-500 outline-hidden transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {newPassword && confirmPassword && (
+                <p
+                  className={`mt-1 text-[11px] font-bold ${
+                    newPassword === confirmPassword
+                      ? "text-emerald-600"
+                      : "text-rose-600"
+                  }`}
+                >
+                  {newPassword === confirmPassword
+                    ? "✓ Passwords match"
+                    : "✕ Passwords do not match"}
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={saving || loading}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={changingPassword}
+              className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-md transition disabled:opacity-50 cursor-pointer"
             >
-              {saving ? (
+              {changingPassword ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  <span>Saving Settings...</span>
+                  <span>Updating Password...</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
-                  <span>Save Settings</span>
+                  <Key className="h-4 w-4" />
+                  <span>Update Admin Password</span>
                 </>
               )}
             </button>
-          </div>
-
-        </div>
+          </form>
+        </section>
       )}
-
-    </form>
+    </div>
   );
 }

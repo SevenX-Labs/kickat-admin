@@ -54,3 +54,4 @@ export * from "./admin-testimonial";
 
 export * from "./admin-blog";
 export * from "./admin-campaign";
+export * from "./admin-settings";

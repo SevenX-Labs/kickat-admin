@@ -45,6 +45,7 @@ export const SIDEBAR_NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Reports", href: "/admin/dashboard/reports", icon: "PieChart" },
       { label: "Settings", href: "/admin/dashboard/settings", icon: "Settings" },
+      { label: "Password Vault", href: "/admin/dashboard/vault", icon: "KeyRound" },
     ],
   },
 ];
@@ -62,5 +63,6 @@ export const NAVIGATION_ITEMS: NavItem[] = [
   { label: "Blogs", href: "/admin/dashboard/blogs", icon: "FileText" },
   { label: "Reports", href: "/admin/dashboard/reports", icon: "PieChart" },
   { label: "Settings", href: "/admin/dashboard/settings", icon: "Settings" },
+      { label: "Password Vault", href: "/admin/dashboard/vault", icon: "KeyRound" },
   { label: "Admin Profile", href: "/admin/dashboard/profile", icon: "User" },
 ];

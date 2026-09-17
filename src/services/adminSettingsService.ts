@@ -1,150 +1,186 @@
+import { AxiosError } from "axios";
 import api from "./api";
+import {
+  AdminChangePasswordDto,
+  AdminSettingsForm,
+  AdminSettingsResponse,
+  DeliverySettingsState,
+  GeneralSettingsState,
+  PaymentSettingsState,
+  PublicSettings,
+  TaxSettingsState,
+  UpdateAllSettingsDto,
+} from "../types/admin-settings";
 
-export interface SocialLinks {
-  instagram?: string;
-  facebook?: string;
-  youtube?: string;
-  twitter?: string;
-  linkedin?: string;
-}
-
-export interface GeneralSettingsState {
-  storeName: string;
-  supportEmail: string;
-  supportPhone: string;
-  maintenanceMode: boolean;
-  socialLinks: SocialLinks;
-}
-
-export interface RazorpaySettings {
-  enabled: boolean;
-  keyId: string;
-  keySecret: string;
-  webhookSecret: string;
-}
-
-export interface CodSettings {
-  enabled: boolean;
-  minOrderAmount: number;
-  maxOrderAmount: number;
-  extraFeeEnabled: boolean;
-  extraFee: number;
-}
-
-export interface MethodToggle {
-  enabled: boolean;
-}
-
-export interface PaymentSettingsState {
-  razorpay: RazorpaySettings;
-  cod: CodSettings;
-  upi: MethodToggle;
-  card: MethodToggle;
-  wallet: MethodToggle;
-  netbanking: MethodToggle;
-}
-
-export interface TaxSettingsState {
-  gstEnabled: boolean;
-  gstNumber: string | null;
-  gstPercentage: number;
-  gstAppliesToDelivery: boolean;
-  taxInclusive: boolean;
-}
-
-export interface DeliverySettingsState {
-  deliveryFeeEnabled: boolean;
-  deliveryFee: number;
-  freeDeliveryThreshold: number;
-  estimatedDays: number;
-  courierDefault: string;
-  extraFeeEnabled: boolean;
-  extraFeeName: string;
-  extraFeeAmount: number;
-  isExtraFeeCompulsory: boolean;
-}
-
-export interface AdminSettingsForm {
-  general: GeneralSettingsState;
-  payment: PaymentSettingsState;
-  tax: TaxSettingsState;
-  delivery: DeliverySettingsState;
-}
+export * from "../types/admin-settings";
 
 export const AdminSettingsService = {
   /**
-   * Retrieve consolidated store settings across all 4 groups
+   * GET /api/v1/admin/settings
+   * Retrieve consolidated store settings across all 4 groups (general, payment, tax, delivery)
    */
-  async getAll() {
-    const res = await api.get<{ success: boolean; data: AdminSettingsForm }>("/admin/settings");
+  async getAll(): Promise<AdminSettingsResponse<AdminSettingsForm>> {
+    const res = await api.get<AdminSettingsResponse<AdminSettingsForm>>("/admin/settings");
     return res.data;
   },
 
   /**
+   * PATCH /api/v1/admin/settings
    * Bulk update configurations across multiple groups
    */
-  async updateAll(payload: Partial<AdminSettingsForm>) {
-    const res = await api.patch<{ success: boolean; data: AdminSettingsForm }>("/admin/settings", payload);
+  async updateAll(
+    payload: UpdateAllSettingsDto
+  ): Promise<AdminSettingsResponse<AdminSettingsForm>> {
+    const res = await api.patch<AdminSettingsResponse<AdminSettingsForm>>(
+      "/admin/settings",
+      payload
+    );
     return res.data;
   },
 
   /**
-   * General store settings
+   * POST /api/v1/admin/settings/change-password
+   * Authenticated Admin Password Reset within Settings
    */
-  async getGeneral() {
-    const res = await api.get<{ success: boolean; data: GeneralSettingsState }>("/admin/settings/general");
-    return res.data;
-  },
-
-  async updateGeneral(payload: Partial<GeneralSettingsState>) {
-    const res = await api.patch<{ success: boolean; data: GeneralSettingsState }>("/admin/settings/general", payload);
+  async changePassword(
+    payload: AdminChangePasswordDto
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await api.post<{ success: boolean; message: string }>(
+      "/admin/settings/change-password",
+      payload
+    );
     return res.data;
   },
 
   /**
-   * Payment gateway configurations
+   * GET /api/v1/admin/settings/general
    */
-  async getPayment() {
-    const res = await api.get<{ success: boolean; data: PaymentSettingsState }>("/admin/settings/payment");
-    return res.data;
-  },
-
-  async updatePayment(payload: Partial<PaymentSettingsState>) {
-    const res = await api.patch<{ success: boolean; data: PaymentSettingsState }>("/admin/settings/payment", payload);
+  async getGeneral(): Promise<AdminSettingsResponse<GeneralSettingsState>> {
+    const res = await api.get<AdminSettingsResponse<GeneralSettingsState>>(
+      "/admin/settings/general"
+    );
     return res.data;
   },
 
   /**
-   * Tax calculation rules
+   * PATCH /api/v1/admin/settings/general
    */
-  async getTax() {
-    const res = await api.get<{ success: boolean; data: TaxSettingsState }>("/admin/settings/tax");
-    return res.data;
-  },
-
-  async updateTax(payload: Partial<TaxSettingsState>) {
-    const res = await api.patch<{ success: boolean; data: TaxSettingsState }>("/admin/settings/tax", payload);
+  async updateGeneral(
+    payload: Partial<GeneralSettingsState>
+  ): Promise<AdminSettingsResponse<GeneralSettingsState>> {
+    const res = await api.patch<AdminSettingsResponse<GeneralSettingsState>>(
+      "/admin/settings/general",
+      payload
+    );
     return res.data;
   },
 
   /**
-   * Delivery & Shipping fee rules
+   * GET /api/v1/admin/settings/payment
    */
-  async getDelivery() {
-    const res = await api.get<{ success: boolean; data: DeliverySettingsState }>("/admin/settings/delivery");
-    return res.data;
-  },
-
-  async updateDelivery(payload: Partial<DeliverySettingsState>) {
-    const res = await api.patch<{ success: boolean; data: DeliverySettingsState }>("/admin/settings/delivery", payload);
+  async getPayment(): Promise<AdminSettingsResponse<PaymentSettingsState>> {
+    const res = await api.get<AdminSettingsResponse<PaymentSettingsState>>(
+      "/admin/settings/payment"
+    );
     return res.data;
   },
 
   /**
-   * Public Store Configuration API
+   * PATCH /api/v1/admin/settings/payment
    */
-  async getPublicSettings() {
-    const res = await api.get<{ success: boolean; data: any }>("/settings/public");
+  async updatePayment(
+    payload: Partial<PaymentSettingsState>
+  ): Promise<AdminSettingsResponse<PaymentSettingsState>> {
+    const res = await api.patch<AdminSettingsResponse<PaymentSettingsState>>(
+      "/admin/settings/payment",
+      payload
+    );
     return res.data;
+  },
+
+  /**
+   * GET /api/v1/admin/settings/tax
+   */
+  async getTax(): Promise<AdminSettingsResponse<TaxSettingsState>> {
+    const res = await api.get<AdminSettingsResponse<TaxSettingsState>>(
+      "/admin/settings/tax"
+    );
+    return res.data;
+  },
+
+  /**
+   * PATCH /api/v1/admin/settings/tax
+   */
+  async updateTax(
+    payload: Partial<TaxSettingsState>
+  ): Promise<AdminSettingsResponse<TaxSettingsState>> {
+    const res = await api.patch<AdminSettingsResponse<TaxSettingsState>>(
+      "/admin/settings/tax",
+      payload
+    );
+    return res.data;
+  },
+
+  /**
+   * GET /api/v1/admin/settings/delivery
+   */
+  async getDelivery(): Promise<AdminSettingsResponse<DeliverySettingsState>> {
+    const res = await api.get<AdminSettingsResponse<DeliverySettingsState>>(
+      "/admin/settings/delivery"
+    );
+    return res.data;
+  },
+
+  /**
+   * PATCH /api/v1/admin/settings/delivery
+   */
+  async updateDelivery(
+    payload: Partial<DeliverySettingsState>
+  ): Promise<AdminSettingsResponse<DeliverySettingsState>> {
+    const res = await api.patch<AdminSettingsResponse<DeliverySettingsState>>(
+      "/admin/settings/delivery",
+      payload
+    );
+    return res.data;
+  },
+
+  /**
+   * GET /api/v1/settings/public
+   * Public store configuration API for customer frontend
+   */
+  async getPublicSettings(): Promise<AdminSettingsResponse<PublicSettings>> {
+    const res = await api.get<AdminSettingsResponse<PublicSettings>>("/settings/public");
+    return res.data;
+  },
+
+  /**
+   * Helper to extract formatted error message from backend responses
+   */
+  extractErrorMessage(
+    err: unknown,
+    fallback = "Failed to process settings update."
+  ): string {
+    if (err && typeof err === "object" && "response" in err) {
+      const axiosErr = err as AxiosError<any>;
+      const respData = axiosErr.response?.data;
+      if (respData) {
+        if (Array.isArray(respData.errors) && respData.errors.length > 0) {
+          return respData.errors.join(", ");
+        }
+        if (respData.message) {
+          return typeof respData.message === "string"
+            ? respData.message
+            : Array.isArray(respData.message)
+            ? respData.message.join(", ")
+            : JSON.stringify(respData.message);
+        }
+      }
+    }
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+    return fallback;
   },
 };
+
+export default AdminSettingsService;

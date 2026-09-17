@@ -18,6 +18,7 @@ import {
   PieChart, 
   Settings,
   User,
+  KeyRound,
   LogOut,
   X
 } from "lucide-react";
@@ -39,251 +40,135 @@ const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   PieChart,
   Settings,
   User,
+  KeyRound
 };
 
 interface SidebarProps {
   isOpen: boolean;
-  onClose?: () => void;
+  onClose: () => void;
   isCollapsed?: boolean;
   onLogoutClick?: () => void;
+  onOpenLogoutModal?: () => void;
 }
 
-export function Sidebar({ 
-  isOpen, 
-  onClose, 
-  isCollapsed = false,
-  onLogoutClick,
-}: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isCollapsed = false, onLogoutClick, onOpenLogoutModal }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    if (onClose) onClose();
-    if (onLogoutClick) {
-      onLogoutClick();
-      return;
-    }
-    try {
-      await AdminAuthService.logout();
-    } finally {
-      router.push("/admin/login");
-    }
-  };
+  const handleLogout = onLogoutClick || onOpenLogoutModal;
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-[#2A241E]/30 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
 
-      {/* Floating 3D Clay Sidebar: Always Full Width on Mobile, Collapsible on Desktop */}
+      {/* Sidebar container */}
       <aside 
         className={`
-          clay-sidebar fixed top-2.5 bottom-2.5 left-2.5 sm:top-3 sm:bottom-3 sm:left-3 z-50 flex flex-col shrink-0 lg:static lg:h-full
-          sidebar-mobile ${isCollapsed ? "sidebar-desktop-collapsed" : "sidebar-desktop-expanded"}
-          transition-[width,transform] duration-200 ease-out will-change-[width,transform]
-          ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[calc(100%+32px)] lg:translate-x-0"}
+          fixed top-0 left-0 z-50 h-full bg-white border-r border-slate-200/80 flex flex-col justify-between p-4 transition-all duration-300 ease-in-out lg:static lg:translate-x-0 shrink-0
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          ${isCollapsed ? "w-[80px]" : "w-[260px]"}
         `}
       >
-        {/* Brand Header */}
-        <div className={`
-          flex h-16 sm:h-18 shrink-0 items-center border-b border-slate-100/60 lg:border-none
-          ${isCollapsed ? "lg:justify-center lg:px-1.5 justify-between px-4 sm:px-5" : "justify-between px-4 sm:px-5"}
-        `}>
-          <Link 
-            href="/admin/dashboard" 
-            onClick={onClose}
-            className="flex items-center gap-2.5 group min-w-0"
-            title={isCollapsed ? "KickAt Admin Dashboard" : undefined}
-          >
-            {/* 3D Puffy Clay Logo Badge with Pet Paw Emblem */}
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-amber-400 text-white shadow-[0_6px_14px_rgba(234,88,12,0.35),inset_0_2px_3px_rgba(255,255,255,0.5),inset_0_-2px_3px_rgba(154,52,18,0.35)] hover:scale-105 active:scale-95 transition-transform">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-white drop-shadow-xs" viewBox="0 0 24 24">
-                <path d="M12 10.5c1.38 0 2.5-1.12 2.5-2.5S13.38 5.5 12 5.5s-2.5 1.12-2.5 2.5 1.12 2.5 2.5 2.5zm-4.5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm9 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-4.5 2c-2.48 0-4.5 1.57-4.5 3.5 0 1.25.86 2.34 2.16 2.95.74.35 1.57.55 2.34.55.77 0 1.6-.2 2.34-.55 1.3-.61 2.16-1.7 2.16-2.95 0-1.93-2.02-3.5-4.5-3.5z"/>
-              </svg>
-            </div>
-            
-            {/* KickAt Brand Logo Image & Admin Tag: Always visible on mobile, hidden on desktop collapsed */}
-            <div className={`min-w-0 flex-1 flex items-center gap-2 ${isCollapsed ? "lg:hidden flex" : "flex"}`}>
-              <img 
-                src="/logo-clean.png" 
-                alt="KickAt Pet Commerce" 
-                className="h-7 sm:h-8 w-auto object-contain max-w-[110px]" 
-              />
-              <span className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider rounded-md bg-orange-100 text-orange-700 border border-orange-200/60 font-mono-eyebrow shrink-0">
-                Admin
-              </span>
-            </div>
-          </Link>
-
-          {/* Close button on Mobile (Always visible and accessible on mobile) */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onClose}
-              className="clay-button flex h-9 w-9 items-center justify-center text-slate-500 hover:text-slate-900 lg:hidden"
-              aria-label="Close menu"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Scrollable Navigation List */}
-        <div className={`
-          flex-1 overflow-y-auto space-y-2.5 pb-8 pt-1 no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
-          px-3 sm:px-4 ${isCollapsed ? "lg:px-2" : "lg:px-3.5"}
-        `}>
-          {SIDEBAR_NAV_SECTIONS.map((section, idx) => (
-            <div key={idx} className="space-y-1">
-              {/* Section Header */}
-              {isCollapsed && (
-                <div className="hidden lg:block my-2 h-[1px] w-6 mx-auto bg-slate-200/80 rounded-full" />
-              )}
-              <div className={`px-3 pb-0.5 pt-1 ${isCollapsed ? "lg:hidden block" : "block"}`}>
-                <span className="font-mono-eyebrow text-[9.5px] font-bold tracking-[0.18em] text-slate-400 uppercase">
-                  {section.title}
-                </span>
+        {/* Top: Logo & Navigation */}
+        <div className="flex flex-col min-h-0">
+          
+          {/* Logo Brand Header */}
+          <div className="flex items-center justify-between px-2 py-2 border-b border-slate-100">
+            <Link href="/admin/dashboard" className="flex items-center gap-2.5 group">
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-105 transition-transform shrink-0">
+                K
               </div>
-
-              {/* Navigation Links */}
-              <nav className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = NAV_ICONS[item.icon] || LayoutDashboard;
-                  const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      title={isCollapsed ? item.label : undefined}
-                      className={`
-                        group relative flex items-center transition-colors duration-150 rounded-2xl
-                        w-full justify-between px-3.5 py-2 text-xs font-semibold
-                        ${isCollapsed ? "lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:px-0" : ""}
-                        ${isActive 
-                          ? "clay-pill-orange text-white shadow-md" 
-                          : "text-slate-600 hover:bg-[#F7F3EE] hover:text-slate-900"
-                        }
-                      `}
-                    >
-                      <div className={`flex items-center ${isCollapsed ? "lg:justify-center gap-2.5 min-w-0" : "gap-2.5 min-w-0"}`}>
-                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-500"}`} />
-                        {/* Text label: Always visible on mobile */}
-                        <span className={`truncate ${isCollapsed ? "lg:hidden block" : "block"}`}>
-                          {item.label}
-                        </span>
-                      </div>
-
-                      {/* Tooltip on Desktop Collapsed Only */}
-                      {isCollapsed && (
-                        <div className="pointer-events-none absolute left-full ml-3 hidden lg:group-hover:flex items-center z-50">
-                          <div className="rounded-xl bg-[#2A241E] text-white px-3 py-1.5 text-xs font-medium shadow-xl whitespace-nowrap">
-                            {item.label}
-                          </div>
-                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2A241E]" />
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          ))}
-
-          {/* Account Profile Item */}
-          <div className="space-y-1 pt-2 border-t border-slate-100">
-            {isCollapsed && (
-              <div className="hidden lg:block my-2 h-[1px] w-6 mx-auto bg-slate-200/80 rounded-full" />
-            )}
-            <div className={`px-3 pb-0.5 ${isCollapsed ? "lg:hidden block" : "block"}`}>
-              <span className="font-mono-eyebrow text-[9.5px] font-bold tracking-[0.18em] text-slate-400 uppercase">
-                Account
-              </span>
-            </div>
-            <Link
-              href="/admin/dashboard/profile"
-              onClick={onClose}
-              title={isCollapsed ? "Admin Profile" : undefined}
-              className={`
-                group relative flex items-center transition-colors duration-150 rounded-2xl
-                w-full justify-between px-3.5 py-2 text-xs font-semibold
-                ${isCollapsed ? "lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:px-0" : ""}
-                ${pathname === "/admin/dashboard/profile"
-                  ? "clay-pill-orange text-white shadow-md"
-                  : "text-slate-600 hover:bg-[#F7F3EE] hover:text-slate-900"
-                }
-              `}
-            >
-              <div className={`flex items-center ${isCollapsed ? "lg:justify-center gap-2.5 min-w-0" : "gap-2.5 min-w-0"}`}>
-                <User className={`h-4 w-4 shrink-0 ${pathname === "/admin/dashboard/profile" ? "text-white" : "text-slate-500"}`} />
-                <span className={`truncate ${isCollapsed ? "lg:hidden block" : "block"}`}>
-                  Admin Profile
-                </span>
-              </div>
-
-              {isCollapsed && (
-                <div className="pointer-events-none absolute left-full ml-3 hidden lg:group-hover:flex items-center z-50">
-                  <div className="rounded-xl bg-[#2A241E] text-white px-3 py-1.5 text-xs font-medium shadow-xl whitespace-nowrap">
-                    Admin Profile
-                  </div>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2A241E]" />
+              {!isCollapsed && (
+                <div className="flex flex-col">
+                  <span className="font-fraunces text-lg font-bold text-[#2A241E] leading-tight">
+                    Kickat
+                  </span>
+                  <span className="text-[10px] font-bold text-orange-600 tracking-wider uppercase font-mono-eyebrow">
+                    Admin Hub
+                  </span>
                 </div>
               )}
             </Link>
-          </div>
-        </div>
 
-        {/* Bottom User & Logout: Full open on Mobile */}
-        {/* 1. Mobile & Desktop Expanded View: Full user card */}
-        <div className={`border-t border-slate-100/80 p-2.5 shrink-0 ${isCollapsed ? "lg:hidden block" : "block"}`}>
-          <div className="flex items-center justify-between rounded-2xl bg-[#F7F3EE] p-2 border border-white/60">
-            <Link href="/admin/dashboard/profile" onClick={onClose} className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FF7A00] text-white text-xs font-bold shadow-[0_2px_4px_rgba(255,122,0,0.25)]">
-                AD
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-xs font-bold text-slate-800 leading-tight">Admin User</p>
-                <p className="truncate text-[9.5px] font-medium text-slate-400">admin@kickat.in</p>
-              </div>
-            </Link>
-
+            {/* Close button for mobile */}
             <button
-              onClick={handleLogout}
-              title="Logout"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition ml-1"
-              aria-label="Logout"
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 lg:hidden transition-colors"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Nav Sections Scrollable */}
+          <nav className="mt-4 flex-1 space-y-5 overflow-y-auto no-scrollbar pr-1">
+            {SIDEBAR_NAV_SECTIONS.map((section, idx) => (
+              <div key={idx} className="space-y-1">
+                {section.title && !isCollapsed && (
+                  <h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">
+                    {section.title}
+                  </h3>
+                )}
+
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const IconComponent = NAV_ICONS[item.icon] || LayoutDashboard;
+                    const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        title={isCollapsed ? item.label : undefined}
+                        className={`
+                          flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all duration-150
+                          ${isActive 
+                            ? "clay-nav-active text-orange-600 shadow-sm font-extrabold" 
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                          }
+                          ${isCollapsed ? "justify-center px-0" : ""}
+                        `}
+                      >
+                        <IconComponent className={`h-4 w-4 stroke-[2.2] shrink-0 ${isActive ? "text-orange-600" : "text-slate-400"}`} />
+                        {!isCollapsed && <span className="truncate">{item.label}</span>}
+                        {!isCollapsed && item.badge && (
+                          <span className="ml-auto px-2 py-0.5 text-[9.5px] font-black rounded-full bg-orange-100 text-orange-700 font-mono-eyebrow">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
         </div>
 
-        {/* 2. Desktop Collapsed View Only: Centered icon avatar & logout */}
-        {isCollapsed && (
-          <div className="hidden lg:flex border-t border-slate-100/80 p-2 shrink-0 flex-col items-center gap-2">
-            <Link 
-              href="/admin/dashboard/profile" 
-              title="Admin User (admin@kickat.in)"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FF7A00] text-white text-xs font-bold shadow-[0_2px_6px_rgba(255,122,0,0.3)] hover:scale-105 active:scale-95 transition-transform"
-            >
-              AD
-            </Link>
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="clay-button flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 transition"
-              aria-label="Logout"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+        {/* Bottom Profile / Logout Footer */}
+        <div className="pt-3 border-t border-slate-100 space-y-2 shrink-0">
+          <button
+            onClick={handleLogout}
+            title={isCollapsed ? "Log out" : undefined}
+            className={`
+              w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors group
+              ${isCollapsed ? "justify-center px-0" : ""}
+            `}
+          >
+            <div className="flex items-center gap-2.5">
+              <LogOut className="h-4 w-4 text-slate-400 group-hover:text-rose-600 transition-colors shrink-0" />
+              {!isCollapsed && <span>Log out</span>}
+            </div>
+            {!isCollapsed && <span className="text-[10px] font-mono text-slate-400">Ctrl+Q</span>}
+          </button>
+        </div>
       </aside>
     </>
   );
 }
+
+export default Sidebar;
