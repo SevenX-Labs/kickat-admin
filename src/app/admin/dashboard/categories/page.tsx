@@ -1394,7 +1394,7 @@ export default function CategoriesPage() {
                         autoFocus
                         value={deleteConfirmText}
                         onChange={(e) => setDeleteConfirmText(e.target.value)}
-                        placeholder={deleteTarget.name}
+                        placeholder="Type category name to confirm..."
                         className="w-full rounded-xl bg-white border border-rose-300 p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-rose-600 shadow-2xs"
                       />
                     </div>
