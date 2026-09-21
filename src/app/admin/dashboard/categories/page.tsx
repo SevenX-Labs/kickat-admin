@@ -30,6 +30,8 @@ import {
   GitFork,
   MoreVertical,
   Loader2,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import {
   AdminCategoryItem,
@@ -182,7 +184,21 @@ export default function CategoriesPage() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminCategoryItem | null>(null);
   const [deletePermanent, setDeletePermanent] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  const handleOpenDelete = (cat: AdminCategoryItem, permanent: boolean = true) => {
+    setDeleteTarget(cat);
+    setDeletePermanent(permanent);
+    setDeleteStep(1);
+    setDeleteConfirmText("");
+  };
+
+  const deleteTargetSubcategories = useMemo(() => {
+    if (!deleteTarget) return [];
+    return categories.filter((c) => c.parentId === deleteTarget.id);
+  }, [deleteTarget, categories]);
 
   // Toast Helper
   const showToast = useCallback((message: string, type: "success" | "error" | "info" = "success") => {
@@ -462,9 +478,17 @@ export default function CategoriesPage() {
     setDeleting(true);
 
     try {
-      await AdminCategoryService.deleteCategory(deleteTarget.id, deletePermanent);
-      showToast(`Deleted category "${deleteTarget.name}".`, "success");
+      const res = await AdminCategoryService.deleteCategory(deleteTarget.id, deletePermanent);
+      const subCount = deleteTargetSubcategories.length;
+      const msg =
+        res.message ||
+        (subCount > 0
+          ? `Deleted category "${deleteTarget.name}" and ${subCount} subcategory(ies).`
+          : `Deleted category "${deleteTarget.name}".`);
+      showToast(msg, "success");
       setDeleteTarget(null);
+      setDeleteConfirmText("");
+      setDeleteStep(1);
       fetchCategoriesData(true);
     } catch (err) {
       const msg = AdminCategoryService.extractErrorMessage(err, "Cannot delete category.");
@@ -948,10 +972,7 @@ export default function CategoriesPage() {
                               </button>
 
                               <button
-                                onClick={() => {
-                                  setDeleteTarget(sub);
-                                  setDeletePermanent(true);
-                                }}
+                                onClick={() => handleOpenDelete(sub, true)}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
                                 title="Delete Subcategory"
                               >
@@ -1021,10 +1042,7 @@ export default function CategoriesPage() {
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        setDeleteTarget(cat);
-                        setDeletePermanent(true);
-                      }}
+                      onClick={() => handleOpenDelete(cat, true)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
                       title="Delete"
                     >
@@ -1291,51 +1309,181 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* DELETE CONFIRMATION MODAL (WITH DOUBLE CONFIRMATION FOR CASCADE DELETE) */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="clay-card w-full max-w-md p-5 sm:p-6 space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="p-2.5 rounded-2xl bg-rose-50">
-                <Trash2 className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
-                  Delete Category?
-                </h3>
-                <p className="text-xs text-slate-500 font-medium">{deleteTarget.name}</p>
-              </div>
-            </div>
+            {deleteTargetSubcategories.length > 0 ? (
+              /* DOUBLE CONFIRMATION FLOW FOR CATEGORIES WITH SUBCATEGORIES */
+              deleteStep === 1 ? (
+                /* STEP 1: CASCADE WARNING */
+                <>
+                  <div className="flex items-center gap-3 text-amber-600">
+                    <div className="p-2.5 rounded-2xl bg-amber-50 shrink-0">
+                      <AlertTriangle className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
+                        Cascade Delete Warning
+                      </h3>
+                      <p className="text-xs text-amber-700 font-semibold">
+                        Category contains {deleteTargetSubcategories.length} subcategory(ies)
+                      </p>
+                    </div>
+                  </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 text-xs text-slate-600 space-y-2">
-              <p>
-                Are you sure you want to delete &ldquo;{deleteTarget.name}&rdquo;? Categories with active products or child subcategories cannot be deleted.
-              </p>
-            </div>
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs text-slate-700 space-y-2">
+                    <p className="font-bold text-amber-900">
+                      Deleting &ldquo;{deleteTarget.name}&rdquo; will automatically delete the following {deleteTargetSubcategories.length} subcategory(ies):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {deleteTargetSubcategories.map((sub) => (
+                        <span
+                          key={sub.id}
+                          className="px-2 py-0.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-[11px] font-bold"
+                        >
+                          ↳ {sub.name}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-slate-500 pt-1">
+                      Note: If active products are assigned to this category or any of these subcategories, deletion will be blocked by the server.
+                    </p>
+                  </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <span>Delete Category</span>
-                )}
-              </button>
-            </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => setDeleteTarget(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => setDeleteStep(2)}
+                      className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>Proceed to Confirmation</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* STEP 2: DOUBLE CONFIRMATION TYPE INPUT */
+                <>
+                  <div className="flex items-center gap-3 text-rose-600">
+                    <div className="p-2.5 rounded-2xl bg-rose-50 shrink-0">
+                      <ShieldAlert className="h-6 w-6 text-rose-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
+                        Double Confirmation Required
+                      </h3>
+                      <p className="text-xs text-rose-600 font-semibold">
+                        Type category name to confirm deletion
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/80 text-xs text-slate-700 space-y-2">
+                    <p>
+                      To prevent accidental deletion of <strong className="text-rose-900">&ldquo;{deleteTarget.name}&rdquo;</strong> and its <strong className="text-rose-900">{deleteTargetSubcategories.length} subcategory(ies)</strong>, please type the category name below to confirm:
+                    </p>
+                    <div className="pt-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder={deleteTarget.name}
+                        className="w-full rounded-xl bg-white border border-rose-300 p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-rose-600 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => setDeleteStep(1)}
+                      disabled={deleting}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      ← Back
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setDeleteTarget(null)}
+                        disabled={deleting}
+                        className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteConfirm}
+                        disabled={
+                          deleting ||
+                          deleteConfirmText.trim() !== deleteTarget.name.trim()
+                        }
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2"
+                      >
+                        {deleting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Deleting...</span>
+                          </>
+                        ) : (
+                          <span>Delete Category & Subcategories</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )
+            ) : (
+              /* STANDARD SINGLE STEP CONFIRMATION FOR CATEGORIES WITHOUT SUBCATEGORIES */
+              <>
+                <div className="flex items-center gap-3 text-rose-600">
+                  <div className="p-2.5 rounded-2xl bg-rose-50 shrink-0">
+                    <Trash2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-fraunces text-base font-bold text-[#2A241E]">
+                      Delete Category?
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium">{deleteTarget.name}</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 text-xs text-slate-600 space-y-2">
+                  <p>
+                    Are you sure you want to delete &ldquo;{deleteTarget.name}&rdquo;? Active products assigned to this category will block deletion.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => setDeleteTarget(null)}
+                    disabled={deleting}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    disabled={deleting}
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete Category</span>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
