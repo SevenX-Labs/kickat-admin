@@ -41,6 +41,7 @@ import {
   AdminCategorySortEnum,
 } from "@/types/admin-category";
 import AdminCategoryService from "@/services/adminCategoryService";
+import { AdminUploadService } from "@/services/adminUploadService";
 
 /**
  * Category Thumbnail Renderer
@@ -178,6 +179,30 @@ export default function CategoriesPage() {
     | { kind: "new_url"; url: string }
     | { kind: "removed" }
   >({ kind: "none" });
+
+  // File Upload Ref & State
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const res = await AdminUploadService.uploadImage(file, "categories");
+      setFormImageUrl(res.url);
+      showToast("Category image uploaded successfully!", "success");
+    } catch (err: any) {
+      const msg = err?.message || "Failed to upload category image.";
+      showToast(msg, "error");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   // Modal Submit / Delete Loading
   const [submittingModal, setSubmittingModal] = useState(false);
@@ -513,12 +538,7 @@ export default function CategoriesPage() {
     const parentId = isSubcategoryMode && modalParentId ? modalParentId : null;
 
     try {
-      let finalImageUrl: string | null = null;
-      if (formImageState.kind === "existing") {
-        finalImageUrl = formImageState.url;
-      } else if (formImageState.kind === "new_url") {
-        finalImageUrl = formImageState.url.trim();
-      }
+      const finalImageUrl = formImageUrl.trim() !== "" ? formImageUrl.trim() : null;
 
       if (editingCategory) {
         const payload: UpdateCategoryDto = {
@@ -1231,23 +1251,77 @@ export default function CategoriesPage() {
                 </div>
               </div>
 
-              {/* Category Image */}
+              {/* Category Image Upload & Preview */}
               <div className="space-y-1.5">
-                <label className="block text-slate-700 font-bold">Category Image URL (Optional)</label>
-                <input
-                  type="url"
-                  value={formImageUrl}
-                  onChange={(e) => {
-                    setFormImageUrl(e.target.value);
-                    if (e.target.value.trim()) {
-                      setFormImageState({ kind: "new_url", url: e.target.value.trim() });
-                    } else {
-                      setFormImageState({ kind: "none" });
-                    }
-                  }}
-                  placeholder="https://cdn.kickat.co.in/categories/dog-food.png"
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/70 p-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#FF7A00] transition"
-                />
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-700 font-bold">Category Image (Optional)</label>
+                  <span className="text-[10px] text-slate-400">PNG, JPG, WEBP, SVG</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="url"
+                    value={formImageUrl}
+                    onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="Paste image CDN URL or click Upload Image..."
+                    className="flex-1 rounded-xl bg-[#F8F5F1] border border-slate-200/70 p-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#FF7A00] transition"
+                  />
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={uploadingImage}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="clay-button px-3.5 py-2.5 text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#FF7A00]" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5 text-[#FF7A00]" />
+                    )}
+                    <span>{uploadingImage ? "Uploading..." : "Upload Image"}</span>
+                  </button>
+                </div>
+
+                {/* Live Image Preview */}
+                {formImageUrl.trim() !== "" && (
+                  <div className="relative mt-2 flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200/80 animate-fade-in">
+                    <div className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={formImageUrl}
+                        alt="Category Preview"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-slate-700 truncate">
+                        Image Preview
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-400 truncate">
+                        {formImageUrl}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormImageUrl("")}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                      title="Remove image"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Order Sequence & Status */}
