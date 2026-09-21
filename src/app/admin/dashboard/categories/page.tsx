@@ -1421,7 +1421,7 @@ export default function CategoriesPage() {
                         onClick={handleDeleteConfirm}
                         disabled={
                           deleting ||
-                          deleteConfirmText.trim() !== deleteTarget.name.trim()
+                          deleteConfirmText.trim().toLowerCase() !== deleteTarget.name.trim().toLowerCase()
                         }
                         className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2"
                       >
