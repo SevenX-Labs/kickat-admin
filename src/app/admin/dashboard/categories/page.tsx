@@ -641,7 +641,7 @@ export default function CategoriesPage() {
             title="Create a new top-level parent category"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
-            <span>+ New Root Category</span>
+            <span>New Root Category</span>
           </button>
         </div>
       </div>
@@ -903,7 +903,7 @@ export default function CategoriesPage() {
                       title={`Add nested subcategory under ${root.name}`}
                     >
                       <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-                      <span>+ Add Subcategory</span>
+                      <span>Add Subcategory</span>
                     </button>
 
                     {/* Edit Root */}
@@ -942,7 +942,7 @@ export default function CategoriesPage() {
                           className="text-orange-600 font-bold hover:underline cursor-pointer flex items-center gap-1"
                         >
                           <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-                          <span>+ Add Subcategory</span>
+                          <span>Add Subcategory</span>
                         </button>
                       </div>
                     ) : (
@@ -1048,10 +1048,11 @@ export default function CategoriesPage() {
                     {isRoot && (
                       <button
                         onClick={() => handleOpenAdd(cat.id)}
-                        className="px-2 py-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition cursor-pointer"
                         title="Add Subcategory under this root"
                       >
-                        + Add Subcategory
+                        <Plus className="h-3 w-3 stroke-[2.5]" />
+                        <span>Add Subcategory</span>
                       </button>
                     )}
                     <button
