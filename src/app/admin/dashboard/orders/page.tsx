@@ -20,6 +20,9 @@ import {
   ArrowUp,
   SlidersHorizontal,
   PackageCheck,
+  Copy,
+  Package,
+  Inbox,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -57,6 +60,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string>("");
 
   // Filter States
   const [search, setSearch] = useState("");
@@ -68,6 +72,9 @@ export default function OrdersPage() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+
+  // Copied feedback
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
   // Modals & Action States
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -88,10 +95,24 @@ export default function OrdersPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Active filters count (excluding default values)
+  const handleCopyOrderId = (orderNum: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(orderNum);
+      setCopiedOrderId(orderNum);
+      showToast(`Order #${orderNum} copied to clipboard`, "success");
+      setTimeout(() => setCopiedOrderId(null), 2000);
+    }
+  };
+
+  // Active filters count
   const activeFiltersCount =
     (selectedStatus !== "ALL" ? 1 : 0) +
-    (paymentStatus !== "ALL" ? 1 : 0);
+    (paymentStatus !== "ALL" ? 1 : 0) +
+    (search.trim() ? 1 : 0);
 
   // Debounce search input
   useEffect(() => {
@@ -141,6 +162,13 @@ export default function OrdersPage() {
         setOrders(res.data.orders || []);
         setPagination(res.data.pagination);
         setSummary(res.data.summary);
+        setLastRefreshedAt(
+          new Date().toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        );
       }
     } catch (err) {
       setError(AdminOrderService.extractErrorMessage(err, "Failed to load orders"));
@@ -162,77 +190,178 @@ export default function OrdersPage() {
     setPage(1);
   };
 
-  /**
-   * Fully consistent semantic color mapping across stat cards & order list badges:
-   * - In Progress / Processing / Picking / Placed: amber / orange
-   * - In Transit / Shipped / Out for delivery: blue
-   * - Delivered / Completed: green (emerald)
-   * - Cancelled: red (rose)
-   */
+  const getCustomerInitials = (name?: string) => {
+    if (!name || !name.trim()) return "CU";
+    const parts = name.trim().split(" ").filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case "DELIVERED":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+        return {
+          bg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+          dot: "bg-emerald-500",
+          label: "Delivered",
+        };
       case "SHIPPED":
+        return {
+          bg: "bg-blue-50 text-blue-700 border-blue-200/80",
+          dot: "bg-blue-500",
+          label: "Shipped",
+        };
       case "OUT_FOR_DELIVERY":
-        return "bg-blue-50 text-blue-700 border-blue-200";
+        return {
+          bg: "bg-sky-50 text-sky-700 border-sky-200/80",
+          dot: "bg-sky-500",
+          label: "Out for Delivery",
+        };
       case "PROCESSING":
+        return {
+          bg: "bg-amber-50 text-amber-700 border-amber-200/80",
+          dot: "bg-amber-500",
+          label: "Processing",
+        };
       case "PACKED":
+        return {
+          bg: "bg-orange-50 text-orange-700 border-orange-200/80",
+          dot: "bg-orange-500",
+          label: "Packed",
+        };
       case "PLACED":
+        return {
+          bg: "bg-amber-50/90 text-amber-800 border-amber-300/80",
+          dot: "bg-amber-500 animate-pulse",
+          label: "Placed",
+        };
       case "PENDING":
-        return "bg-amber-50 text-amber-700 border-amber-200";
+        return {
+          bg: "bg-amber-50 text-amber-700 border-amber-200/80",
+          dot: "bg-amber-400",
+          label: "Pending",
+        };
       case "CANCELLED":
-        return "bg-rose-50 text-rose-700 border-rose-200";
+        return {
+          bg: "bg-rose-50 text-rose-700 border-rose-200/80",
+          dot: "bg-rose-500",
+          label: "Cancelled",
+        };
       case "RETURN_INITIATED":
+        return {
+          bg: "bg-purple-50 text-purple-700 border-purple-200/80",
+          dot: "bg-purple-500",
+          label: "Return Req.",
+        };
       case "RETURNED":
-        return "bg-purple-50 text-purple-700 border-purple-200";
+        return {
+          bg: "bg-purple-50 text-purple-700 border-purple-200/80",
+          dot: "bg-purple-600",
+          label: "Returned",
+        };
       default:
-        return "bg-slate-50 text-slate-700 border-slate-200";
+        return {
+          bg: "bg-slate-50 text-slate-700 border-slate-200",
+          dot: "bg-slate-400",
+          label: status,
+        };
     }
   };
 
   const getPaymentBadge = (pStatus: PaymentStatus) => {
     switch (pStatus) {
       case "COMPLETED":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+        return {
+          bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          dot: "bg-emerald-500",
+          label: "Paid",
+        };
       case "PENDING":
-        return "bg-amber-50 text-amber-700 border-amber-200";
+        return {
+          bg: "bg-amber-50 text-amber-700 border-amber-200",
+          dot: "bg-amber-500",
+          label: "Pending",
+        };
       case "FAILED":
-        return "bg-rose-50 text-rose-700 border-rose-200";
+        return {
+          bg: "bg-rose-50 text-rose-700 border-rose-200",
+          dot: "bg-rose-500",
+          label: "Failed",
+        };
       case "REFUNDED":
-        return "bg-purple-50 text-purple-700 border-purple-200";
+        return {
+          bg: "bg-purple-50 text-purple-700 border-purple-200",
+          dot: "bg-purple-500",
+          label: "Refunded",
+        };
       default:
-        return "bg-slate-50 text-slate-600 border-slate-200";
+        return {
+          bg: "bg-slate-50 text-slate-600 border-slate-200",
+          dot: "bg-slate-400",
+          label: pStatus,
+        };
     }
   };
 
+  // Segmented Quick Filter Tabs
+  const statusTabs: Array<{ label: string; value: "ALL" | OrderStatus; count?: number }> = [
+    { label: "All Orders", value: "ALL", count: summary?.totalOrders },
+    {
+      label: "In Progress",
+      value: "PROCESSING",
+      count:
+        (summary?.processingCount || 0) +
+        (summary?.placedCount || 0) +
+        (summary?.pendingCount || 0),
+    },
+    {
+      label: "In Transit",
+      value: "SHIPPED",
+      count: (summary?.shippedCount || 0) + (summary?.packedCount || 0),
+    },
+    { label: "Delivered", value: "DELIVERED", count: summary?.deliveredCount },
+    { label: "Cancelled", value: "CANCELLED", count: summary?.cancelledCount },
+    { label: "Returns", value: "RETURNED", count: summary?.returnedCount },
+  ];
+
   return (
-    <div className="space-y-4 sm:space-y-5 pb-16 w-full min-w-0 no-scrollbar">
+    <div className="space-y-4 pb-16 w-full min-w-0">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-[#2A241E] text-white px-5 py-3 text-xs font-semibold shadow-2xl animate-fade-in border border-slate-700/50">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 text-xs font-semibold shadow-2xl animate-fade-in border border-slate-700/60 transition-all">
           {toastMessage.type === "success" ? (
-            <Check className="h-4 w-4 text-emerald-400" />
+            <div className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Check className="h-3.5 w-3.5" />
+            </div>
           ) : (
-            <AlertCircle className="h-4 w-4 text-rose-400" />
+            <div className="h-6 w-6 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <AlertCircle className="h-3.5 w-3.5" />
+            </div>
           )}
-          <span>{toastMessage.text}</span>
+          <span className="text-slate-100">{toastMessage.text}</span>
         </div>
       )}
 
       {/* Header Bar */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-fraunces text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-[#2A241E] truncate">
-              Orders & Fulfillment
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="font-fraunces text-xl sm:text-2xl font-bold tracking-tight text-[#2A241E]">
+              Orders &amp; Fulfillment
             </h1>
-            {refreshing && (
-              <RefreshCw className="h-4 w-4 text-orange-500 animate-spin" />
+            {summary && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-100/80 text-[#FF7A00] border border-orange-200/80 shadow-2xs">
+                {summary.totalOrders} {summary.totalOrders === 1 ? "Order" : "Orders"}
+              </span>
             )}
           </div>
-          <p className="text-xs sm:text-[13px] text-slate-500 font-medium mt-0.5">
-            Track customer orders, packing slips, logistics milestones, GST invoices, and refunds.
+          <p className="text-[11.5px] sm:text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2">
+            <span>Manage customer orders, packing slips, tracking &amp; tax invoices.</span>
+            {lastRefreshedAt && (
+              <span className="hidden md:inline text-slate-400 text-[10.5px] font-mono">
+                • Updated at {lastRefreshedAt}
+              </span>
+            )}
           </p>
         </div>
 
@@ -240,303 +369,361 @@ export default function OrdersPage() {
           <button
             onClick={() => fetchOrders(true)}
             disabled={refreshing || loading}
-            className="clay-button inline-flex items-center justify-center gap-1.5 h-10 min-h-[40px] px-3.5 text-xs font-bold text-slate-700 hover:text-orange-600 active:scale-95 transition cursor-pointer"
+            className="clay-button inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-bold text-slate-700 hover:text-[#FF7A00] active:scale-95 transition cursor-pointer shadow-xs"
             title="Refresh Orders"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[#FF7A00]" : ""}`} />
+            <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Summary Cards (Consistent min-height across 2-column mobile grid, interactive filters) */}
+      {/* KPI Stats Grid: Compact, Non-overflowing 6-card row */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
-          {/* Total Orders */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+          {/* Total Orders Card */}
           <button
             type="button"
             onClick={() => {
               setSelectedStatus("ALL");
               setPage(1);
             }}
-            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+            className={`p-3 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between min-h-[86px] cursor-pointer shadow-xs ${
               selectedStatus === "ALL"
-                ? "ring-2 ring-slate-900/30 border-slate-900 shadow-md"
-                : "hover:border-slate-300"
+                ? "bg-white border-orange-400/90 ring-2 ring-orange-500/20 shadow-sm"
+                : "bg-white/95 hover:bg-white border-slate-200/80 hover:border-slate-300"
             }`}
           >
-            <div className="flex items-center justify-between text-slate-500 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Orders</span>
-              <ShoppingBag className="h-4 w-4 text-orange-500 shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono-eyebrow">
+                Total Orders
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-orange-50 text-[#FF7A00] flex items-center justify-center">
+                <ShoppingBag className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+            <div className="mt-1">
+              <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
                 {summary.totalOrders}
               </p>
-              <p className="text-[10px] text-slate-400 font-medium">All lifecycle orders</p>
+              <p className="text-[9.5px] font-medium text-slate-400 mt-1">All lifecycle</p>
             </div>
           </button>
 
-          {/* Total Revenue */}
-          <div className="clay-card p-3.5 sm:p-4 min-h-[96px] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Revenue</span>
-              <IndianRupee className="h-4 w-4 text-emerald-600 shrink-0" />
+          {/* Revenue Card */}
+          <div className="p-3 rounded-2xl border border-emerald-100 bg-linear-to-br from-white to-emerald-50/40 text-left flex flex-col justify-between min-h-[86px] shadow-xs">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-emerald-700/80 font-mono-eyebrow">
+                Net Revenue
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center">
+                <IndianRupee className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-emerald-700 truncate">
+            <div className="mt-1">
+              <p className="text-xl font-black text-emerald-800 tracking-tight leading-none truncate">
                 ₹{summary.totalRevenue.toLocaleString("en-IN")}
               </p>
-              <p className="text-[10px] text-slate-400 font-medium">Net non-cancelled</p>
+              <p className="text-[9.5px] font-medium text-emerald-600/80 mt-1">Non-cancelled</p>
             </div>
           </div>
 
-          {/* Processing / Placed (In Progress) */}
+          {/* In Progress Card */}
           <button
             type="button"
             onClick={() => {
               setSelectedStatus((prev) => (prev === "PROCESSING" ? "ALL" : "PROCESSING"));
               setPage(1);
             }}
-            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+            className={`p-3 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between min-h-[86px] cursor-pointer shadow-xs ${
               selectedStatus === "PROCESSING" || selectedStatus === "PLACED"
-                ? "ring-2 ring-amber-500/40 border-amber-500 shadow-md"
-                : "hover:border-amber-300"
+                ? "bg-white border-amber-400/90 ring-2 ring-amber-500/20 shadow-sm"
+                : "bg-white/95 hover:bg-white border-slate-200/80 hover:border-slate-300"
             }`}
           >
-            <div className="flex items-center justify-between text-amber-600 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">In Progress</span>
-              <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-amber-600 font-mono-eyebrow">
+                In Progress
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Clock className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+            <div className="mt-1">
+              <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
                 {(summary.processingCount || 0) + (summary.placedCount || 0) + (summary.pendingCount || 0)}
               </p>
-              <p className="text-[10px] text-amber-600 font-medium">Picking & packing</p>
+              <p className="text-[9.5px] font-medium text-amber-600 mt-1">Picking &amp; packing</p>
             </div>
           </button>
 
-          {/* Shipped (In Transit - Blue) */}
+          {/* In Transit Card */}
           <button
             type="button"
             onClick={() => {
               setSelectedStatus((prev) => (prev === "SHIPPED" ? "ALL" : "SHIPPED"));
               setPage(1);
             }}
-            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+            className={`p-3 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between min-h-[86px] cursor-pointer shadow-xs ${
               selectedStatus === "SHIPPED" || selectedStatus === "OUT_FOR_DELIVERY"
-                ? "ring-2 ring-blue-500/40 border-blue-500 shadow-md"
-                : "hover:border-blue-300"
+                ? "bg-white border-blue-400/90 ring-2 ring-blue-500/20 shadow-sm"
+                : "bg-white/95 hover:bg-white border-slate-200/80 hover:border-slate-300"
             }`}
           >
-            <div className="flex items-center justify-between text-blue-600 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">In Transit</span>
-              <Truck className="h-4 w-4 text-blue-500 shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-blue-600 font-mono-eyebrow">
+                In Transit
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Truck className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+            <div className="mt-1">
+              <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
                 {(summary.shippedCount || 0) + (summary.packedCount || 0)}
               </p>
-              <p className="text-[10px] text-blue-600 font-medium">With couriers</p>
+              <p className="text-[9.5px] font-medium text-blue-600 mt-1">With couriers</p>
             </div>
           </button>
 
-          {/* Delivered */}
+          {/* Delivered Card */}
           <button
             type="button"
             onClick={() => {
               setSelectedStatus((prev) => (prev === "DELIVERED" ? "ALL" : "DELIVERED"));
               setPage(1);
             }}
-            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+            className={`p-3 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between min-h-[86px] cursor-pointer shadow-xs ${
               selectedStatus === "DELIVERED"
-                ? "ring-2 ring-emerald-500/40 border-emerald-500 shadow-md"
-                : "hover:border-emerald-300"
+                ? "bg-white border-emerald-400/90 ring-2 ring-emerald-500/20 shadow-sm"
+                : "bg-white/95 hover:bg-white border-slate-200/80 hover:border-slate-300"
             }`}
           >
-            <div className="flex items-center justify-between text-emerald-600 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Delivered</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-emerald-600 font-mono-eyebrow">
+                Delivered
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <CheckCircle2 className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+            <div className="mt-1">
+              <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
                 {summary.deliveredCount}
               </p>
-              <p className="text-[10px] text-emerald-600 font-medium">Successfully fulfilled</p>
+              <p className="text-[9.5px] font-medium text-emerald-600 mt-1">Fulfilled</p>
             </div>
           </button>
 
-          {/* Cancelled */}
+          {/* Cancelled Card */}
           <button
             type="button"
             onClick={() => {
               setSelectedStatus((prev) => (prev === "CANCELLED" ? "ALL" : "CANCELLED"));
               setPage(1);
             }}
-            className={`clay-card p-3.5 sm:p-4 text-left min-h-[96px] flex flex-col justify-between transition-all active:scale-[0.98] cursor-pointer ${
+            className={`p-3 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between min-h-[86px] cursor-pointer shadow-xs ${
               selectedStatus === "CANCELLED"
-                ? "ring-2 ring-rose-500/40 border-rose-500 shadow-md"
-                : "hover:border-rose-300"
+                ? "bg-white border-rose-400/90 ring-2 ring-rose-500/20 shadow-sm"
+                : "bg-white/95 hover:bg-white border-slate-200/80 hover:border-slate-300"
             }`}
           >
-            <div className="flex items-center justify-between text-rose-600 text-xs w-full">
-              <span className="font-bold text-[10.5px] uppercase tracking-wider font-mono-eyebrow">Cancelled</span>
-              <XCircle className="h-4 w-4 text-rose-500 shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-rose-600 font-mono-eyebrow">
+                Cancelled
+              </span>
+              <div className="h-6 w-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                <XCircle className="h-3 w-3" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-black text-[#2A241E]">
+            <div className="mt-1">
+              <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
                 {summary.cancelledCount}
               </p>
-              <p className="text-[10px] text-rose-500 font-medium">Restocked inventory</p>
+              <p className="text-[9.5px] font-medium text-rose-500 mt-1">Restocked</p>
             </div>
           </button>
         </div>
       )}
 
-      {/* =========================================================
-          STICKY COMPACT SEARCH & FILTER TOOLBAR (375px Mobile Optimized)
-          - Search bar (majority width)
-          - Filter Icon Button (with active count badge, opens Filter Sheet)
-          - Custom Sort Dropdown (custom styled, no native select)
-          - Active Filter Removable Chips (compact, only when filters active)
-          - NO permanent scrollable pill row taking up screen space!
-          ========================================================= */}
-      <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1.5 pb-2.5 md:static md:bg-transparent md:p-0 md:m-0 space-y-2">
-        <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0 shadow-sm md:shadow-none">
-          {/* Main Controls Row: Search + Filter Button + Custom Sort */}
-          <div className="flex items-center gap-2 w-full">
-            {/* Search Input (44px min height & short placeholder) */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search order ID, name, email..."
-                className="w-full h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
-                  title="Clear search"
-                  aria-label="Clear search query"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+      {/* Segmented Quick Status Tabs + Filter Controls Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-3 space-y-3">
+        {/* Horizontal Quick Filter Pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {statusTabs.map((tab) => {
+            const isActive =
+              tab.value === "ALL"
+                ? selectedStatus === "ALL"
+                : selectedStatus === tab.value ||
+                  (tab.value === "PROCESSING" && selectedStatus === "PLACED") ||
+                  (tab.value === "SHIPPED" && selectedStatus === "OUT_FOR_DELIVERY");
 
-            {/* Filter Icon Button (Opens Filter Bottom Sheet) */}
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={() => {
+                  setSelectedStatus(tab.value);
+                  setPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-[#2A241E] text-white shadow-xs"
+                    : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-mono ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search, Filter & Sort Controls Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-slate-100 items-center">
+          {/* Search Box */}
+          <div className="sm:col-span-6 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search order ID, customer name, phone, email..."
+              className="w-full h-10 rounded-xl bg-slate-50 hover:bg-slate-100/60 focus:bg-white border border-slate-200/80 py-2 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Payment Status Dropdown */}
+          <div className="sm:col-span-3">
+            <OrderPaymentDropdown
+              value={paymentStatus}
+              onChange={(val) => {
+                setPaymentStatus(val);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="sm:col-span-2">
+            <OrderSortDropdown
+              value={sortBy}
+              onChange={(val) => {
+                setSortBy(val);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          {/* More Filters Button */}
+          <div className="sm:col-span-1 flex justify-end">
             <button
               type="button"
               onClick={() => setIsFilterSheetOpen(true)}
-              className={`h-11 min-h-[44px] px-3 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition active:scale-95 cursor-pointer shrink-0 ${
+              className={`h-10 w-full flex items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 activeFiltersCount > 0
-                  ? "bg-orange-50/90 border-orange-300 text-orange-950 ring-1 ring-orange-200/60 shadow-xs"
-                  : "bg-white border-slate-200/80 text-slate-700 hover:bg-[#FAF7F2]"
+                  ? "bg-orange-50 border-orange-300 text-orange-800 ring-1 ring-orange-300/60"
+                  : "bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-700"
               }`}
-              title="Filter Orders"
-              aria-label="Filter Orders"
+              title="Advanced Filters"
             >
-              <SlidersHorizontal
-                className={`h-4 w-4 ${activeFiltersCount > 0 ? "text-orange-600" : "text-slate-500"}`}
-              />
-              <span className="hidden sm:inline">Filters</span>
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span className="sm:hidden">Filters</span>
               {activeFiltersCount > 0 && (
-                <span className="h-5 min-w-[20px] px-1 rounded-full bg-orange-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                <span className="h-4 w-4 rounded-full bg-[#FF7A00] text-white text-[9px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
             </button>
-
-            {/* Custom Payment Dropdown (Desktop fast filter, custom styled, 0 native select) */}
-            <div className="hidden md:block shrink-0 w-44">
-              <OrderPaymentDropdown
-                value={paymentStatus}
-                onChange={(val) => {
-                  setPaymentStatus(val);
-                  setPage(1);
-                }}
-              />
-            </div>
-
-            {/* Custom Sort Dropdown (Zero native select element) */}
-            <div className="shrink-0 w-32 sm:w-40">
-              <OrderSortDropdown
-                value={sortBy}
-                onChange={(val) => {
-                  setSortBy(val);
-                  setPage(1);
-                }}
-              />
-            </div>
           </div>
-
-          {/* Active Removable Filter Chips (Only rendered when filters are active) */}
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-slate-100/90">
-              <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow mr-0.5">
-                Active:
-              </span>
-
-              {selectedStatus !== "ALL" && (
-                <span className="inline-flex items-center gap-1 h-6 px-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[11px] font-bold">
-                  <span>{selectedStatus.replace("_", " ")}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedStatus("ALL");
-                      setPage(1);
-                    }}
-                    className="hover:bg-orange-200/70 rounded p-0.5 transition cursor-pointer"
-                    title="Remove status filter"
-                  >
-                    <X className="h-2.5 w-2.5 text-orange-700" />
-                  </button>
-                </span>
-              )}
-
-              {paymentStatus !== "ALL" && (
-                <span className="inline-flex items-center gap-1 h-6 px-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[11px] font-bold">
-                  <span>{paymentStatus === "COMPLETED" ? "Paid" : paymentStatus}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentStatus("ALL");
-                      setPage(1);
-                    }}
-                    className="hover:bg-orange-200/70 rounded p-0.5 transition cursor-pointer"
-                    title="Remove payment filter"
-                  >
-                    <X className="h-2.5 w-2.5 text-orange-700" />
-                  </button>
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={handleClearAllFilters}
-                className="text-[11px] font-bold text-slate-500 hover:text-orange-600 underline ml-1 cursor-pointer transition"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Active Filter Chips Bar */}
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
+            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+              Active:
+            </span>
+
+            {selectedStatus !== "ALL" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 font-bold text-[11px]">
+                <span>Status: {selectedStatus}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus("ALL")}
+                  className="hover:text-rose-600 cursor-pointer"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {paymentStatus !== "ALL" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-[11px]">
+                <span>Payment: {paymentStatus}</span>
+                <button
+                  type="button"
+                  onClick={() => setPaymentStatus("ALL")}
+                  className="hover:text-rose-600 cursor-pointer"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {search.trim() && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 font-bold text-[11px]">
+                <span>&ldquo;{search}&rdquo;</span>
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="hover:text-rose-600 cursor-pointer"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearAllFilters}
+              className="text-[11px] font-bold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer ml-auto"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Error state */}
+      {/* Error Banner */}
       {error && (
-        <div className="clay-card p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-rose-700 text-xs">
+        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+            <span className="font-semibold">{error}</span>
           </div>
           <button
             onClick={() => fetchOrders()}
-            className="font-bold underline hover:text-rose-900 cursor-pointer"
+            className="px-3 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-bold hover:bg-rose-700 transition cursor-pointer"
           >
             Retry
           </button>
@@ -544,35 +731,29 @@ export default function OrdersPage() {
       )}
 
       {/* Loading Skeletons */}
-      {loading ? (
-        <TableListSkeleton rows={8} />
+      {loading && !refreshing ? (
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
+          <TableListSkeleton rows={5} />
+        </div>
       ) : orders.length === 0 ? (
         /* Empty State */
-        <div className="clay-card p-8 sm:p-12 text-center space-y-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 mx-auto">
-            <ShoppingBag className="h-7 w-7" />
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-10 text-center shadow-xs">
+          <div className="h-14 w-14 rounded-2xl bg-orange-50 text-[#FF7A00] flex items-center justify-center mx-auto mb-3 border border-orange-100 shadow-2xs">
+            <Inbox className="h-7 w-7" />
           </div>
-          <h3 className="font-fraunces text-base sm:text-lg font-bold text-slate-800">
-            {selectedStatus !== "ALL"
-              ? `No ${selectedStatus.replace("_", " ").toLowerCase()} orders`
-              : debouncedSearch
-              ? `No orders matching "${debouncedSearch}"`
-              : "No orders found"}
+          <h3 className="font-fraunces text-lg font-bold text-slate-800">
+            No orders found
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-            {debouncedSearch
-              ? `No orders match "${debouncedSearch}". Try checking the spelling, resetting search, or clearing status filters.`
-              : selectedStatus !== "ALL"
-              ? `There are currently no orders in "${selectedStatus.replace("_", " ").toLowerCase()}" milestone status.`
-              : paymentStatus !== "ALL"
-              ? `No orders found with payment status "${paymentStatus.toLowerCase()}".`
-              : "No customer orders have been placed in this store yet."}
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+            {activeFiltersCount > 0
+              ? "No orders matched your current filters. Try changing search keywords or resetting status."
+              : "No customer orders have been placed yet. When an order arrives, it will appear here instantly."}
           </p>
-          {(selectedStatus !== "ALL" || paymentStatus !== "ALL" || debouncedSearch) && (
+          {activeFiltersCount > 0 && (
             <button
               type="button"
               onClick={handleClearAllFilters}
-              className="clay-button h-11 min-h-[44px] px-5 text-xs font-bold text-orange-600 hover:bg-orange-50 active:scale-95 transition inline-flex items-center justify-center cursor-pointer"
+              className="mt-3.5 px-3.5 py-1.5 rounded-xl bg-[#2A241E] text-white text-xs font-bold hover:bg-black transition cursor-pointer shadow-xs"
             >
               Reset All Filters
             </button>
@@ -580,158 +761,226 @@ export default function OrdersPage() {
         </div>
       ) : (
         <>
-          {/* Mobile Order Cards (< md) — Full responsive at 375px with 44px tap targets */}
-          <div className="grid grid-cols-1 gap-3 md:hidden">
-            {orders.map((ord) => (
-              <div key={ord.id} className="clay-card p-4 space-y-2.5 min-w-0">
-                {/* Top Row: Order ID, Date/Time, and Status Badge */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="text-xs font-black font-mono-eyebrow text-slate-900 block truncate">
-                      {ord.orderNumber}
-                    </span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {new Date(ord.createdAt).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
+          {/* Mobile Orders List View (< md) */}
+          <div className="space-y-2.5 md:hidden">
+            {orders.map((ord) => {
+              const statusInfo = getStatusBadge(ord.orderStatus);
+              const paymentInfo = getPaymentBadge(ord.paymentStatus);
 
-                  {/* Standardized Pill Sizing & Semantic Color */}
-                  <span
-                    className={`min-w-[84px] h-6 px-2.5 text-[10px] font-bold rounded-full border inline-flex items-center justify-center text-center uppercase tracking-wide shrink-0 ${getStatusBadge(
-                      ord.orderStatus
-                    )}`}
-                  >
-                    {ord.orderStatus}
-                  </span>
-                </div>
+              return (
+                <div
+                  key={ord.id}
+                  className="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-xs space-y-2.5"
+                >
+                  {/* Top Row: Order ID & Status */}
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-1">
+                      <Link
+                        href={`/admin/dashboard/orders/${ord.id}`}
+                        className="font-bold text-xs text-slate-900 hover:text-[#FF7A00] font-mono tracking-tight"
+                      >
+                        {ord.orderNumber}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyOrderId(ord.orderNumber, e)}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                        title="Copy Order ID"
+                      >
+                        {copiedOrderId === ord.orderNumber ? (
+                          <Check className="h-3 w-3 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </button>
+                    </div>
 
-                {/* Customer Name & Product Line */}
-                <div>
-                  <p className="text-xs font-bold text-slate-800 truncate">
-                    {ord.customer?.name || "Customer"}
-                  </p>
-                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                    {ord.itemsSummary || `${ord.itemsCount} item(s)`}
-                  </p>
-                </div>
-
-                {/* Payment Pill & Grand Total Price Row */}
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                  <div>
                     <span
-                      className={`inline-flex items-center h-5 px-2 text-[9px] font-bold rounded border uppercase ${getPaymentBadge(
-                        ord.paymentStatus
-                      )}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold border uppercase tracking-wider ${statusInfo.bg}`}
                     >
-                      {ord.paymentStatus} • {ord.paymentMethod || "UPI"}
+                      <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
+                      <span>{statusInfo.label}</span>
                     </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-slate-900">
-                      ₹{ord.grandTotal.toLocaleString("en-IN")}
-                    </p>
+
+                  {/* Customer & Item Line */}
+                  <div className="flex items-start gap-2">
+                    <div className="h-7 w-7 rounded-full bg-orange-100 text-[#FF7A00] font-bold text-xs flex items-center justify-center shrink-0">
+                      {getCustomerInitials(ord.customer?.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {ord.customer?.name || "Guest Customer"}
+                      </p>
+                      <p className="text-[10.5px] text-slate-400 truncate">
+                        {ord.customer?.phone || ord.customer?.email || "No contact"}
+                      </p>
+                      <p className="text-[10.5px] text-slate-600 mt-0.5 line-clamp-1 font-medium">
+                        {ord.itemsSummary || `${ord.itemsCount} item(s)`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Price & Payment Mode */}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold border ${paymentInfo.bg}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${paymentInfo.dot}`} />
+                        <span>{paymentInfo.label}</span>
+                      </span>
+                      <span className="text-[9.5px] font-mono text-slate-400 uppercase">
+                        {ord.paymentMethod || "COD"}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900">
+                        ₹{ord.grandTotal.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Action Buttons */}
+                  <div className="grid grid-cols-4 gap-1 pt-1.5 border-t border-slate-100 text-xs">
+                    <Link
+                      href={`/admin/dashboard/orders/${ord.id}`}
+                      className="h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>View</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveStatusOrder(ord)}
+                      className="h-8 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#FF7A00] font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
+                    >
+                      <Truck className="h-3 w-3" />
+                      <span>Status</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveInvoiceOrderId(ord.id)}
+                      className="h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span>Tax</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlipOrderId(ord.id)}
+                      className="h-8 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
+                    >
+                      <PackageCheck className="h-3 w-3" />
+                      <span>Slip</span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Mobile Action Buttons (44px min touch target height) */}
-                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 text-xs">
-                  <Link
-                    href={`/admin/dashboard/orders/${ord.id}`}
-                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-indigo-600 active:scale-[0.98] transition cursor-pointer"
-                  >
-                    <Eye className="h-3.5 w-3.5 shrink-0" />
-                    <span>View</span>
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveStatusOrder(ord)}
-                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-orange-600 active:scale-[0.98] transition cursor-pointer"
-                  >
-                    <Truck className="h-3.5 w-3.5 shrink-0" />
-                    <span>Status</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveInvoiceOrderId(ord.id)}
-                    className="clay-button h-11 min-h-[44px] flex items-center justify-center gap-1.5 text-slate-700 font-bold hover:text-emerald-600 active:scale-[0.98] transition cursor-pointer"
-                  >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>Invoice</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Desktop Responsive Orders Table (>= md) */}
-          <div className="clay-card overflow-hidden hidden md:block">
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-400 font-mono-eyebrow text-[10px] uppercase tracking-wider">
-                    <th className="py-3 px-4 font-bold">Order ID</th>
-                    <th className="py-3 px-4 font-bold">Customer & Contact</th>
-                    <th className="py-3 px-4 font-bold">Items Summary</th>
-                    <th className="py-3 px-4 font-bold">Date & Time</th>
-                    <th className="py-3 px-4 font-bold text-right">Grand Total</th>
-                    <th className="py-3 px-4 font-bold text-center">Payment</th>
-                    <th className="py-3 px-4 font-bold text-center">Fulfillment</th>
-                    <th className="py-3 px-4 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {orders.map((ord) => (
-                    <tr key={ord.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
-                      {/* Order Number */}
-                      <td className="py-3.5 px-4 font-bold font-mono-eyebrow text-slate-900">
-                        <Link
-                          href={`/admin/dashboard/orders/${ord.id}`}
-                          className="hover:text-orange-600 transition"
-                        >
-                          {ord.orderNumber}
-                        </Link>
+          {/* Desktop Orders Table (>= md): Full Width, Strict Widths, Zero Overflow Slider */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden hidden md:block">
+            <table className="w-full text-left border-collapse text-xs table-fixed">
+              <thead>
+                <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-500 font-mono-eyebrow text-[10px] uppercase tracking-wider">
+                  <th className="py-3 px-3.5 font-bold w-[170px]">Order ID</th>
+                  <th className="py-3 px-3 font-bold w-[180px]">Customer &amp; Contact</th>
+                  <th className="py-3 px-3 font-bold">Items Summary</th>
+                  <th className="py-3 px-3 font-bold w-[110px]">Date &amp; Time</th>
+                  <th className="py-3 px-3 font-bold text-right w-[100px]">Grand Total</th>
+                  <th className="py-3 px-2 font-bold text-center w-[85px]">Payment</th>
+                  <th className="py-3 px-2 font-bold text-center w-[95px]">Fulfillment</th>
+                  <th className="py-3 px-3 font-bold text-right w-[140px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {orders.map((ord) => {
+                  const statusInfo = getStatusBadge(ord.orderStatus);
+                  const paymentInfo = getPaymentBadge(ord.paymentStatus);
+
+                  return (
+                    <tr
+                      key={ord.id}
+                      className="hover:bg-[#FAF7F3]/70 transition-colors group"
+                    >
+                      {/* Order ID: Single Line with Copy Button */}
+                      <td className="py-3 px-3.5 align-middle">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/admin/dashboard/orders/${ord.id}`}
+                            className="font-bold text-slate-900 hover:text-[#FF7A00] font-mono tracking-tight text-[11.5px] whitespace-nowrap transition-colors"
+                            title={ord.orderNumber}
+                          >
+                            {ord.orderNumber}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyOrderId(ord.orderNumber, e)}
+                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-all cursor-pointer shrink-0"
+                            title="Copy Order ID"
+                          >
+                            {copiedOrderId === ord.orderNumber ? (
+                              <Check className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
                         {ord.trackingNumber && (
-                          <span className="block text-[9.5px] font-mono text-slate-400 font-normal">
-                            AWB: {ord.trackingNumber}
+                          <span className="inline-flex items-center gap-1 text-[9.5px] font-mono text-slate-400 mt-0.5 whitespace-nowrap truncate max-w-[150px]">
+                            <Truck className="h-2.5 w-2.5 shrink-0" />
+                            <span>AWB: {ord.trackingNumber}</span>
                           </span>
                         )}
                       </td>
 
-                      {/* Customer */}
-                      <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900">
-                          {ord.customer?.name || "Guest Customer"}
-                        </p>
-                        <p className="text-[10.5px] text-slate-400">
-                          {ord.customer?.phone || ord.customer?.email || "—"}
-                        </p>
+                      {/* Customer & Contact */}
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-full bg-linear-to-tr from-orange-100 to-amber-100 text-[#FF7A00] font-bold text-[11px] flex items-center justify-center shrink-0 border border-orange-200/60 shadow-2xs">
+                            {getCustomerInitials(ord.customer?.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 truncate text-[11.5px]">
+                              {ord.customer?.name || "Guest Customer"}
+                            </p>
+                            <p className="text-[10.5px] text-slate-400 truncate">
+                              {ord.customer?.phone || ord.customer?.email || "—"}
+                            </p>
+                          </div>
+                        </div>
                       </td>
 
                       {/* Items Summary */}
-                      <td className="py-3.5 px-4 max-w-[200px]">
-                        <p className="font-medium text-slate-700 truncate" title={ord.itemsSummary}>
+                      <td className="py-3 px-3 align-middle">
+                        <p
+                          className="font-medium text-slate-800 truncate text-[11.5px]"
+                          title={ord.itemsSummary}
+                        >
                           {ord.itemsSummary || `${ord.itemsCount} items`}
                         </p>
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {ord.itemsCount} unit(s) total
+                        <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-slate-400 mt-0.5">
+                          <Package className="h-3 w-3 text-slate-400" />
+                          <span>{ord.itemsCount} unit(s) total</span>
                         </span>
                       </td>
 
-                      {/* Date */}
-                      <td className="py-3.5 px-4 text-slate-500 text-[11px] whitespace-nowrap">
-                        {new Date(ord.createdAt).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                        <p className="text-[10px] text-slate-400">
+                      {/* Date & Time */}
+                      <td className="py-3 px-3 align-middle text-slate-600 text-xs whitespace-nowrap">
+                        <div className="font-medium text-slate-800 text-[11px]">
+                          {new Date(ord.createdAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
                           {new Date(ord.createdAt).toLocaleTimeString("en-IN", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -739,89 +988,89 @@ export default function OrdersPage() {
                         </p>
                       </td>
 
-                      {/* Total */}
-                      <td className="py-3.5 px-4 text-right font-black text-slate-900 text-[13px] whitespace-nowrap">
-                        ₹{ord.grandTotal.toLocaleString("en-IN")}
+                      {/* Grand Total */}
+                      <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
+                        <span className="font-black text-slate-900 text-xs tracking-tight">
+                          ₹{ord.grandTotal.toLocaleString("en-IN")}
+                        </span>
+                        <span className="block text-[9.5px] font-mono text-slate-400 uppercase">
+                          {ord.paymentMethod || "COD"}
+                        </span>
                       </td>
 
-                      {/* Payment */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      {/* Payment Status */}
+                      <td className="py-3 px-2 align-middle text-center whitespace-nowrap">
                         <span
-                          className={`inline-block px-2 py-0.5 text-[9.5px] font-bold rounded-md uppercase border ${getPaymentBadge(
-                            ord.paymentStatus
-                          )}`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9.5px] font-bold rounded-full border uppercase tracking-wider ${paymentInfo.bg}`}
                         >
-                          {ord.paymentStatus}
+                          <span className={`h-1.5 w-1.5 rounded-full ${paymentInfo.dot}`} />
+                          <span>{paymentInfo.label}</span>
                         </span>
-                        <p className="text-[9.5px] text-slate-400 font-mono mt-0.5">
-                          {ord.paymentMethod || "UPI/COD"}
-                        </p>
                       </td>
 
                       {/* Fulfillment Status */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <td className="py-3 px-2 align-middle text-center whitespace-nowrap">
                         <span
-                          className={`min-w-[80px] inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border text-center uppercase ${getStatusBadge(
-                            ord.orderStatus
-                          )}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9.5px] font-bold rounded-full border uppercase tracking-wider shadow-2xs ${statusInfo.bg}`}
                         >
-                          {ord.orderStatus}
+                          <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
+                          <span>{statusInfo.label}</span>
                         </span>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right relative">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Actions: All 4 Buttons Always Visible */}
+                      <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1 justify-end">
                           {/* View Detail Link */}
                           <Link
                             href={`/admin/dashboard/orders/${ord.id}`}
-                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-indigo-600 transition cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                             title="View Full Details"
                           >
-                            <Eye className="h-3.5 w-3.5" />
+                            <Eye className="h-3 w-3" />
                           </Link>
 
                           {/* Quick Status Update */}
                           <button
                             type="button"
                             onClick={() => setActiveStatusOrder(ord)}
-                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-orange-600 transition cursor-pointer"
-                            title="Update Status / Tracking"
+                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-orange-50 border border-slate-200/80 hover:border-orange-200 text-slate-500 hover:text-[#FF7A00] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                            title="Update Logistics & Tracking"
                           >
-                            <Truck className="h-3.5 w-3.5" />
+                            <Truck className="h-3 w-3" />
                           </button>
 
                           {/* Print Invoice */}
                           <button
                             type="button"
                             onClick={() => setActiveInvoiceOrderId(ord.id)}
-                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-emerald-600 transition cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-200 text-slate-500 hover:text-emerald-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                             title="GST Tax Invoice"
                           >
-                            <FileText className="h-3.5 w-3.5" />
+                            <FileText className="h-3 w-3" />
                           </button>
 
                           {/* Packing Slip */}
                           <button
                             type="button"
                             onClick={() => setActiveSlipOrderId(ord.id)}
-                            className="clay-button inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-purple-600 transition cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-purple-50 border border-slate-200/80 hover:border-purple-200 text-slate-500 hover:text-purple-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                             title="Warehouse Packing Slip"
                           >
-                            <PackageCheck className="h-3.5 w-3.5" />
+                            <PackageCheck className="h-3 w-3" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
 
-          {/* Pagination Controls (Optimized for Mobile 375px and Desktop) */}
+          {/* Pagination Controls */}
           {pagination.total > 0 && (
-            <div className="clay-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-3 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs shadow-xs">
               <div className="text-slate-500 text-[11px] font-medium text-center sm:text-left">
                 Showing{" "}
                 <span className="font-bold text-slate-800">
@@ -841,7 +1090,7 @@ export default function OrdersPage() {
                     setLimit(Number(e.target.value));
                     setPage(1);
                   }}
-                  className="h-11 min-h-[44px] rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer"
+                  className="h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 px-2.5 text-xs font-bold text-slate-700 outline-none cursor-pointer transition-colors"
                 >
                   <option value="10">10 / page</option>
                   <option value="25">25 / page</option>
@@ -849,18 +1098,18 @@ export default function OrdersPage() {
                   <option value="100">100 / page</option>
                 </select>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={!pagination.hasPrevPage}
-                    className="clay-button h-11 min-h-[44px] px-3.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer"
+                    className="clay-button h-8 px-2.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer text-xs"
                   >
-                    <ChevronLeft className="h-4 w-4 shrink-0" />
-                    <span className="hidden sm:inline">Prev</span>
+                    <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+                    <span>Prev</span>
                   </button>
 
-                  <span className="px-2.5 py-1 font-bold text-slate-800 text-xs whitespace-nowrap">
+                  <span className="px-2 py-0.5 font-bold text-slate-800 text-xs whitespace-nowrap">
                     Page {pagination.page} of {pagination.totalPages || 1}
                   </span>
 
@@ -868,10 +1117,10 @@ export default function OrdersPage() {
                     type="button"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!pagination.hasNextPage}
-                    className="clay-button h-11 min-h-[44px] px-3.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer"
+                    className="clay-button h-8 px-2.5 inline-flex items-center justify-center gap-1 text-slate-700 font-bold disabled:opacity-30 active:scale-95 transition cursor-pointer text-xs"
                   >
-                    <span className="hidden sm:inline">Next</span>
-                    <ChevronRight className="h-4 w-4 shrink-0" />
+                    <span>Next</span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0" />
                   </button>
                 </div>
               </div>
@@ -880,12 +1129,12 @@ export default function OrdersPage() {
         </>
       )}
 
-      {/* Floating Scroll to Top Button (Mobile + Desktop after scroll threshold) */}
+      {/* Floating Scroll to Top Button */}
       {showScrollTop && (
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-5 right-4 z-30 h-11 w-11 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer animate-fade-in"
+          className="fixed bottom-6 right-6 z-30 h-10 w-10 rounded-full bg-[#2A241E] text-white shadow-2xl flex items-center justify-center transition-all hover:bg-black active:scale-95 cursor-pointer animate-fade-in"
           title="Scroll to top"
           aria-label="Scroll to top"
         >
