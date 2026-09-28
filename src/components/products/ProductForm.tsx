@@ -521,6 +521,23 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     setOptions(copy);
   };
 
+  // FAQ Handlers
+  const handleAddFaq = () => {
+    setFaqs((prev) => [...prev, { question: '', answer: '' }]);
+  };
+
+  const handleRemoveFaq = (index: number) => {
+    setFaqs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateFaq = (index: number, field: 'question' | 'answer', val: string) => {
+    setFaqs((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      return copy;
+    });
+  };
+
   // Step Validation Logic
   const validateStep = (stepNumber: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -2117,7 +2134,118 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                 )}
               </div>
 
-              {/* SECTION 6: Google Search Preview (SEO) */}
+              {/* SECTION 6: Frequently Asked Questions (FAQs) */}
+              <div className="rounded-2xl border border-slate-200/90 overflow-hidden bg-white">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveAccordion(
+                      activeAccordion === "faqs" ? null : "faqs"
+                    )
+                  }
+                  className="w-full flex items-center justify-between p-4 text-left font-bold text-sm text-slate-800 bg-slate-50/50 hover:bg-slate-50 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Frequently Asked Questions (FAQs)</span>
+                    {faqs.some((f) => f.question.trim() || f.answer.trim()) && (
+                      <span className="h-2 w-2 rounded-full bg-[#FF7A00]" />
+                    )}
+                    {faqs.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-[#FF7A00]">
+                        {faqs.length} FAQ{faqs.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  {activeAccordion === "faqs" ? (
+                    <ChevronUp className="h-4 w-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                  )}
+                </button>
+
+                {activeAccordion === "faqs" && (
+                  <div className="p-4 sm:p-5 border-t border-slate-100 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <p className="text-xs text-slate-500">
+                        Add product-specific FAQs (questions & answers) to answer common customer queries.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddFaq}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#FF7A00] text-xs font-bold transition cursor-pointer border border-orange-200/60 shrink-0 self-start sm:self-auto"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Add Question</span>
+                      </button>
+                    </div>
+
+                    {faqs.length === 0 ? (
+                      <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                        <p className="text-xs text-slate-500 font-medium">No FAQs added for this product yet.</p>
+                        <button
+                          type="button"
+                          onClick={handleAddFaq}
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#FF7A00] hover:underline cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Add first question</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {faqs.map((faq, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-2.5 relative"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-500 font-mono uppercase">
+                                FAQ #{idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFaq(idx)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                                title="Remove question"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-slate-700">
+                                Question
+                              </label>
+                              <input
+                                type="text"
+                                value={faq.question}
+                                onChange={(e) => handleUpdateFaq(idx, 'question', e.target.value)}
+                                placeholder="e.g., Is this food suitable for senior cats?"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#FF7A00]"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-slate-700">
+                                Answer
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={faq.answer}
+                                onChange={(e) => handleUpdateFaq(idx, 'answer', e.target.value)}
+                                placeholder="e.g., Yes, this formula has lower phosphorus and added glucosamine for joints."
+                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 outline-none focus:border-[#FF7A00]"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 7: Google Search Preview (SEO) */}
               <div className="rounded-2xl border border-slate-200/90 overflow-hidden bg-white">
                 <button
                   type="button"
