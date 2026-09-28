@@ -158,11 +158,11 @@ export function ReviewSummary({
         </div>
       </div>
 
-      {/* Section 2: Product Photos */}
+      {/* Section 2: Pricing, Photos & Options */}
       <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            2. Product Photos ({images.length})
+            2. Pricing, Photos & Options ({sellingMode === "single" ? "Single Product" : `${options.length} Options`})
           </span>
           <button
             type="button"
@@ -174,42 +174,27 @@ export function ReviewSummary({
           </button>
         </div>
 
-        {images.length > 0 ? (
-          <div className="flex flex-wrap gap-2.5 pt-1">
-            {images.map((url, i) => (
-              <div
-                key={url + i}
-                className="relative h-16 w-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-1 flex items-center justify-center"
-              >
-                <img src={url} alt="Preview" className="h-full w-full object-contain" />
-                {i === 0 && (
-                  <span className="absolute bottom-0 inset-x-0 bg-[#FF7A00] text-white text-[8px] font-bold text-center py-0.5">
-                    Cover
-                  </span>
-                )}
-              </div>
-            ))}
+        {/* Product Photos (for single product mode) */}
+        {sellingMode === "single" && images.length > 0 && (
+          <div className="space-y-1.5">
+            <span className="text-[11px] text-slate-400 font-medium block">Product Photos ({images.length})</span>
+            <div className="flex flex-wrap gap-2.5">
+              {images.map((url, i) => (
+                <div
+                  key={url + i}
+                  className="relative h-16 w-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-1 flex items-center justify-center"
+                >
+                  <img src={url} alt="Preview" className="h-full w-full object-contain" />
+                  {i === 0 && (
+                    <span className="absolute bottom-0 inset-x-0 bg-[#FF7A00] text-white text-[8px] font-bold text-center py-0.5">
+                      Cover
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <p className="text-xs text-rose-500 font-medium">No photos added yet.</p>
         )}
-      </div>
-
-      {/* Section 3: Pricing & Options */}
-      <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            3. Pricing & Options ({sellingMode === "single" ? "Single Product" : `${options.length} Options`})
-          </span>
-          <button
-            type="button"
-            onClick={() => onEditStep(3)}
-            className="flex items-center gap-1 text-xs font-bold text-[#FF7A00] hover:text-orange-700 cursor-pointer"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            <span>Edit</span>
-          </button>
-        </div>
 
         {sellingMode === "single" ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
@@ -293,15 +278,15 @@ export function ReviewSummary({
         )}
       </div>
 
-      {/* Section 4: Product Information */}
+      {/* Section 3: Product Information */}
       <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            4. Product Information
+            3. Product Information
           </span>
           <button
             type="button"
-            onClick={() => onEditStep(4)}
+            onClick={() => onEditStep(3)}
             className="flex items-center gap-1 text-xs font-bold text-[#FF7A00] hover:text-orange-700 cursor-pointer"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -352,15 +337,15 @@ export function ReviewSummary({
         </div>
       </div>
 
-      {/* Section 5: Additional Information */}
+      {/* Section 4: Additional Information */}
       <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            5. Additional Information
+            4. Additional Information
           </span>
           <button
             type="button"
-            onClick={() => onEditStep(5)}
+            onClick={() => onEditStep(4)}
             className="flex items-center gap-1 text-xs font-bold text-[#FF7A00] hover:text-orange-700 cursor-pointer"
           >
             <Pencil className="h-3.5 w-3.5" />

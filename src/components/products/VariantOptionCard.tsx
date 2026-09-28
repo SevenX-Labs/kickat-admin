@@ -75,6 +75,9 @@ export function VariantOptionCard({
   errors,
 }: VariantOptionCardProps) {
   const [isSkuCustomized, setIsSkuCustomized] = useState(false);
+  const [isAttrManuallySet, setIsAttrManuallySet] = useState(
+    () => Object.keys(option.attributes || {}).length > 0
+  );
   const [dragOver, setDragOver] = useState(false);
   const [showGalleryImport, setShowGalleryImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -89,10 +92,10 @@ export function VariantOptionCard({
       newSku = newName.trim() ? generateProductSku(productName || "", newName, index + 1) : "";
     }
 
-    // Auto-detect and sync attribute if only 1 attribute exists
+    // Auto-detect attribute type ONLY when attributes haven't been manually set by the user
     let newAttributes = { ...option.attributes };
     const attrKeys = Object.keys(newAttributes);
-    if (attrKeys.length <= 1) {
+    if (!isAttrManuallySet && attrKeys.length <= 1) {
       let detectedKey = attrKeys[0] || "color";
       const trimmed = newName.trim();
       if (/\d+\s*(kg|g|gm|gms|lbs|oz|ml|l|ltr)\b/i.test(trimmed)) {
@@ -105,6 +108,9 @@ export function VariantOptionCard({
         detectedKey = "flavor";
       }
       newAttributes = { [detectedKey]: trimmed };
+    } else if (attrKeys.length === 1) {
+      // Just update the value with the new name, keeping the existing key
+      newAttributes = { [attrKeys[0]]: newName.trim() };
     }
 
     onChange({
@@ -129,15 +135,16 @@ export function VariantOptionCard({
   const effectiveAttrs =
     attrEntries.length > 0
       ? attrEntries.map(([k, v]) => ({ key: k, value: v }))
-      : [{ key: "color", value: option.name }];
+      : [{ key: "color", value: "" }];
 
   const handleAttributeChange = (attrIndex: number, key: string, value: string) => {
+    setIsAttrManuallySet(true);
     const updatedEntries = [...effectiveAttrs];
-    updatedEntries[attrIndex] = { key: key.toLowerCase().trim(), value: value.trim() };
+    updatedEntries[attrIndex] = { key: key.toLowerCase().trim(), value };
 
     const newAttrObj: Record<string, string> = {};
     for (const item of updatedEntries) {
-      if (item.key && item.value) {
+      if (item.key) {
         newAttrObj[item.key] = item.value;
       }
     }
@@ -149,6 +156,7 @@ export function VariantOptionCard({
   };
 
   const handleAddAttribute = () => {
+    setIsAttrManuallySet(true);
     const existingKeys = effectiveAttrs.map((a) => a.key);
     const nextUnused = COMMON_ATTRIBUTE_TYPES.find((t) => !existingKeys.includes(t.key))?.key || "custom";
     const updatedEntries = [...effectiveAttrs, { key: nextUnused, value: "" }];

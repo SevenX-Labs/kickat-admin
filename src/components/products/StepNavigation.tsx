@@ -11,11 +11,10 @@ export interface StepNavigationProps {
 
 export const STEPS = [
   { id: 1, label: "Basic Information", shortLabel: "Basic" },
-  { id: 2, label: "Product Photos", shortLabel: "Photos" },
-  { id: 3, label: "Pricing & Options", shortLabel: "Pricing" },
-  { id: 4, label: "Product Information", shortLabel: "Details" },
-  { id: 5, label: "Additional Information", shortLabel: "Extra" },
-  { id: 6, label: "Review & Publish", shortLabel: "Review" },
+  { id: 2, label: "Pricing & Photos", shortLabel: "Pricing" },
+  { id: 3, label: "Product Information", shortLabel: "Details" },
+  { id: 4, label: "Additional Information", shortLabel: "Extra" },
+  { id: 5, label: "Review & Publish", shortLabel: "Review" },
 ];
 
 export function StepNavigation({
@@ -26,7 +25,7 @@ export function StepNavigation({
   return (
     <div className="clay-card p-3 sm:p-4 mb-6 border border-slate-200/80 bg-white/95 backdrop-blur-xs">
       <nav aria-label="Product Creation Steps" className="relative">
-        <ol className="grid grid-cols-6 gap-1 sm:gap-2">
+        <ol className="grid grid-cols-5 gap-1 sm:gap-2">
           {STEPS.map((step) => {
             const isCurrent = step.id === currentStep;
             const isCompleted = completedSteps.includes(step.id) && !isCurrent;

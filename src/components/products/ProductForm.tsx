@@ -76,7 +76,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   // Navigation & Step Tracking
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>(() =>
-    mode === "edit" ? [1, 2, 3, 4, 5] : []
+    mode === "edit" ? [1, 2, 3, 4] : []
   );
 
   // Categories
@@ -524,12 +524,15 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         }
       }
     } else if (stepNumber === 2) {
-      if (images.length === 0) {
-        newErrors.images = "Please add at least one product photo.";
-      } else if (images.length > 5) {
-        newErrors.images = "A maximum of 5 product photos is allowed.";
+      // For single product mode: require at least 1 photo + pricing
+      if (sellingMode === "single") {
+        if (images.length === 0) {
+          newErrors.images = "Please add at least one product photo.";
+        } else if (images.length > 5) {
+          newErrors.images = "A maximum of 5 product photos is allowed.";
+        }
       }
-    } else if (stepNumber === 3) {
+      // Photos for options mode are per-variant, validated below
       if (sellingMode === "single") {
         if (price === "" || Number(price) <= 0) {
           newErrors.price = "Please enter an original price greater than 0.";
@@ -588,7 +591,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       setCompletedSteps([...completedSteps, currentStep]);
     }
 
-    setCurrentStep((prev) => Math.min(6, prev + 1));
+    setCurrentStep((prev) => Math.min(5, prev + 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -613,8 +616,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     setApiError(null);
     setSuccessMessage(null);
 
-    // Validate all required steps: 1, 2, 3
-    for (let s = 1; s <= 3; s++) {
+    // Validate all required steps: 1, 2
+    for (let s = 1; s <= 2; s++) {
       if (!validateStep(s)) {
         setCurrentStep(s);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -630,8 +633,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       const urlReplacementMap = new Map<string, string>();
       const pendingList: { blobUrl: string; file: File }[] = [];
 
+      const isOptionsMode = sellingMode === "options" && options.length > 0;
       for (const [blobUrl, file] of pendingFilesRef.current.entries()) {
-        const isUsedInImages = images.includes(blobUrl);
+        // For options mode, skip product-level gallery images — only upload variant images
+        const isUsedInImages = !isOptionsMode && images.includes(blobUrl);
         const isUsedInOptions = options.some(
           (opt) => (Array.isArray(opt.images) && opt.images.includes(blobUrl)) || opt.imageUrl === blobUrl
         );
@@ -651,12 +656,13 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       }
 
       // Replace blob URLs with uploaded CDN URLs
-      const finalImages = images.map((url) => urlReplacementMap.get(url) || url);
+      // For options mode, product-level gallery is not used — images live on each variant
+      const hasOptions = sellingMode === "options" && options.length > 0;
+      const finalImages = hasOptions ? [] : images.map((url) => urlReplacementMap.get(url) || url);
 
       setSubmitStatusText("Saving product in database...");
 
       // Build Variants Payload if options mode
-      const hasOptions = sellingMode === "options" && options.length > 0;
 
       let effectivePrice = price !== "" ? Number(price) : 0;
       let effectiveDiscountPrice =
@@ -874,7 +880,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               {mode === "create"
-                ? "Follow the 6 simple steps to configure and publish your product."
+                ? "Follow the 5 simple steps to configure and publish your product."
                 : `Editing: ${name || initialProduct?.name || "Product"}`}
             </p>
           </div>
@@ -1206,27 +1212,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         )}
 
         {/* ======================================================== */}
-        {/* STEP 2: PRODUCT PHOTOS */}
+        {/* STEP 2: PRICING, PHOTOS & OPTIONS */}
         {/* ======================================================== */}
         {currentStep === 2 && (
-          <PhotoGalleryUploader
-            images={images}
-            onChange={(newImgs) => {
-              setImages(newImgs);
-              if (errors.images) {
-                setErrors({ ...errors, images: "" });
-              }
-            }}
-            onFilesSelected={handleFilesSelected}
-            onRemove={handleRemovePhoto}
-            error={errors.images}
-          />
-        )}
-
-        {/* ======================================================== */}
-        {/* STEP 3: PRICING & OPTIONS */}
-        {/* ======================================================== */}
-        {currentStep === 3 && (
           <div className="space-y-6">
             {/* Selling Mode Selector */}
             <ProductSellingMode
@@ -1255,8 +1243,23 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               }}
             />
 
-            {/* SINGLE PRODUCT PRICING */}
+            {/* SINGLE PRODUCT: PHOTOS + PRICING */}
             {sellingMode === "single" && (
+              <div className="space-y-6">
+                {/* Product Photo Gallery */}
+                <PhotoGalleryUploader
+                  images={images}
+                  onChange={(newImgs) => {
+                    setImages(newImgs);
+                    if (errors.images) {
+                      setErrors({ ...errors, images: "" });
+                    }
+                  }}
+                  onFilesSelected={handleFilesSelected}
+                  onRemove={handleRemovePhoto}
+                  error={errors.images}
+                />
+
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-4">
                 <div className="pb-2 border-b border-slate-100">
                   <h3 className="text-sm font-bold text-slate-800">
@@ -1374,6 +1377,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                   </div>
                 </div>
               </div>
+              </div>
             )}
 
             {/* PRODUCT WITH OPTIONS MODE */}
@@ -1475,9 +1479,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         )}
 
         {/* ======================================================== */}
-        {/* STEP 4: PRODUCT INFORMATION */}
+        {/* STEP 3: PRODUCT INFORMATION */}
         {/* ======================================================== */}
-        {currentStep === 4 && (
+        {currentStep === 3 && (
           <div className="space-y-6">
             <div className="pb-3 border-b border-slate-100">
               <h2 className="font-fraunces text-xl font-bold text-slate-900">
@@ -1546,9 +1550,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         )}
 
         {/* ======================================================== */}
-        {/* STEP 5: ADDITIONAL INFORMATION (Collapsible Sections) */}
+        {/* STEP 4: ADDITIONAL INFORMATION (Collapsible Sections) */}
         {/* ======================================================== */}
-        {currentStep === 5 && (
+        {currentStep === 4 && (
           <div className="space-y-6">
             <div className="pb-3 border-b border-slate-100">
               <h2 className="font-fraunces text-xl font-bold text-slate-900">
@@ -2179,9 +2183,9 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         )}
 
         {/* ======================================================== */}
-        {/* STEP 6: REVIEW & PUBLISH */}
+        {/* STEP 5: REVIEW & PUBLISH */}
         {/* ======================================================== */}
-        {currentStep === 6 && (
+        {currentStep === 5 && (
           <ReviewSummary
             name={name}
             categoryName={selectedCategory ? getCategoryBreadcrumb(selectedCategory.id, categories) : ""}
@@ -2234,7 +2238,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           )}
 
           <div className="flex items-center gap-3">
-            {currentStep < 6 ? (
+            {currentStep < 5 ? (
               <button
                 type="button"
                 onClick={handleNextStep}
