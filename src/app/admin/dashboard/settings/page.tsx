@@ -221,11 +221,11 @@ export default function SettingsPage() {
           supportPhone: supportPhone.trim(),
           maintenanceMode,
           socialLinks: {
-            instagram: instagramUrl.trim(),
-            facebook: facebookUrl.trim(),
-            youtube: youtubeUrl.trim(),
-            twitter: twitterUrl.trim(),
-            linkedin: linkedinUrl.trim(),
+            ...(instagramUrl.trim() && { instagram: /^https?:\/\//i.test(instagramUrl.trim()) ? instagramUrl.trim() : "https://" + instagramUrl.trim() }),
+            ...(facebookUrl.trim() && { facebook: /^https?:\/\//i.test(facebookUrl.trim()) ? facebookUrl.trim() : "https://" + facebookUrl.trim() }),
+            ...(youtubeUrl.trim() && { youtube: /^https?:\/\//i.test(youtubeUrl.trim()) ? youtubeUrl.trim() : "https://" + youtubeUrl.trim() }),
+            ...(twitterUrl.trim() && { twitter: /^https?:\/\//i.test(twitterUrl.trim()) ? twitterUrl.trim() : "https://" + twitterUrl.trim() }),
+            ...(linkedinUrl.trim() && { linkedin: /^https?:\/\//i.test(linkedinUrl.trim()) ? linkedinUrl.trim() : "https://" + linkedinUrl.trim() }),
           },
         },
         payment: {
