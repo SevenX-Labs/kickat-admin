@@ -71,6 +71,11 @@ export interface ProductSizeGuide {
 
 export type VariantAttributes = Record<string, string>;
 
+export interface ProductFaqItem {
+  question: string;
+  answer: string;
+}
+
 export interface ProductVariant {
   id?: string;
   productId?: string;
@@ -118,6 +123,7 @@ export interface AdminProductItem {
   feedingGuide?: ProductFeedingGuide | null;
   careInstructions?: string[];
   sizeGuide?: ProductSizeGuide | null;
+  faqs?: ProductFaqItem[] | null;
   isTrending: boolean;
   isBestSeller: boolean;
   rating: number;
@@ -207,6 +213,7 @@ export interface CreateProductDto {
   feedingGuide?: ProductFeedingGuide | null;
   careInstructions?: string[];
   sizeGuide?: ProductSizeGuide | null;
+  faqs?: ProductFaqItem[] | null;
   variants?: Array<{
     name: string;
     sku?: string | null;

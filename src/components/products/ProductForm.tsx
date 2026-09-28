@@ -38,6 +38,7 @@ import {
   NutritionItem,
   FeedingRow,
   SizeItem,
+  ProductFaqItem,
   VariantAttributes,
 } from "@/types/admin-product";
 import { AdminProductService } from "@/services/adminProductService";
@@ -263,6 +264,20 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     initialProduct?.sizeGuide?.note || ""
   );
 
+  // Frequently Asked Questions (FAQs)
+  const [faqs, setFaqs] = useState<ProductFaqItem[]>(() => {
+    if (!initialProduct?.faqs) return [];
+    if (Array.isArray(initialProduct.faqs)) return initialProduct.faqs;
+    try {
+      if (typeof initialProduct.faqs === "string") {
+        return JSON.parse(initialProduct.faqs);
+      }
+    } catch {
+      return [];
+    }
+    return [];
+  });
+
   // SEO
   const [seoTitle, setSeoTitle] = useState(initialProduct?.seoTitle || "");
   const [seoDescription, setSeoDescription] = useState(
@@ -387,6 +402,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     if (feedingDesc || feedingRows.length > 0) count++;
     if (careInstructions.length > 0) count++;
     if (sizeGuideEnabled && (sizeGuideDesc || sizeGuideSizes.length > 0)) count++;
+    if (faqs.length > 0 && faqs.some((f) => f.question.trim() || f.answer.trim())) count++;
     if (seoTitle || seoDescription) count++;
     return count;
   }, [
@@ -403,6 +419,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     sizeGuideEnabled,
     sizeGuideDesc,
     sizeGuideSizes,
+    faqs,
     seoTitle,
     seoDescription,
   ]);
@@ -756,6 +773,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           }
         : null;
 
+      // Valid FAQs
+      const validFaqs = faqs
+        .filter((f) => f.question.trim().length > 0 && f.answer.trim().length > 0)
+        .map((f) => ({
+          question: f.question.trim(),
+          answer: f.answer.trim(),
+        }));
+
       if (mode === "create") {
         const createPayload: CreateProductDto = {
           name: name.trim(),
@@ -779,6 +804,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           feedingGuide: feedingGuidePayload,
           careInstructions: careInstructions.filter((c) => c.trim()),
           sizeGuide: sizeGuidePayload,
+          faqs: validFaqs,
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
           ...(hasOptions ? { variants: variantsPayload } : { variants: [] }),
@@ -816,6 +842,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           feedingGuide: feedingGuidePayload,
           careInstructions: careInstructions.filter((c) => c.trim()),
           sizeGuide: sizeGuidePayload,
+          faqs: validFaqs,
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
           variants: variantsPayload,
