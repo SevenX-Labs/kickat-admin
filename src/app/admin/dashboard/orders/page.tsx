@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShoppingBag,
   Search,
-  Eye,
   Truck,
   CheckCircle2,
   Clock,
   AlertCircle,
-  FileText,
   ChevronRight,
   ChevronLeft,
   RefreshCw,
@@ -19,7 +18,6 @@ import {
   X,
   ArrowUp,
   SlidersHorizontal,
-  PackageCheck,
   Copy,
   Package,
   Inbox,
@@ -35,16 +33,13 @@ import {
 } from "@/types/admin-order";
 import { AdminOrderService } from "@/services/adminOrderService";
 import { TableListSkeleton } from "@/components/ui/Skeleton";
-import UpdateOrderStatusModal from "@/components/orders/UpdateOrderStatusModal";
-import CancelOrderModal from "@/components/orders/CancelOrderModal";
-import ProcessRefundModal from "@/components/orders/ProcessRefundModal";
-import OrderInvoiceModal from "@/components/orders/OrderInvoiceModal";
-import PackingSlipModal from "@/components/orders/PackingSlipModal";
 import OrderFilterSheet from "@/components/orders/OrderFilterSheet";
 import OrderSortDropdown from "@/components/orders/OrderSortDropdown";
 import OrderPaymentDropdown from "@/components/orders/OrderPaymentDropdown";
 
 export default function OrdersPage() {
+  const router = useRouter();
+
   // Data States
   const [orders, setOrders] = useState<AdminOrderItem[]>([]);
   const [summary, setSummary] = useState<AdminOrderSummary | null>(null);
@@ -76,13 +71,8 @@ export default function OrdersPage() {
   // Copied feedback
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
-  // Modals & Action States
+  // Modals & Filter Sheet
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  const [activeStatusOrder, setActiveStatusOrder] = useState<AdminOrderItem | null>(null);
-  const [activeCancelOrder, setActiveCancelOrder] = useState<AdminOrderItem | null>(null);
-  const [activeRefundOrder, setActiveRefundOrder] = useState<AdminOrderItem | null>(null);
-  const [activeInvoiceOrderId, setActiveInvoiceOrderId] = useState<string | null>(null);
-  const [activeSlipOrderId, setActiveSlipOrderId] = useState<string | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -274,25 +264,25 @@ export default function OrdersPage() {
         return {
           bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
           dot: "bg-emerald-500",
-          label: "Paid",
+          label: "COMPLETED",
         };
       case "PENDING":
         return {
           bg: "bg-amber-50 text-amber-700 border-amber-200",
           dot: "bg-amber-500",
-          label: "Pending",
+          label: "PENDING",
         };
       case "FAILED":
         return {
           bg: "bg-rose-50 text-rose-700 border-rose-200",
           dot: "bg-rose-500",
-          label: "Failed",
+          label: "FAILED",
         };
       case "REFUNDED":
         return {
           bg: "bg-purple-50 text-purple-700 border-purple-200",
           dot: "bg-purple-500",
-          label: "Refunded",
+          label: "REFUNDED",
         };
       default:
         return {
@@ -343,7 +333,7 @@ export default function OrdersPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between min-w-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="font-fraunces text-xl sm:text-2xl font-bold tracking-tight text-[#2A241E]">
@@ -356,7 +346,7 @@ export default function OrdersPage() {
             )}
           </div>
           <p className="text-[11.5px] sm:text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2">
-            <span>Manage customer orders, packing slips, tracking &amp; tax invoices.</span>
+            <span>Click any order row to view full details, shipping milestones, packing slips &amp; invoices.</span>
             {lastRefreshedAt && (
               <span className="hidden md:inline text-slate-400 text-[10.5px] font-mono">
                 • Updated at {lastRefreshedAt}
@@ -378,7 +368,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* KPI Stats Grid: Compact, Non-overflowing 6-card row */}
+      {/* KPI Stats Grid */}
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
           {/* Total Orders Card */}
@@ -761,8 +751,8 @@ export default function OrdersPage() {
         </div>
       ) : (
         <>
-          {/* Mobile Orders List View (< md) */}
-          <div className="space-y-2.5 md:hidden">
+          {/* Mobile Orders List View (< md) - Whole Card Clickable */}
+          <div className="space-y-3 md:hidden">
             {orders.map((ord) => {
               const statusInfo = getStatusBadge(ord.orderStatus);
               const paymentInfo = getPaymentBadge(ord.paymentStatus);
@@ -770,33 +760,31 @@ export default function OrdersPage() {
               return (
                 <div
                   key={ord.id}
-                  className="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-xs space-y-2.5"
+                  onClick={() => router.push(`/admin/dashboard/orders/${ord.id}`)}
+                  className="bg-white hover:bg-[#FAF7F2] rounded-2xl border border-slate-200/90 hover:border-orange-200/80 p-4 shadow-xs space-y-3 transition-all cursor-pointer group active:scale-[0.99]"
                 >
                   {/* Top Row: Order ID & Status */}
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                    <div className="flex items-center gap-1">
-                      <Link
-                        href={`/admin/dashboard/orders/${ord.id}`}
-                        className="font-bold text-xs text-slate-900 hover:text-[#FF7A00] font-mono tracking-tight"
-                      >
+                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-bold text-xs text-slate-900 font-mono tracking-tight truncate">
                         {ord.orderNumber}
-                      </Link>
+                      </span>
                       <button
                         type="button"
                         onClick={(e) => handleCopyOrderId(ord.orderNumber, e)}
-                        className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition cursor-pointer shrink-0"
                         title="Copy Order ID"
                       >
                         {copiedOrderId === ord.orderNumber ? (
-                          <Check className="h-3 w-3 text-emerald-600" />
+                          <Check className="h-3 w-3 text-emerald-600 stroke-[2.5]" />
                         ) : (
-                          <Copy className="h-3 w-3" />
+                          <Copy className="h-3 w-3 opacity-70 hover:opacity-100" />
                         )}
                       </button>
                     </div>
 
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold border uppercase tracking-wider ${statusInfo.bg}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusInfo.bg}`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
                       <span>{statusInfo.label}</span>
@@ -804,136 +792,91 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Customer & Item Line */}
-                  <div className="flex items-start gap-2">
-                    <div className="h-7 w-7 rounded-full bg-orange-100 text-[#FF7A00] font-bold text-xs flex items-center justify-center shrink-0">
+                  <div className="flex items-start gap-2.5">
+                    <div className="h-8 w-8 rounded-full bg-linear-to-tr from-amber-100 to-orange-100 text-[#FF7A00] font-bold text-xs flex items-center justify-center shrink-0 border border-orange-200/60 shadow-2xs">
                       {getCustomerInitials(ord.customer?.name)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-800 truncate">
+                      <p className="text-xs font-bold text-slate-900 truncate">
                         {ord.customer?.name || "Guest Customer"}
                       </p>
-                      <p className="text-[10.5px] text-slate-400 truncate">
+                      <p className="text-[11px] text-slate-400 truncate font-mono">
                         {ord.customer?.phone || ord.customer?.email || "No contact"}
                       </p>
-                      <p className="text-[10.5px] text-slate-600 mt-0.5 line-clamp-1 font-medium">
+                      <p className="text-[11px] text-slate-600 mt-1 line-clamp-1 font-medium">
                         {ord.itemsSummary || `${ord.itemsCount} item(s)`}
                       </p>
                     </div>
                   </div>
 
-                  {/* Price & Payment Mode */}
-                  <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold border ${paymentInfo.bg}`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${paymentInfo.dot}`} />
-                        <span>{paymentInfo.label}</span>
-                      </span>
-                      <span className="text-[9.5px] font-mono text-slate-400 uppercase">
-                        {ord.paymentMethod || "COD"}
-                      </span>
-                    </div>
+                  {/* Price & Payment Status */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${paymentInfo.bg}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${paymentInfo.dot}`} />
+                      <span>{paymentInfo.label}</span>
+                    </span>
 
                     <div className="text-right">
-                      <span className="text-xs font-black text-slate-900">
-                        ₹{ord.grandTotal.toLocaleString("en-IN")}
+                      <span className="text-sm font-black text-slate-900 font-mono tracking-tight">
+                        ₹{ord.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Mobile Action Buttons */}
-                  <div className="grid grid-cols-4 gap-1 pt-1.5 border-t border-slate-100 text-xs">
-                    <Link
-                      href={`/admin/dashboard/orders/${ord.id}`}
-                      className="h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
-                    >
-                      <Eye className="h-3 w-3" />
-                      <span>View</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveStatusOrder(ord)}
-                      className="h-8 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#FF7A00] font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
-                    >
-                      <Truck className="h-3 w-3" />
-                      <span>Status</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveInvoiceOrderId(ord.id)}
-                      className="h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
-                    >
-                      <FileText className="h-3 w-3" />
-                      <span>Tax</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveSlipOrderId(ord.id)}
-                      className="h-8 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold flex items-center justify-center gap-1 text-[10.5px] transition cursor-pointer"
-                    >
-                      <PackageCheck className="h-3 w-3" />
-                      <span>Slip</span>
-                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Desktop Orders Table (>= md): Full Width, Strict Widths, Zero Overflow Slider */}
+          {/* Desktop Orders Table (>= md): Entire Row Clickable, No Horizontal Scrollbar, Clean 6-Column Layout */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden hidden md:block">
-            <table className="w-full text-left border-collapse text-xs table-fixed">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-500 font-mono-eyebrow text-[10px] uppercase tracking-wider">
-                  <th className="py-3 px-3.5 font-bold w-[170px]">Order ID</th>
-                  <th className="py-3 px-3 font-bold w-[180px]">Customer &amp; Contact</th>
-                  <th className="py-3 px-3 font-bold">Items Summary</th>
-                  <th className="py-3 px-3 font-bold w-[110px]">Date &amp; Time</th>
-                  <th className="py-3 px-3 font-bold text-right w-[100px]">Grand Total</th>
-                  <th className="py-3 px-2 font-bold text-center w-[85px]">Payment</th>
-                  <th className="py-3 px-2 font-bold text-center w-[95px]">Fulfillment</th>
-                  <th className="py-3 px-3 font-bold text-right w-[140px]">Actions</th>
+                <tr className="border-b border-slate-100 bg-[#FAF7F3] text-slate-500 font-mono-eyebrow text-[10.5px] uppercase tracking-wider select-none">
+                  <th className="py-3.5 px-4 font-bold w-[20%]">Order ID</th>
+                  <th className="py-3.5 px-4 font-bold w-[22%]">Customer &amp; Contact</th>
+                  <th className="py-3.5 px-4 font-bold w-[26%]">Items Summary</th>
+                  <th className="py-3.5 px-4 font-bold w-[14%]">Date &amp; Time</th>
+                  <th className="py-3.5 px-4 font-bold text-right w-[10%]">Grand Total</th>
+                  <th className="py-3.5 px-4 font-bold text-center w-[12%]">Payment Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100/90 text-xs">
                 {orders.map((ord) => {
-                  const statusInfo = getStatusBadge(ord.orderStatus);
                   const paymentInfo = getPaymentBadge(ord.paymentStatus);
 
                   return (
                     <tr
                       key={ord.id}
-                      className="hover:bg-[#FAF7F3]/70 transition-colors group"
+                      onClick={() => router.push(`/admin/dashboard/orders/${ord.id}`)}
+                      className="hover:bg-[#FAF7F2]/90 cursor-pointer transition-colors duration-150 select-none"
                     >
                       {/* Order ID: Single Line with Copy Button */}
-                      <td className="py-3 px-3.5 align-middle">
-                        <div className="flex items-center gap-1">
-                          <Link
-                            href={`/admin/dashboard/orders/${ord.id}`}
-                            className="font-bold text-slate-900 hover:text-[#FF7A00] font-mono tracking-tight text-[11.5px] whitespace-nowrap transition-colors"
+                      <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="font-bold text-slate-900 font-mono tracking-tight text-[11.5px]"
                             title={ord.orderNumber}
                           >
                             {ord.orderNumber}
-                          </Link>
+                          </span>
                           <button
                             type="button"
                             onClick={(e) => handleCopyOrderId(ord.orderNumber, e)}
                             className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-all cursor-pointer shrink-0"
                             title="Copy Order ID"
+                            aria-label="Copy Order ID"
                           >
                             {copiedOrderId === ord.orderNumber ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
+                              <Check className="h-3 w-3 text-emerald-600 stroke-[2.5]" />
                             ) : (
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-3 w-3 opacity-70 hover:opacity-100" />
                             )}
                           </button>
                         </div>
                         {ord.trackingNumber && (
-                          <span className="inline-flex items-center gap-1 text-[9.5px] font-mono text-slate-400 mt-0.5 whitespace-nowrap truncate max-w-[150px]">
+                          <span className="inline-flex items-center gap-1 text-[9.5px] font-mono text-slate-400 mt-0.5 whitespace-nowrap truncate max-w-[160px]">
                             <Truck className="h-2.5 w-2.5 shrink-0" />
                             <span>AWB: {ord.trackingNumber}</span>
                           </span>
@@ -941,16 +884,16 @@ export default function OrdersPage() {
                       </td>
 
                       {/* Customer & Contact */}
-                      <td className="py-3 px-3 align-middle">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-linear-to-tr from-orange-100 to-amber-100 text-[#FF7A00] font-bold text-[11px] flex items-center justify-center shrink-0 border border-orange-200/60 shadow-2xs">
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-linear-to-tr from-orange-100 to-amber-100 text-[#FF7A00] font-bold text-[11px] flex items-center justify-center shrink-0 border border-orange-200/60 shadow-2xs">
                             {getCustomerInitials(ord.customer?.name)}
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-slate-900 truncate text-[11.5px]">
                               {ord.customer?.name || "Guest Customer"}
                             </p>
-                            <p className="text-[10.5px] text-slate-400 truncate">
+                            <p className="text-[10.5px] text-slate-400 truncate font-mono">
                               {ord.customer?.phone || ord.customer?.email || "—"}
                             </p>
                           </div>
@@ -958,21 +901,21 @@ export default function OrdersPage() {
                       </td>
 
                       {/* Items Summary */}
-                      <td className="py-3 px-3 align-middle">
+                      <td className="py-3.5 px-4 align-middle">
                         <p
-                          className="font-medium text-slate-800 truncate text-[11.5px]"
-                          title={ord.itemsSummary}
+                          className="font-medium text-slate-800 truncate text-[11.5px] max-w-[240px]"
+                          title={ord.itemsSummary || `${ord.itemsCount} item(s)`}
                         >
-                          {ord.itemsSummary || `${ord.itemsCount} items`}
+                          {ord.itemsSummary || `${ord.itemsCount} item(s)`}
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-slate-400 mt-0.5">
-                          <Package className="h-3 w-3 text-slate-400" />
-                          <span>{ord.itemsCount} unit(s) total</span>
-                        </span>
+                        <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 mt-0.5 whitespace-nowrap">
+                          <Package className="h-3 w-3 shrink-0 text-slate-400" />
+                          <span>{ord.itemsCount} {ord.itemsCount === 1 ? "unit" : "units"} total</span>
+                        </div>
                       </td>
 
                       {/* Date & Time */}
-                      <td className="py-3 px-3 align-middle text-slate-600 text-xs whitespace-nowrap">
+                      <td className="py-3.5 px-4 align-middle text-slate-600 whitespace-nowrap">
                         <div className="font-medium text-slate-800 text-[11px]">
                           {new Date(ord.createdAt).toLocaleDateString("en-IN", {
                             day: "2-digit",
@@ -984,82 +927,27 @@ export default function OrdersPage() {
                           {new Date(ord.createdAt).toLocaleTimeString("en-IN", {
                             hour: "2-digit",
                             minute: "2-digit",
+                            hour12: true,
                           })}
                         </p>
                       </td>
 
                       {/* Grand Total */}
-                      <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
-                        <span className="font-black text-slate-900 text-xs tracking-tight">
-                          ₹{ord.grandTotal.toLocaleString("en-IN")}
-                        </span>
-                        <span className="block text-[9.5px] font-mono text-slate-400 uppercase">
-                          {ord.paymentMethod || "COD"}
+                      <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                        <span className="font-black text-slate-900 text-[13.5px] tracking-tight font-mono">
+                          ₹{ord.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </td>
 
-                      {/* Payment Status */}
-                      <td className="py-3 px-2 align-middle text-center whitespace-nowrap">
+                      {/* Payment Status: Clean Single Badge */}
+                      <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9.5px] font-bold rounded-full border uppercase tracking-wider ${paymentInfo.bg}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full border uppercase tracking-wider shadow-2xs ${paymentInfo.bg}`}
+                          title={`Payment: ${paymentInfo.label} (${ord.paymentMethod || "N/A"})`}
                         >
                           <span className={`h-1.5 w-1.5 rounded-full ${paymentInfo.dot}`} />
                           <span>{paymentInfo.label}</span>
                         </span>
-                      </td>
-
-                      {/* Fulfillment Status */}
-                      <td className="py-3 px-2 align-middle text-center whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9.5px] font-bold rounded-full border uppercase tracking-wider shadow-2xs ${statusInfo.bg}`}
-                        >
-                          <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
-                          <span>{statusInfo.label}</span>
-                        </span>
-                      </td>
-
-                      {/* Actions: All 4 Buttons Always Visible */}
-                      <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1 justify-end">
-                          {/* View Detail Link */}
-                          <Link
-                            href={`/admin/dashboard/orders/${ord.id}`}
-                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                            title="View Full Details"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Link>
-
-                          {/* Quick Status Update */}
-                          <button
-                            type="button"
-                            onClick={() => setActiveStatusOrder(ord)}
-                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-orange-50 border border-slate-200/80 hover:border-orange-200 text-slate-500 hover:text-[#FF7A00] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                            title="Update Logistics & Tracking"
-                          >
-                            <Truck className="h-3 w-3" />
-                          </button>
-
-                          {/* Print Invoice */}
-                          <button
-                            type="button"
-                            onClick={() => setActiveInvoiceOrderId(ord.id)}
-                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-200 text-slate-500 hover:text-emerald-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                            title="GST Tax Invoice"
-                          >
-                            <FileText className="h-3 w-3" />
-                          </button>
-
-                          {/* Packing Slip */}
-                          <button
-                            type="button"
-                            onClick={() => setActiveSlipOrderId(ord.id)}
-                            className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-purple-50 border border-slate-200/80 hover:border-purple-200 text-slate-500 hover:text-purple-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                            title="Warehouse Packing Slip"
-                          >
-                            <PackageCheck className="h-3 w-3" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );
@@ -1167,42 +1055,6 @@ export default function OrdersPage() {
         onClearAll={handleClearAllFilters}
         activeCount={activeFiltersCount}
       />
-
-      {/* Update Status Modal */}
-      {activeStatusOrder && (
-        <UpdateOrderStatusModal
-          orderId={activeStatusOrder.id}
-          orderNumber={activeStatusOrder.orderNumber}
-          currentStatus={activeStatusOrder.orderStatus}
-          currentCourier={activeStatusOrder.courierPartner}
-          currentTracking={activeStatusOrder.trackingNumber}
-          currentEstimatedDelivery={activeStatusOrder.estimatedDelivery}
-          isOpen={!!activeStatusOrder}
-          onClose={() => setActiveStatusOrder(null)}
-          onSuccess={(updated) => {
-            showToast(`Order #${activeStatusOrder.orderNumber} status updated to ${updated.orderStatus || "updated"}`);
-            fetchOrders(true);
-          }}
-        />
-      )}
-
-      {/* GST Tax Invoice Modal */}
-      {activeInvoiceOrderId && (
-        <OrderInvoiceModal
-          orderId={activeInvoiceOrderId}
-          isOpen={!!activeInvoiceOrderId}
-          onClose={() => setActiveInvoiceOrderId(null)}
-        />
-      )}
-
-      {/* Warehouse Packing Slip Modal */}
-      {activeSlipOrderId && (
-        <PackingSlipModal
-          orderId={activeSlipOrderId}
-          isOpen={!!activeSlipOrderId}
-          onClose={() => setActiveSlipOrderId(null)}
-        />
-      )}
     </div>
   );
 }
