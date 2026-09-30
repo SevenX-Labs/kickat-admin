@@ -84,6 +84,10 @@ export interface ProductVariant {
   price: number;
   discountPrice?: number | null;
   stock: number;
+  shippingWeightKg?: number | null;
+  shippingLengthCm?: number | null;
+  shippingBreadthCm?: number | null;
+  shippingHeightCm?: number | null;
   attributes?: VariantAttributes;
   imageUrl?: string | null;
   images?: string[];
@@ -117,6 +121,10 @@ export interface AdminProductItem {
   status: ProductStatus;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  shippingWeightKg?: number | null;
+  shippingLengthCm?: number | null;
+  shippingBreadthCm?: number | null;
+  shippingHeightCm?: number | null;
   attributes?: ProductAttributes | null;
   highlights?: ProductHighlight[] | null;
   ingredients?: ProductIngredients | null;
@@ -207,6 +215,10 @@ export interface CreateProductDto {
   isBestSeller?: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  shippingWeightKg?: number | null;
+  shippingLengthCm?: number | null;
+  shippingBreadthCm?: number | null;
+  shippingHeightCm?: number | null;
   attributes?: ProductAttributes | null;
   highlights?: ProductHighlight[] | null;
   ingredients?: ProductIngredients | null;
@@ -220,6 +232,10 @@ export interface CreateProductDto {
     price: number;
     discountPrice?: number | null;
     stock: number;
+    shippingWeightKg?: number | null;
+    shippingLengthCm?: number | null;
+    shippingBreadthCm?: number | null;
+    shippingHeightCm?: number | null;
     attributes?: VariantAttributes;
     imageUrl?: string | null;
     images?: string[];
@@ -235,6 +251,10 @@ export interface UpdateProductDto extends Partial<CreateProductDto> {
     price: number;
     discountPrice?: number | null;
     stock: number;
+    shippingWeightKg?: number | null;
+    shippingLengthCm?: number | null;
+    shippingBreadthCm?: number | null;
+    shippingHeightCm?: number | null;
     attributes?: VariantAttributes;
     imageUrl?: string | null;
     images?: string[];

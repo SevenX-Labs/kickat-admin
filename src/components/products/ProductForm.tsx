@@ -169,6 +169,18 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     initialProduct?.discountPrice ?? ""
   );
   const [stock, setStock] = useState<number | "">(initialProduct?.stock ?? 0);
+  const [shippingWeightKg, setShippingWeightKg] = useState<number | "">(
+    initialProduct?.shippingWeightKg ?? ""
+  );
+  const [shippingLengthCm, setShippingLengthCm] = useState<number | "">(
+    initialProduct?.shippingLengthCm ?? ""
+  );
+  const [shippingBreadthCm, setShippingBreadthCm] = useState<number | "">(
+    initialProduct?.shippingBreadthCm ?? ""
+  );
+  const [shippingHeightCm, setShippingHeightCm] = useState<number | "">(
+    initialProduct?.shippingHeightCm ?? ""
+  );
   const [options, setOptions] = useState<OptionItemData[]>(() => {
     if (initialProduct?.variants && initialProduct.variants.length > 0) {
       const hasDefinedDefault = initialProduct.variants.some((v) => v.isDefault);
@@ -187,6 +199,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           price: v.price ?? "",
           discountPrice: v.discountPrice ?? "",
           stock: v.stock ?? 0,
+          shippingWeightKg: v.shippingWeightKg ?? "",
+          shippingLengthCm: v.shippingLengthCm ?? "",
+          shippingBreadthCm: v.shippingBreadthCm ?? "",
+          shippingHeightCm: v.shippingHeightCm ?? "",
           attributes: safeAttrs,
           imageUrl: v.imageUrl || null,
           images: Array.isArray(v.images) ? v.images : (v.imageUrl ? [v.imageUrl] : []),
@@ -435,6 +451,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       discountPrice:
         discountPrice !== "" && discountPrice !== null ? discountPrice : "",
       stock: "",
+      shippingWeightKg: "",
+      shippingLengthCm: "",
+      shippingBreadthCm: "",
+      shippingHeightCm: "",
       attributes: {},
       imageUrl: null,
       images: [],
@@ -495,6 +515,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       price: source.price,
       discountPrice: source.discountPrice,
       stock: source.stock,
+      shippingWeightKg: "",
+      shippingLengthCm: "",
+      shippingBreadthCm: "",
+      shippingHeightCm: "",
       attributes: clonedAttributes,
       images: clonedImages,
       imageUrl: clonedImages[0] || source.imageUrl || null,
@@ -582,6 +606,18 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           newErrors.discountPrice =
             "Selling price must be lower than the original price.";
         }
+        if (shippingWeightKg === "" || Number(shippingWeightKg) <= 0 || isNaN(Number(shippingWeightKg))) {
+          newErrors.shippingWeightKg = "Shipping weight is required and must be greater than 0.";
+        }
+        if (shippingLengthCm === "" || Number(shippingLengthCm) <= 0 || isNaN(Number(shippingLengthCm))) {
+          newErrors.shippingLengthCm = "Package length is required and must be greater than 0.";
+        }
+        if (shippingBreadthCm === "" || Number(shippingBreadthCm) <= 0 || isNaN(Number(shippingBreadthCm))) {
+          newErrors.shippingBreadthCm = "Package breadth is required and must be greater than 0.";
+        }
+        if (shippingHeightCm === "" || Number(shippingHeightCm) <= 0 || isNaN(Number(shippingHeightCm))) {
+          newErrors.shippingHeightCm = "Package height is required and must be greater than 0.";
+        }
       } else {
         // Options mode
         if (options.length === 0) {
@@ -605,6 +641,42 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
             ) {
               newErrors[`option_${idx}_discountPrice`] =
                 "Selling price must be lower than the original price.";
+            }
+            if (
+              opt.shippingWeightKg === "" ||
+              opt.shippingWeightKg === undefined ||
+              opt.shippingWeightKg === null ||
+              Number(opt.shippingWeightKg) <= 0 ||
+              isNaN(Number(opt.shippingWeightKg))
+            ) {
+              newErrors[`option_${idx}_shippingWeightKg`] = "Shipping weight is required (> 0 kg).";
+            }
+            if (
+              opt.shippingLengthCm === "" ||
+              opt.shippingLengthCm === undefined ||
+              opt.shippingLengthCm === null ||
+              Number(opt.shippingLengthCm) <= 0 ||
+              isNaN(Number(opt.shippingLengthCm))
+            ) {
+              newErrors[`option_${idx}_shippingLengthCm`] = "Length is required (> 0 cm).";
+            }
+            if (
+              opt.shippingBreadthCm === "" ||
+              opt.shippingBreadthCm === undefined ||
+              opt.shippingBreadthCm === null ||
+              Number(opt.shippingBreadthCm) <= 0 ||
+              isNaN(Number(opt.shippingBreadthCm))
+            ) {
+              newErrors[`option_${idx}_shippingBreadthCm`] = "Breadth is required (> 0 cm).";
+            }
+            if (
+              opt.shippingHeightCm === "" ||
+              opt.shippingHeightCm === undefined ||
+              opt.shippingHeightCm === null ||
+              Number(opt.shippingHeightCm) <= 0 ||
+              isNaN(Number(opt.shippingHeightCm))
+            ) {
+              newErrors[`option_${idx}_shippingHeightCm`] = "Height is required (> 0 cm).";
             }
           });
         }
@@ -744,6 +816,30 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                   ? Number(opt.discountPrice)
                   : null,
               stock: typeof opt.stock === "number" ? opt.stock : 0,
+              shippingWeightKg:
+                opt.shippingWeightKg !== "" &&
+                opt.shippingWeightKg !== undefined &&
+                opt.shippingWeightKg !== null
+                  ? Number(opt.shippingWeightKg)
+                  : null,
+              shippingLengthCm:
+                opt.shippingLengthCm !== "" &&
+                opt.shippingLengthCm !== undefined &&
+                opt.shippingLengthCm !== null
+                  ? Number(opt.shippingLengthCm)
+                  : null,
+              shippingBreadthCm:
+                opt.shippingBreadthCm !== "" &&
+                opt.shippingBreadthCm !== undefined &&
+                opt.shippingBreadthCm !== null
+                  ? Number(opt.shippingBreadthCm)
+                  : null,
+              shippingHeightCm:
+                opt.shippingHeightCm !== "" &&
+                opt.shippingHeightCm !== undefined &&
+                opt.shippingHeightCm !== null
+                  ? Number(opt.shippingHeightCm)
+                  : null,
               attributes: attrs,
               imageUrl: finalOptionImageUrl,
               images: finalOptionImages,
@@ -811,6 +907,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           price: effectivePrice,
           discountPrice: effectiveDiscountPrice,
           stock: calculatedTotalStock,
+          shippingWeightKg: !hasOptions && shippingWeightKg !== "" ? Number(shippingWeightKg) : null,
+          shippingLengthCm: !hasOptions && shippingLengthCm !== "" ? Number(shippingLengthCm) : null,
+          shippingBreadthCm: !hasOptions && shippingBreadthCm !== "" ? Number(shippingBreadthCm) : null,
+          shippingHeightCm: !hasOptions && shippingHeightCm !== "" ? Number(shippingHeightCm) : null,
           images: finalImages,
           descriptionTitle: descriptionTitle.trim() || null,
           description: description.trim() || null,
@@ -849,6 +949,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           price: effectivePrice,
           discountPrice: effectiveDiscountPrice,
           stock: calculatedTotalStock,
+          shippingWeightKg: !hasOptions && shippingWeightKg !== "" ? Number(shippingWeightKg) : null,
+          shippingLengthCm: !hasOptions && shippingLengthCm !== "" ? Number(shippingLengthCm) : null,
+          shippingBreadthCm: !hasOptions && shippingBreadthCm !== "" ? Number(shippingBreadthCm) : null,
+          shippingHeightCm: !hasOptions && shippingHeightCm !== "" ? Number(shippingHeightCm) : null,
           images: finalImages,
           descriptionTitle: descriptionTitle.trim() || null,
           description: description.trim() || null,
@@ -1277,6 +1381,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                           ? discountPrice
                           : "",
                       stock: stock !== "" ? Number(stock) : "",
+                      shippingWeightKg: "",
+                      shippingLengthCm: "",
+                      shippingBreadthCm: "",
+                      shippingHeightCm: "",
                       attributes: {},
                       imageUrl: null,
                       images: [],
@@ -1421,6 +1529,165 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Single Product Shipping & Package Details */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+                <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Shipping & Package Details
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Mandatory package specifications required for courier delivery and Shiprocket shipping.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-orange-50 text-[#FF7A00] border border-orange-200">
+                    Required for Shipping
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Weight */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Shipping Weight (kg) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0.001"
+                        step="0.01"
+                        value={shippingWeightKg}
+                        onChange={(e) =>
+                          setShippingWeightKg(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
+                        }
+                        placeholder="3.00"
+                        className={`w-full rounded-xl border pl-3.5 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                          errors.shippingWeightKg
+                            ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                            : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                        }`}
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400">
+                        kg
+                      </span>
+                    </div>
+                    {errors.shippingWeightKg && (
+                      <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {errors.shippingWeightKg}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Length */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Package Length (cm) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={shippingLengthCm}
+                        onChange={(e) =>
+                          setShippingLengthCm(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
+                        }
+                        placeholder="35"
+                        className={`w-full rounded-xl border pl-3.5 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                          errors.shippingLengthCm
+                            ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                            : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                        }`}
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400">
+                        cm
+                      </span>
+                    </div>
+                    {errors.shippingLengthCm && (
+                      <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {errors.shippingLengthCm}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Breadth */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Package Breadth (cm) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={shippingBreadthCm}
+                        onChange={(e) =>
+                          setShippingBreadthCm(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
+                        }
+                        placeholder="25"
+                        className={`w-full rounded-xl border pl-3.5 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                          errors.shippingBreadthCm
+                            ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                            : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                        }`}
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400">
+                        cm
+                      </span>
+                    </div>
+                    {errors.shippingBreadthCm && (
+                      <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {errors.shippingBreadthCm}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Height */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Package Height (cm) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={shippingHeightCm}
+                        onChange={(e) =>
+                          setShippingHeightCm(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
+                        }
+                        placeholder="15"
+                        className={`w-full rounded-xl border pl-3.5 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                          errors.shippingHeightCm
+                            ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                            : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                        }`}
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400">
+                        cm
+                      </span>
+                    </div>
+                    {errors.shippingHeightCm && (
+                      <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {errors.shippingHeightCm}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
               </div>
             )}
 
@@ -1503,6 +1770,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                         price: errors[`option_${idx}_price`],
                         discountPrice: errors[`option_${idx}_discountPrice`],
                         stock: errors[`option_${idx}_stock`],
+                        shippingWeightKg: errors[`option_${idx}_shippingWeightKg`],
+                        shippingLengthCm: errors[`option_${idx}_shippingLengthCm`],
+                        shippingBreadthCm: errors[`option_${idx}_shippingBreadthCm`],
+                        shippingHeightCm: errors[`option_${idx}_shippingHeightCm`],
                       }}
                     />
                   ))}
@@ -2354,6 +2625,10 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
             price={price}
             discountPrice={discountPrice}
             stock={stock}
+            shippingWeightKg={shippingWeightKg}
+            shippingLengthCm={shippingLengthCm}
+            shippingBreadthCm={shippingBreadthCm}
+            shippingHeightCm={shippingHeightCm}
             options={options}
             descriptionTitle={descriptionTitle}
             description={description}

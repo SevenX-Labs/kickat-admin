@@ -30,6 +30,10 @@ export interface ReviewSummaryProps {
   price: number | "";
   discountPrice: number | "" | null;
   stock: number | "";
+  shippingWeightKg?: number | "";
+  shippingLengthCm?: number | "";
+  shippingBreadthCm?: number | "";
+  shippingHeightCm?: number | "";
   options: OptionItemData[];
   descriptionTitle: string;
   description: string;
@@ -52,6 +56,10 @@ export function ReviewSummary({
   price,
   discountPrice,
   stock,
+  shippingWeightKg,
+  shippingLengthCm,
+  shippingBreadthCm,
+  shippingHeightCm,
   options,
   descriptionTitle,
   description,
@@ -220,6 +228,22 @@ export function ReviewSummary({
                 {stock || 0} units
               </p>
             </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-[11px] text-slate-400 font-semibold block">Shipping Weight</span>
+              <p className="text-sm font-bold text-slate-800 mt-0.5">
+                {shippingWeightKg ? `${shippingWeightKg} kg` : "Not set"}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
+              <span className="text-[11px] text-slate-400 font-semibold block">Package Dimensions (L × B × H)</span>
+              <p className="text-sm font-bold text-slate-800 mt-0.5">
+                {shippingLengthCm && shippingBreadthCm && shippingHeightCm
+                  ? `${shippingLengthCm} × ${shippingBreadthCm} × ${shippingHeightCm} cm`
+                  : "Not set"}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 pt-1">
@@ -237,7 +261,8 @@ export function ReviewSummary({
                     <th className="pb-2 pr-3">Attributes</th>
                     <th className="pb-2 pr-3">Original Price</th>
                     <th className="pb-2 pr-3">Selling Price</th>
-                    <th className="pb-2">Stock</th>
+                    <th className="pb-2 pr-3">Stock</th>
+                    <th className="pb-2">Shipping Info</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -268,7 +293,12 @@ export function ReviewSummary({
                       <td className="py-2.5 pr-3 text-emerald-700 font-bold">
                         ₹{opt.discountPrice ? Number(opt.discountPrice).toLocaleString("en-IN") : opt.price ? Number(opt.price).toLocaleString("en-IN") : "0"}
                       </td>
-                      <td className="py-2.5 font-bold text-slate-800">{opt.stock || 0}</td>
+                      <td className="py-2.5 pr-3 font-bold text-slate-800">{opt.stock || 0}</td>
+                      <td className="py-2.5 text-xs text-slate-600 font-mono">
+                        {opt.shippingWeightKg
+                          ? `${opt.shippingWeightKg}kg (${opt.shippingLengthCm || 0}×${opt.shippingBreadthCm || 0}×${opt.shippingHeightCm || 0}cm)`
+                          : "Incomplete"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

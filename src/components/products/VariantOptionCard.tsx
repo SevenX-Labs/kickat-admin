@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageIcon,
+  Package,
   ImagePlus,
 } from "lucide-react";
 import { generateProductSku } from "./slugUtils";
@@ -27,6 +28,10 @@ export interface OptionItemData {
   price: number | "";
   discountPrice?: number | "" | null;
   stock: number | "";
+  shippingWeightKg?: number | "";
+  shippingLengthCm?: number | "";
+  shippingBreadthCm?: number | "";
+  shippingHeightCm?: number | "";
   attributes: VariantAttributes;
   imageUrl?: string | null;
   images?: string[];
@@ -49,6 +54,10 @@ export interface VariantOptionCardProps {
     price?: string;
     discountPrice?: string;
     stock?: string;
+    shippingWeightKg?: string;
+    shippingLengthCm?: string;
+    shippingBreadthCm?: string;
+    shippingHeightCm?: string;
   };
 }
 
@@ -547,6 +556,163 @@ export function VariantOptionCard({
               {errors.stock}
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Option Shipping & Package Details */}
+      <div className="pt-3 border-t border-slate-100 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-[#FF7A00]" />
+          <span className="text-xs font-bold text-slate-800">
+            Shipping & Package Details
+          </span>
+          <span className="text-[10px] text-slate-400 font-medium">(Required for Shiprocket fulfillment)</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Shipping Weight */}
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-700">
+              Weight *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0.001"
+                step="any"
+                value={option.shippingWeightKg ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...option,
+                    shippingWeightKg: e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="e.g. 3.00"
+                className={`w-full rounded-xl border pl-3 pr-8 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                  errors?.shippingWeightKg
+                    ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                    : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                }`}
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">
+                kg
+              </span>
+            </div>
+            {errors?.shippingWeightKg && (
+              <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-0.5">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                {errors.shippingWeightKg}
+              </p>
+            )}
+          </div>
+
+          {/* Package Length */}
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-700">
+              Length *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0.1"
+                step="any"
+                value={option.shippingLengthCm ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...option,
+                    shippingLengthCm: e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="e.g. 35"
+                className={`w-full rounded-xl border pl-3 pr-8 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                  errors?.shippingLengthCm
+                    ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                    : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                }`}
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">
+                cm
+              </span>
+            </div>
+            {errors?.shippingLengthCm && (
+              <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-0.5">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                {errors.shippingLengthCm}
+              </p>
+            )}
+          </div>
+
+          {/* Package Breadth */}
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-700">
+              Breadth *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0.1"
+                step="any"
+                value={option.shippingBreadthCm ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...option,
+                    shippingBreadthCm: e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="e.g. 25"
+                className={`w-full rounded-xl border pl-3 pr-8 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                  errors?.shippingBreadthCm
+                    ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                    : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                }`}
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">
+                cm
+              </span>
+            </div>
+            {errors?.shippingBreadthCm && (
+              <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-0.5">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                {errors.shippingBreadthCm}
+              </p>
+            )}
+          </div>
+
+          {/* Package Height */}
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-700">
+              Height *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0.1"
+                step="any"
+                value={option.shippingHeightCm ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...option,
+                    shippingHeightCm: e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="e.g. 15"
+                className={`w-full rounded-xl border pl-3 pr-8 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+                  errors?.shippingHeightCm
+                    ? "border-rose-400 bg-rose-50/20 focus:border-rose-500"
+                    : "border-slate-200 bg-white focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15"
+                }`}
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">
+                cm
+              </span>
+            </div>
+            {errors?.shippingHeightCm && (
+              <p className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-0.5">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                {errors.shippingHeightCm}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
