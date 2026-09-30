@@ -55,6 +55,10 @@ export interface OrderItemDetail {
   price: number;
   totalPrice: number;
   productImage?: string;
+  shippingWeightKg?: number | null;
+  shippingLengthCm?: number | null;
+  shippingBreadthCm?: number | null;
+  shippingHeightCm?: number | null;
 }
 
 export interface OrderPaymentRecord {
@@ -126,6 +130,13 @@ export interface AdminOrdersResponse {
   };
 }
 
+export interface OrderPackageDetails {
+  totalWeightKg?: number | null;
+  lengthCm?: number | null;
+  breadthCm?: number | null;
+  heightCm?: number | null;
+}
+
 export interface AdminOrderDetail extends AdminOrderItem {
   discount?: number;
   notes?: string | null;
@@ -138,6 +149,9 @@ export interface AdminOrderDetail extends AdminOrderItem {
   cancelReasonOther?: string | null;
   cancelledAt?: string | null;
   returns?: any[];
+  packageDetails?: OrderPackageDetails | null;
+  shiprocketOrderId?: string | null;
+  shiprocketShipmentId?: string | null;
 }
 
 export interface AdminOrderDetailResponse {

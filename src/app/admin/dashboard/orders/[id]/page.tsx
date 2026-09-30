@@ -470,6 +470,20 @@ export default function OrderDetailPage({
                             Variant: {item.variantName}
                           </p>
                         )}
+                        {(item.shippingWeightKg || item.shippingLengthCm) && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {item.shippingWeightKg && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-orange-50 text-[10px] font-bold text-[#FF7A00] border border-orange-200/60">
+                                {item.shippingWeightKg} kg
+                              </span>
+                            )}
+                            {item.shippingLengthCm && item.shippingBreadthCm && item.shippingHeightCm && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-600 border border-slate-200">
+                                {item.shippingLengthCm}×{item.shippingBreadthCm}×{item.shippingHeightCm} cm
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <p className="text-[10px] text-slate-400 font-mono">
                           ID: {item.productId.substring(0, 8)}...
                         </p>
@@ -607,6 +621,40 @@ export default function OrderDetailPage({
                         minute: "2-digit",
                       })
                     : "Standard 2-4 business days"}
+                </p>
+              </div>
+            </div>
+
+            {/* Shipping & Package Dimensions Details */}
+            <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/70">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">
+                  Total Package Weight
+                </span>
+                <p className="font-bold text-slate-800 text-xs sm:text-sm">
+                  {order.packageDetails?.totalWeightKg
+                    ? `${order.packageDetails.totalWeightKg} kg`
+                    : "Not Calculated"}
+                </p>
+              </div>
+
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">
+                  Package Dimensions (L × B × H)
+                </span>
+                <p className="font-bold text-slate-800 text-xs sm:text-sm font-mono">
+                  {order.packageDetails?.lengthCm && order.packageDetails?.breadthCm && order.packageDetails?.heightCm
+                    ? `${order.packageDetails.lengthCm} × ${order.packageDetails.breadthCm} × ${order.packageDetails.heightCm} cm`
+                    : "Not Set"}
+                </p>
+              </div>
+
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">
+                  Shiprocket Reference
+                </span>
+                <p className="font-bold text-slate-800 text-xs truncate">
+                  {order.shiprocketOrderId ? `ID: #${order.shiprocketOrderId}` : "Pending Creation"}
                 </p>
               </div>
             </div>
