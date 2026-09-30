@@ -188,7 +188,7 @@ export default function ShipmentsPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-12 w-full min-w-0">
+    <div className="flex flex-col gap-4 sm:gap-6 pb-12 w-full min-w-0">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
         <div>
@@ -382,8 +382,7 @@ export default function ShipmentsPage() {
           - Active Removable Filter Chips (only when filters active)
           - NO permanent scrollable pill row taking up screen space!
           ========================================================= */}
-      <div className="sticky top-0 z-20 bg-[#ECE6DE]/95 backdrop-blur-md -mx-3 px-3 sm:-mx-4 sm:px-4 pt-1.5 pb-2.5 md:static md:bg-transparent md:p-0 md:m-0 space-y-2">
-        <div className="clay-card p-2.5 sm:p-3 space-y-2 min-w-0 shadow-sm md:shadow-none">
+      <div className="clay-card p-3 sm:p-4 space-y-3 min-w-0">
           {/* Controls: Stacked on mobile (Row 1 search, Row 2 filters+courier), single-row on sm+ */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
             {/* Search Input (44px min height, full width on mobile) */}
@@ -508,7 +507,6 @@ export default function ShipmentsPage() {
               </button>
             </div>
           )}
-        </div>
       </div>
 
       {/* Error state */}
@@ -532,16 +530,39 @@ export default function ShipmentsPage() {
 
       {/* Empty State */}
       {!loading && !error && shipments.length === 0 && (
-        <div className="clay-card p-10 text-center space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto">
-            <Truck className="h-6 w-6" />
+        <div className="clay-card p-10 sm:p-14 text-center space-y-4 max-w-xl mx-auto w-full">
+          <div className="h-14 w-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto shadow-xs">
+            <Truck className="h-7 w-7" />
           </div>
-          <h3 className="font-fraunces text-base font-bold text-slate-800">
-            No Shipments Found
-          </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            No shipments match the selected filters or search keyword. Try resetting your search or filter parameters.
-          </p>
+          <div className="space-y-1.5">
+            <h3 className="font-fraunces text-lg sm:text-xl font-bold text-slate-800">
+              {search || activeFiltersCount > 0
+                ? "No Shipments Found"
+                : "No Shipments Recorded Yet"}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              {search || activeFiltersCount > 0
+                ? "No shipments match the selected filters or search keyword. Try resetting your search or filter parameters."
+                : "Active courier dispatches, manifests, and tracking records will appear here once orders are processed."}
+            </p>
+          </div>
+          {(search || activeFiltersCount > 0) && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("ALL");
+                  setCourierFilter("ALL");
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>Reset All Filters</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
