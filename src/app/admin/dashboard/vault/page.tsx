@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   KeyRound,
   Plus,
-  Search,
   RefreshCw,
   Copy,
   Check,
@@ -49,9 +48,7 @@ export default function PasswordVaultPage() {
   const [error, setError] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Filters & Search
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+
 
   // Show/Hide Password state map (id -> boolean)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -78,10 +75,7 @@ export default function PasswordVaultPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await AdminVaultService.getCredentials({
-        search: search.trim() || undefined,
-        category: selectedCategory !== "ALL" ? selectedCategory : undefined,
-      });
+      const res = await AdminVaultService.getCredentials();
       setCredentials(res.data.credentials || []);
       setCategoriesSummary(res.data.summary.categories || []);
     } catch (err) {
@@ -89,7 +83,7 @@ export default function PasswordVaultPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategory]);
+  }, []);
 
   useEffect(() => {
     fetchCredentials();
@@ -240,13 +234,24 @@ export default function PasswordVaultPage() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="clay-btn-orange inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer self-start sm:self-auto min-h-[44px]"
-        >
-          <Plus className="h-4 w-4 stroke-[2.5]" />
-          <span>Add New Credential</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={fetchCredentials}
+            disabled={loading}
+            className="clay-button px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
+            title="Refresh Vault"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="clay-btn-orange inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer min-h-[44px]"
+          >
+            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <span>Add New Credential</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary KPI Cards */}
@@ -282,58 +287,7 @@ export default function PasswordVaultPage() {
         </div>
       </div>
 
-      {/* Filter Bar & Search */}
-      <div className="clay-card p-3.5 sm:p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          
-          {/* Search Bar */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by service title, username, email, notes or URL..."
-              className="clay-inset w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 min-h-[40px]"
-            />
-          </div>
 
-          <button
-            onClick={fetchCredentials}
-            className="clay-button px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
-          <button
-            onClick={() => setSelectedCategory("ALL")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer min-h-[36px] ${
-              selectedCategory === "ALL"
-                ? "bg-[#EA580C] text-white shadow-xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            All Services ({credentials.length})
-          </button>
-          {PRESET_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer min-h-[36px] ${
-                selectedCategory === cat
-                  ? "bg-[#EA580C] text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Error state */}
       {error && (
@@ -363,9 +317,7 @@ export default function PasswordVaultPage() {
             No Credentials Found
           </h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
-            {search || selectedCategory !== "ALL"
-              ? "No vault items match your search criteria."
-              : "Your password vault is empty. Click \"Add New Credential\" to store your Render login or service passwords safely."}
+            Your password vault is empty. Click &quot;Add New Credential&quot; to store your Render login or service passwords safely.
           </p>
           <button
             onClick={openCreateModal}

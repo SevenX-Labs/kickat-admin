@@ -1135,7 +1135,7 @@ export default function DashboardPage() {
                   {isSavingTargets ? (
                     <>
                       <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Saving...</span>
+                      <span>Saving...</span>e
                     </>
                   ) : (
                     <span>Save Targets</span>
