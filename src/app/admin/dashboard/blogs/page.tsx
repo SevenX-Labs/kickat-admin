@@ -34,6 +34,8 @@ import {
   UpdateBlogPostInput,
 } from "@/types/admin-blog";
 import AdminBlogService from "@/services/adminBlogService";
+import { BlogSectionEditor } from "@/components/blogs/BlogSectionEditor";
+import { BlogContentRenderer } from "@/components/blogs/BlogContentRenderer";
 import AdminUploadService from "@/services/adminUploadService";
 
 const CATEGORY_GRADIENTS = [
@@ -1165,15 +1167,11 @@ export default function BlogsPage() {
                 />
               </div>
 
-              {/* Full Content */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Article Content *</label>
-                <textarea
-                  rows={7}
+              {/* Full Content & Structured Sections */}
+              <div className="space-y-1.5 pt-1">
+                <BlogSectionEditor
                   value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  placeholder="Write the complete article content here (supports Markdown and paragraph breaks)..."
-                  className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 p-2.5 text-xs font-medium text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition font-sans leading-relaxed"
+                  onChange={setFormContent}
                   required
                 />
               </div>
@@ -1419,8 +1417,8 @@ export default function BlogsPage() {
             )}
 
             {/* Full Body Content */}
-            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
-              {previewItem.content}
+            <div className="py-2 border-t border-slate-100">
+              <BlogContentRenderer content={previewItem.content || ""} />
             </div>
 
             {/* Tags */}
