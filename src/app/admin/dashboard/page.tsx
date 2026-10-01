@@ -970,7 +970,7 @@ export default function DashboardPage() {
           <div className="pt-3 flex justify-end z-10 select-none">
             <Link
               href="/admin/dashboard/products"
-              className="clay-button flex h-9 w-9 rounded-full items-center justify-center text-base bg-gradient-to-br from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white shadow-xs hover:scale-105 transition min-h-[36px] min-w-[36px]"
+              className="clay-btn-orange flex h-9 w-9 rounded-full items-center justify-center text-base shadow-xs hover:scale-105 transition min-h-[36px] min-w-[36px]"
               title="Manage Products & Inventory"
             >
               🐾
@@ -1130,7 +1130,7 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={isSavingTargets}
-                  className="clay-button px-4 py-2 text-xs font-extrabold bg-gradient-to-r from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white hover:opacity-95 shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 min-h-[44px]"
+                  className="clay-btn-orange px-5 py-2 text-xs font-extrabold shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 min-h-[44px]"
                 >
                   {isSavingTargets ? (
                     <>

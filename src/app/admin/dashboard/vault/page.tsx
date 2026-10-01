@@ -647,7 +647,7 @@ export default function PasswordVaultPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="clay-button px-5 py-2 text-xs font-extrabold bg-gradient-to-r from-[#FF8C38] via-[#F97316] to-[#EA580C] text-white hover:opacity-95 shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 min-h-[44px]"
+                  className="clay-btn-orange px-5 py-2 text-xs font-extrabold shadow-md cursor-pointer transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 min-h-[44px]"
                 >
                   {isSubmitting ? (
                     <>
@@ -692,9 +692,16 @@ export default function PasswordVaultPage() {
               <button
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="clay-button px-4 py-2 text-xs font-extrabold bg-rose-600 text-white hover:bg-rose-700 transition cursor-pointer flex items-center gap-1 min-h-[40px]"
+                className="clay-btn-rose px-5 py-2 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Delete Credential"}
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete Credential</span>
+                )}
               </button>
             </div>
           </div>

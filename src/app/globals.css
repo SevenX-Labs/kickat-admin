@@ -129,6 +129,24 @@
   transform: translateY(1px) scale(0.98);
 }
 
+/* Tactile Destructive Rose Clay Button */
+.clay-btn-rose {
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%) !important;
+  color: #FFFFFF !important;
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.15s ease;
+}
+.clay-btn-rose:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.35);
+}
+.clay-btn-rose:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+
 /* Rounded Clay Buttons */
 .clay-button {
   background: #FFFFFF;
