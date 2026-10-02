@@ -134,9 +134,6 @@ export default function SettingsPage() {
       if (data.payment) {
         if (data.payment.razorpay) {
           setRazorpayEnabled(data.payment.razorpay.enabled ?? true);
-          setRazorpayKeyId(data.payment.razorpay.keyId || "");
-          setRazorpayKeySecret(data.payment.razorpay.keySecret || "");
-          setRazorpayWebhookSecret(data.payment.razorpay.webhookSecret || "");
         }
 
         if (data.payment.cod) {
@@ -231,9 +228,6 @@ export default function SettingsPage() {
         payment: {
           razorpay: {
             enabled: razorpayEnabled,
-            ...(razorpayKeyId && { keyId: razorpayKeyId.trim() }),
-            ...(razorpayKeySecret && { keySecret: razorpayKeySecret.trim() }),
-            ...(razorpayWebhookSecret && { webhookSecret: razorpayWebhookSecret.trim() }),
           },
           cod: {
             enabled: codEnabled,
@@ -595,14 +589,25 @@ export default function SettingsPage() {
               </div>
 
               {/* Razorpay Subsection */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                    <Key className="h-4 w-4 text-indigo-600" />
-                    <span>Razorpay Integration</span>
-                  </h3>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="text-xs font-bold text-slate-700">Enable Razorpay</span>
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-50/60 to-slate-50 border border-indigo-100/80 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-indigo-600" />
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                        Razorpay Payment Gateway
+                      </h3>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <ShieldCheck className="h-3 w-3" />
+                        Connected via Server Environment (.env)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 max-w-2xl">
+                      Online payments (UPI, Cards, Net Banking, and Wallets) are securely authenticated using your server environment credentials (<code className="font-mono bg-indigo-100/60 text-indigo-900 px-1 py-0.5 rounded text-[10px]">RAZORPAY_KEY_ID</code> & <code className="font-mono bg-indigo-100/60 text-indigo-900 px-1 py-0.5 rounded text-[10px]">RAZORPAY_KEY_SECRET</code>).
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2.5 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-indigo-200/80 shadow-xs hover:border-indigo-300 transition shrink-0">
+                    <span className="text-xs font-bold text-slate-700">Enable Gateway</span>
                     <input
                       type="checkbox"
                       checked={razorpayEnabled}
@@ -611,41 +616,6 @@ export default function SettingsPage() {
                     />
                   </label>
                 </div>
-
-                {razorpayEnabled && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <div className="space-y-1">
-                      <label className="block text-[11px] font-bold text-slate-700">Key ID</label>
-                      <input
-                        type="text"
-                        value={razorpayKeyId}
-                        onChange={(e) => setRazorpayKeyId(e.target.value)}
-                        placeholder="rzp_live_..."
-                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-[11px] font-bold text-slate-700">Key Secret</label>
-                      <input
-                        type="password"
-                        value={razorpayKeySecret}
-                        onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-[11px] font-bold text-slate-700">Webhook Secret</label>
-                      <input
-                        type="password"
-                        value={razorpayWebhookSecret}
-                        onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full rounded-xl bg-white border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 transition"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* COD Subsection */}
