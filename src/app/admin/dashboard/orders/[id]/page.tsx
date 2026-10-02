@@ -531,8 +531,8 @@ export default function OrderDetailPage({
               </div>
 
               <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                <span>Applicable GST (CGST + SGST 18% included)</span>
-                <span>₹{(order.subtotal * 0.18).toFixed(2)}</span>
+                <span>Applicable GST {order.gstPercentage ? `(${order.gstPercentage}% included)` : ""}</span>
+                <span>₹{(order.gstAmount ?? (order.gstPercentage ? (order.subtotal * (order.gstPercentage / 100)) : 0)).toFixed(2)}</span>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-sm sm:text-base font-black text-[#2A241E]">

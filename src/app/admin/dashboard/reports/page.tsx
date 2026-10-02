@@ -240,7 +240,7 @@ export default function ReportsPage() {
                 <Receipt className="h-4 w-4 text-indigo-500 shrink-0" />
               </div>
               <p className="text-xl sm:text-2xl font-black text-[#2A241E] mt-1.5">{formatCurrency(gstCollected)}</p>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">Standard 18% tax</p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 truncate">GST tax collected</p>
             </div>
 
             <div className="clay-card p-3.5 sm:p-4 min-w-0">

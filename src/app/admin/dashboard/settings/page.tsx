@@ -163,7 +163,7 @@ export default function SettingsPage() {
       // Delivery
       if (data.delivery) {
         setDeliveryFeeEnabled(data.delivery.deliveryFeeEnabled ?? true);
-        setDeliveryFee(data.delivery.deliveryFee ?? 50);
+        setDeliveryFee(data.delivery.deliveryFee ?? 0);
         setFreeDeliveryThreshold(data.delivery.freeDeliveryThreshold ?? 499);
         setEstimatedDays(data.delivery.estimatedDays ?? 3);
         setCourierDefault(data.delivery.courierDefault || "Delhivery");
