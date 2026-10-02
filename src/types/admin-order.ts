@@ -87,6 +87,8 @@ export interface AdminOrderItem {
   paymentMethod: string;
   subtotal: number;
   deliveryFee: number;
+  gstPercentage?: number | null;
+  gstAmount?: number | null;
   grandTotal: number;
   itemsCount: number;
   itemsSummary: string;
