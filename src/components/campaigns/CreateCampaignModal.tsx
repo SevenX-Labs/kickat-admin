@@ -271,7 +271,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             <textarea
               rows={4}
               required
-              placeholder="Hi {{name}}, enjoy 15% off all monsoon gear with code {{code}} at kickat.co.in!"
+              placeholder="Hi {{name}}, enjoy 15% off all monsoon gear with code {{code}} at kickat.in!"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition"

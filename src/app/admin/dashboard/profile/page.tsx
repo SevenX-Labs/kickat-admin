@@ -23,7 +23,7 @@ export default function AdminProfilePage() {
   const [adminId, setAdminId] = useState("kickat2021");
   const [firstName, setFirstName] = useState("Super");
   const [lastName, setLastName] = useState("Admin");
-  const [email, setEmail] = useState("admin@kickat.co.in");
+  const [email, setEmail] = useState("admin@kickat.in");
   const [role, setRole] = useState("SUPER_ADMIN");
   const [phone, setPhone] = useState("+91 98200 12345");
   
@@ -227,7 +227,7 @@ export default function AdminProfilePage() {
           </div>
           <div className="clay-inset p-3 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">API Base</span>
-            <p className="text-xs font-bold text-emerald-600 truncate">kickat.co.in</p>
+            <p className="text-xs font-bold text-emerald-600 truncate">kickat.in</p>
           </div>
           <div className="clay-inset p-3 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-eyebrow">Active Sessions</span>

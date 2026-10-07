@@ -1018,7 +1018,7 @@ export default function TestimonialsPage() {
                   type="url"
                   value={formAvatar}
                   onChange={(e) => setFormAvatar(e.target.value)}
-                  placeholder="https://cdn.kickat.co.in/avatars/priya.png"
+                  placeholder="https://cdn.kickat.in/avatars/priya.png"
                   className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/60 p-2.5 text-xs text-slate-800 outline-none focus:bg-white focus:border-orange-400 transition"
                 />
               </div>

@@ -160,7 +160,7 @@ export function ReviewSummary({
           <div>
             <span className="text-[11px] text-slate-400 font-medium block">Store Link</span>
             <p className="text-xs text-slate-600 truncate mt-0.5 font-mono">
-              kickat.co.in/products/{slug || "pending"}
+              kickat.in/products/{slug || "pending"}
             </p>
           </div>
         </div>

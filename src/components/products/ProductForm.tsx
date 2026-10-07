@@ -1336,7 +1336,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                       </button>
                     </div>
                     <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-600">
-                      <span className="text-slate-400 shrink-0">kickat.co.in/products/</span>
+                      <span className="text-slate-400 shrink-0">kickat.in/products/</span>
                       <input
                         type="text"
                         value={slug}
@@ -2593,7 +2593,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                         {seoTitle || name || "Product Title - KickAt Pet Store"}
                       </p>
                       <p className="text-[10px] text-emerald-700 font-mono">
-                        kickat.co.in › products › {slug || "product-name"}
+                        kickat.in › products › {slug || "product-name"}
                       </p>
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                         {seoDescription ||

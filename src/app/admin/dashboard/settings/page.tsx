@@ -57,7 +57,7 @@ export default function SettingsPage() {
 
   // CARD 1: General Settings
   const [storeName, setStoreName] = useState("Kickat");
-  const [supportEmail, setSupportEmail] = useState("support@kickat.co.in");
+  const [supportEmail, setSupportEmail] = useState("support@kickat.in");
   const [supportPhone, setSupportPhone] = useState("+91 98765 43210");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -118,7 +118,7 @@ export default function SettingsPage() {
       // General
       if (data.general) {
         setStoreName(data.general.storeName || "Kickat");
-        setSupportEmail(data.general.supportEmail || "support@kickat.co.in");
+        setSupportEmail(data.general.supportEmail || "support@kickat.in");
         setSupportPhone(data.general.supportPhone || "+91 98765 43210");
         setMaintenanceMode(Boolean(data.general.maintenanceMode));
         if (data.general.socialLinks) {
@@ -471,7 +471,7 @@ export default function SettingsPage() {
                     required
                     value={supportEmail}
                     onChange={(e) => setSupportEmail(e.target.value)}
-                    placeholder="support@kickat.co.in"
+                    placeholder="support@kickat.in"
                     className="w-full rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-800 outline-hidden focus:bg-white focus:border-orange-500 transition"
                   />
                 </div>

@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth";
 
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.kickat.co.in/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.kickat.in/api/v1";
 
 interface QueueItem {
   resolve: (token: string) => void;
@@ -144,7 +144,7 @@ function attachAuthInterceptors(instance: AxiosInstance) {
 }
 
 /**
- * Root API client targeting base URL (default: https://api.kickat.co.in/api/v1)
+ * Root API client targeting base URL (default: https://api.kickat.in/api/v1)
  * Used across the application for orders, products, customers, and root routes.
  */
 export const apiClient = axios.create({
