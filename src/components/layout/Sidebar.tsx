@@ -85,7 +85,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onLogoutClick, o
               {!isCollapsed && (
                 <div className="flex flex-col">
                   <span className="font-fraunces text-lg font-bold text-[#2A241E] leading-tight">
-                    Kickat
+                    KickAt
                   </span>
                   <span className="text-[10px] font-bold text-orange-600 tracking-wider uppercase font-mono-eyebrow">
                     Admin Hub
