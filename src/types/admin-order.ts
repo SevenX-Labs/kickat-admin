@@ -188,6 +188,35 @@ export interface AdminCancelOrderDto {
   restockItems?: boolean;
 }
 
+/**
+ * Response of POST /admin/orders/:id/cancel. `refund` and
+ * `shipmentCancellation` are additive outcome reports: the server cancels the
+ * courier shipment and refunds a captured payment automatically.
+ */
+export interface AdminCancelOrderResult {
+  success: boolean;
+  message: string;
+  data: any;
+  refund?: {
+    attempted: boolean;
+    success: boolean;
+    status:
+      | 'NOT_REQUIRED'
+      | 'ALREADY_REFUNDED'
+      | 'INITIATED'
+      | 'FAILED'
+      | 'UNAVAILABLE';
+    amount: number | null;
+    reason: string;
+    providerRefundId: string | null;
+  };
+  shipmentCancellation?: {
+    attempted: boolean;
+    success: boolean;
+    message: string;
+  };
+}
+
 export interface AdminRefundOrderDto {
   amount?: number;
   reason: string;

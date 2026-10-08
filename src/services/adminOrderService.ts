@@ -7,6 +7,7 @@ import {
   AdminOrdersQuery,
   UpdateOrderStatusDto,
   AdminCancelOrderDto,
+  AdminCancelOrderResult,
   AdminRefundOrderDto,
   OrderInvoiceResponse,
   OrderPackingSlipResponse,
@@ -58,12 +59,11 @@ export const AdminOrderService = {
   async cancelOrder(
     id: string,
     payload: AdminCancelOrderDto
-  ): Promise<{ success: boolean; message: string; data: any }> {
-    const res = await apiClient.post<{
-      success: boolean;
-      message: string;
-      data: any;
-    }>(`/admin/orders/${encodeURIComponent(id)}/cancel`, payload);
+  ): Promise<AdminCancelOrderResult> {
+    const res = await apiClient.post<AdminCancelOrderResult>(
+      `/admin/orders/${encodeURIComponent(id)}/cancel`,
+      payload
+    );
     return res.data;
   },
 

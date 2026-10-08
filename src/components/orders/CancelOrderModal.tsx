@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { X, AlertTriangle, RotateCcw, Loader2, AlertCircle } from "lucide-react";
-import { AdminCancelOrderDto } from "@/types/admin-order";
+import { AdminCancelOrderDto, AdminCancelOrderResult } from "@/types/admin-order";
 import { AdminOrderService } from "@/services/adminOrderService";
 
 interface CancelOrderModalProps {
@@ -10,7 +10,10 @@ interface CancelOrderModalProps {
   orderNumber: string;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (cancelledData: any) => void;
+  onSuccess: (result: AdminCancelOrderResult) => void;
+  /** Optional: enables the "this also refunds" note for a paid order. */
+  paymentStatus?: string;
+  grandTotal?: number;
 }
 
 const CANCEL_REASONS = [
@@ -29,6 +32,8 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  paymentStatus,
+  grandTotal,
 }) => {
   const [reason, setReason] = useState(CANCEL_REASONS[0]);
   const [reasonOther, setReasonOther] = useState("");
@@ -37,6 +42,8 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const isPaid = paymentStatus === "COMPLETED";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +58,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
       };
 
       const res = await AdminOrderService.cancelOrder(orderId, payload);
-      onSuccess(res.data);
+      onSuccess(res);
       onClose();
     } catch (err) {
       setError(AdminOrderService.extractErrorMessage(err, "Failed to cancel order"));
@@ -94,7 +101,18 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
         <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-2.5 text-amber-800 text-xs">
           <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold">Important Notice:</span> Cancelling this order will permanently stop fulfillment. If the customer has already paid, you can process a full or partial refund subsequently.
+            <span className="font-bold">Important Notice:</span> Cancelling this order will permanently stop fulfillment and cancel the courier shipment.
+            {isPaid ? (
+              <>
+                {" "}This order is paid, so a refund of{" "}
+                <span className="font-bold">
+                  {grandTotal != null ? `₹${grandTotal}` : "the order total"}
+                </span>{" "}
+                will be initiated to the customer automatically.
+              </>
+            ) : (
+              " No payment has been captured, so no refund is needed."
+            )}
           </div>
         </div>
 

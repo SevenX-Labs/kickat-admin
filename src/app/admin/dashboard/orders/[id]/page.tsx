@@ -827,10 +827,27 @@ export default function OrderDetailPage({
         <CancelOrderModal
           orderId={order.id}
           orderNumber={order.orderNumber}
+          paymentStatus={order.paymentStatus}
+          grandTotal={order.grandTotal}
           isOpen={isCancelModalOpen}
           onClose={() => setIsCancelModalOpen(false)}
-          onSuccess={() => {
-            showToast("Order cancelled and inventory restocked.");
+          onSuccess={(result) => {
+            const refund = result.refund;
+            let note = "Order cancelled and inventory restocked.";
+            if (refund?.success && refund.status === "INITIATED") {
+              note += ` Refund of ₹${refund.amount} initiated.`;
+            } else if (refund?.attempted && !refund.success) {
+              note += " Refund could not be initiated — process it manually.";
+            } else if (refund?.status === "ALREADY_REFUNDED") {
+              note += " A refund was already recorded for this order.";
+            }
+            if (
+              result.shipmentCancellation?.attempted &&
+              !result.shipmentCancellation.success
+            ) {
+              note += " Cancel the courier shipment in Shiprocket manually.";
+            }
+            showToast(note);
             fetchOrder();
           }}
         />
