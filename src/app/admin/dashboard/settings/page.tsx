@@ -380,12 +380,12 @@ export default function SettingsPage() {
             Configure platform branding, payment gateways, GST tax computation, shipping fees, and security.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadAllSettings}
             disabled={loading || saving}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-orange-600" : ""}`} />
             <span>Reload</span>
@@ -394,7 +394,7 @@ export default function SettingsPage() {
             type="button"
             onClick={handleSaveAllSettings}
             disabled={saving || loading}
-            className="clay-btn-orange inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition cursor-pointer disabled:opacity-60"
+            className="flex-1 sm:flex-initial clay-btn-orange inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition cursor-pointer disabled:opacity-60"
           >
             {saving ? (
               <>
@@ -411,16 +411,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 text-xs font-bold shadow-xs">
+      {/* Navigation Tabs - Responsive Grid without horizontal scrolling */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-slate-100/90 rounded-2xl border border-slate-200/70 text-xs font-bold shadow-xs">
         {[
-          { id: "all", label: "All Settings", icon: Globe },
-          { id: "general", label: "General & Branding", icon: Building2 },
-          { id: "manufacturing", label: "Manufacturing & Compliance", icon: Factory },
-          { id: "payment", label: "Payments & Gateway", icon: CreditCard },
-          { id: "tax", label: "Tax & GST", icon: Receipt },
-          { id: "delivery", label: "Shipping & Handling", icon: Truck },
-          { id: "security", label: "Security & Password", icon: ShieldCheck },
+          { id: "all", label: "All", icon: Globe },
+          { id: "general", label: "General", icon: Building2 },
+          { id: "manufacturing", label: "Manufacturing", icon: Factory },
+          { id: "payment", label: "Payments", icon: CreditCard },
+          { id: "tax", label: "Taxes", icon: Receipt },
+          { id: "delivery", label: "Shipping", icon: Truck },
+          { id: "security", label: "Security", icon: ShieldCheck },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -429,14 +429,14 @@ export default function SettingsPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-150 cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-2.5 py-2.5 rounded-xl transition-all duration-150 cursor-pointer text-xs font-bold select-none ${
                 isActive
                   ? "bg-white text-orange-600 shadow-xs font-extrabold ring-1 ring-slate-200/80"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
+              } ${tab.id === "security" ? "col-span-2 sm:col-span-1" : ""}`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-orange-600" : "text-slate-500"}`} />
-              <span>{tab.label}</span>
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}
