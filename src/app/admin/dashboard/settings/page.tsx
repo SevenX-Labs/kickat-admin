@@ -2,6 +2,7 @@
 
 import {
   Globe,
+  Factory,
   CreditCard,
   Receipt,
   Truck,
@@ -415,6 +416,7 @@ export default function SettingsPage() {
         {[
           { id: "all", label: "All Settings", icon: Globe },
           { id: "general", label: "General & Branding", icon: Building2 },
+          { id: "manufacturing", label: "Manufacturing & Compliance", icon: Factory },
           { id: "payment", label: "Payments & Gateway", icon: CreditCard },
           { id: "tax", label: "Tax & GST", icon: Receipt },
           { id: "delivery", label: "Shipping & Handling", icon: Truck },
@@ -599,6 +601,150 @@ export default function SettingsPage() {
                       className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
                     />
                   </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* SECTION: MANUFACTURING & LEGAL COMPLIANCE */}
+          {(activeTab === "all" || activeTab === "manufacturing") && (
+            <section className="clay-card p-5 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+                    <Factory className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-fraunces text-base sm:text-lg font-bold text-[#2A241E]">
+                      Manufacturing &amp; Legal Compliance
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Mandatory product origin, manufacturer details, and consumer grievance contacts for e-commerce
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Manufacturer Name
+                  </label>
+                  <input
+                    type="text"
+                    value={manufacturerName}
+                    onChange={(e) => setManufacturerName(e.target.value)}
+                    placeholder="e.g. KickAt Pet Care Private Limited"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Marketed By
+                  </label>
+                  <input
+                    type="text"
+                    value={marketedBy}
+                    onChange={(e) => setMarketedBy(e.target.value)}
+                    placeholder="e.g. KickAt Pet Care Private Limited"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  Manufacturer Facility &amp; Address
+                </label>
+                <textarea
+                  rows={2}
+                  value={manufacturerAddress}
+                  onChange={(e) => setManufacturerAddress(e.target.value)}
+                  placeholder="e.g. Unit No. 4, Plot 12, MIDC Industrial Area, Mumbai, Maharashtra – 400093, India"
+                  className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Country of Origin
+                  </label>
+                  <input
+                    type="text"
+                    value={countryOfOrigin}
+                    onChange={(e) => setCountryOfOrigin(e.target.value)}
+                    placeholder="e.g. India"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Consumer Care Email
+                  </label>
+                  <input
+                    type="email"
+                    value={mfgConsumerCareEmail}
+                    onChange={(e) => setMfgConsumerCareEmail(e.target.value)}
+                    placeholder="e.g. support@kickat.in"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Consumer Care Helpline
+                  </label>
+                  <input
+                    type="text"
+                    value={mfgConsumerCarePhone}
+                    onChange={(e) => setMfgConsumerCarePhone(e.target.value)}
+                    placeholder="e.g. +91 98765 43210"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Quality Standard / Certs
+                  </label>
+                  <input
+                    type="text"
+                    value={qualityStandard}
+                    onChange={(e) => setQualityStandard(e.target.value)}
+                    placeholder="e.g. ISO 9001:2015 & GMP Certified"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    CIN / Registration No.
+                  </label>
+                  <input
+                    type="text"
+                    value={cinNumber}
+                    onChange={(e) => setCinNumber(e.target.value)}
+                    placeholder="e.g. U24230MH2024PTC123456"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Default Shelf Life
+                  </label>
+                  <input
+                    type="text"
+                    value={shelfLife}
+                    onChange={(e) => setShelfLife(e.target.value)}
+                    placeholder="e.g. 24 Months from PKD"
+                    className="w-full rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 focus:bg-white focus:border-orange-500 transition"
+                  />
                 </div>
               </div>
             </section>
