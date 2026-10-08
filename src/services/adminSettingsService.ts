@@ -9,6 +9,7 @@ import {
   PaymentSettingsState,
   PublicSettings,
   TaxSettingsState,
+  ManufacturingSettingsState,
   UpdateAllSettingsDto,
 } from "../types/admin-settings";
 
@@ -139,6 +140,29 @@ export const AdminSettingsService = {
   ): Promise<AdminSettingsResponse<DeliverySettingsState>> {
     const res = await api.patch<AdminSettingsResponse<DeliverySettingsState>>(
       "/admin/settings/delivery",
+      payload
+    );
+    return res.data;
+  },
+
+  /**
+   * GET /api/v1/admin/settings/manufacturing
+   */
+  async getManufacturing(): Promise<AdminSettingsResponse<ManufacturingSettingsState>> {
+    const res = await api.get<AdminSettingsResponse<ManufacturingSettingsState>>(
+      "/admin/settings/manufacturing"
+    );
+    return res.data;
+  },
+
+  /**
+   * PATCH /api/v1/admin/settings/manufacturing
+   */
+  async updateManufacturing(
+    payload: Partial<ManufacturingSettingsState>
+  ): Promise<AdminSettingsResponse<ManufacturingSettingsState>> {
+    const res = await api.patch<AdminSettingsResponse<ManufacturingSettingsState>>(
+      "/admin/settings/manufacturing",
       payload
     );
     return res.data;

@@ -1,3 +1,15 @@
+export interface ManufacturingSettingsState {
+  manufacturerName: string;
+  manufacturerAddress: string;
+  marketedBy: string;
+  countryOfOrigin: string;
+  consumerCareEmail: string;
+  consumerCarePhone: string;
+  qualityStandard: string;
+  cinNumber: string;
+  shelfLife: string;
+}
+
 export interface SocialLinks {
   instagram?: string;
   facebook?: string;
@@ -67,6 +79,7 @@ export interface AdminSettingsForm {
   payment: PaymentSettingsState;
   tax: TaxSettingsState;
   delivery: DeliverySettingsState;
+  manufacturing?: ManufacturingSettingsState;
 }
 
 export interface UpdateAllSettingsDto {
@@ -74,6 +87,7 @@ export interface UpdateAllSettingsDto {
   payment?: Partial<PaymentSettingsState>;
   tax?: Partial<TaxSettingsState>;
   delivery?: Partial<DeliverySettingsState>;
+  manufacturing?: Partial<ManufacturingSettingsState>;
 }
 
 export interface AdminSettingsResponse<T = AdminSettingsForm> {
@@ -83,6 +97,7 @@ export interface AdminSettingsResponse<T = AdminSettingsForm> {
 }
 
 export interface PublicSettings {
+  manufacturing?: ManufacturingSettingsState | null;
   general: {
     storeName: string;
     socialLinks: SocialLinks;

@@ -34,7 +34,7 @@ import {
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
-    "all" | "general" | "payment" | "tax" | "delivery" | "security"
+    "all" | "general" | "manufacturing" | "payment" | "tax" | "delivery" | "security"
   >("all");
 
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,17 @@ export default function SettingsPage() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
+
+  // CARD 1.5: Manufacturing & Compliance
+  const [manufacturerName, setManufacturerName] = useState("");
+  const [manufacturerAddress, setManufacturerAddress] = useState("");
+  const [marketedBy, setMarketedBy] = useState("");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("India");
+  const [mfgConsumerCareEmail, setMfgConsumerCareEmail] = useState("support@kickat.in");
+  const [mfgConsumerCarePhone, setMfgConsumerCarePhone] = useState("+91 98765 43210");
+  const [qualityStandard, setQualityStandard] = useState("");
+  const [cinNumber, setCinNumber] = useState("");
+  const [shelfLife, setShelfLife] = useState("24 Months from PKD");
 
   // CARD 2: Payment Methods
   // Subsection 2A: Razorpay
@@ -128,6 +139,19 @@ export default function SettingsPage() {
           setTwitterUrl(data.general.socialLinks.twitter || "");
           setLinkedinUrl(data.general.socialLinks.linkedin || "");
         }
+      }
+
+      // Manufacturing
+      if (data.manufacturing) {
+        setManufacturerName(data.manufacturing.manufacturerName || "");
+        setManufacturerAddress(data.manufacturing.manufacturerAddress || "");
+        setMarketedBy(data.manufacturing.marketedBy || "");
+        setCountryOfOrigin(data.manufacturing.countryOfOrigin || "India");
+        setMfgConsumerCareEmail(data.manufacturing.consumerCareEmail || "support@kickat.in");
+        setMfgConsumerCarePhone(data.manufacturing.consumerCarePhone || "+91 98765 43210");
+        setQualityStandard(data.manufacturing.qualityStandard || "");
+        setCinNumber(data.manufacturing.cinNumber || "");
+        setShelfLife(data.manufacturing.shelfLife || "24 Months from PKD");
       }
 
       // Payment
@@ -224,6 +248,17 @@ export default function SettingsPage() {
             ...(twitterUrl.trim() && { twitter: /^https?:\/\//i.test(twitterUrl.trim()) ? twitterUrl.trim() : "https://" + twitterUrl.trim() }),
             ...(linkedinUrl.trim() && { linkedin: /^https?:\/\//i.test(linkedinUrl.trim()) ? linkedinUrl.trim() : "https://" + linkedinUrl.trim() }),
           },
+        },
+        manufacturing: {
+          manufacturerName: manufacturerName.trim(),
+          manufacturerAddress: manufacturerAddress.trim(),
+          marketedBy: marketedBy.trim(),
+          countryOfOrigin: countryOfOrigin.trim(),
+          consumerCareEmail: mfgConsumerCareEmail.trim(),
+          consumerCarePhone: mfgConsumerCarePhone.trim(),
+          qualityStandard: qualityStandard.trim(),
+          cinNumber: cinNumber.trim(),
+          shelfLife: shelfLife.trim(),
         },
         payment: {
           razorpay: {
