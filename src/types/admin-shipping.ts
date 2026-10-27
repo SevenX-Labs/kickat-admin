@@ -27,6 +27,19 @@ export interface AdminShipmentDestination {
   fullAddress: string;
 }
 
+export interface AdminShipmentPackageItem {
+  id?: string;
+  productId: string;
+  productName: string;
+  variantName?: string | null;
+  sku?: string | null;
+  quantity: number;
+  price: number;
+  totalPrice?: number;
+  productImage?: string | null;
+  weightKg?: number | null;
+}
+
 export interface AdminShipmentItem {
   id: string;
   orderId?: string;
@@ -44,6 +57,35 @@ export interface AdminShipmentItem {
   trackingUrl: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface AdminShipmentDetail {
+  id: string;
+  orderId?: string;
+  shipmentNumber?: string;
+  orderNumber: string;
+  status: ShipmentStatus;
+  courierPartner: string | null;
+  awbNumber: string | null;
+  estimatedDelivery: string | null;
+  isRTO?: boolean;
+  trackingUrl?: string;
+  customer: AdminShipmentCustomer;
+  destination?: AdminShipmentDestination;
+  shippingAddress?: any;
+  items: AdminShipmentPackageItem[];
+  itemsCount: number;
+  itemsSummary?: string;
+  pickupLocation?: string;
+  notes?: string;
+  subtotal?: number;
+  deliveryFee?: number;
+  gstAmount?: number;
+  grandTotal?: number;
+  createdAt: string;
+  updatedAt?: string;
+  dispatchedAt?: string;
+  deliveredAt?: string;
 }
 
 export interface AdminShipmentPagination {
@@ -70,6 +112,7 @@ export interface AdminShipmentTrackingCheckpoint {
   status: string;
   location: string;
   timestamp: string;
+  description?: string;
 }
 
 export interface AdminShipmentTimelineItem {
