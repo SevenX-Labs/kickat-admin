@@ -409,14 +409,14 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
                 <span>Destination Address</span>
               </div>
               <p className="font-medium text-slate-800 leading-relaxed">
-                {detail?.destination.fullAddress ||
+                {detail?.destination?.fullAddress ||
                   shipment.destination?.fullAddress ||
                   `${shipment.customer.city || "Mumbai"} - ${shipment.customer.pincode || ""}`}
               </p>
               <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
-                <span>City: {detail?.destination.city || shipment.destination?.city || shipment.customer.city || "—"}</span>
+                <span>City: {detail?.destination?.city || shipment.destination?.city || shipment.customer.city || "—"}</span>
                 <span>•</span>
-                <span>Pincode: {detail?.destination.pincode || shipment.destination?.pincode || shipment.customer.pincode || "—"}</span>
+                <span>Pincode: {detail?.destination?.pincode || shipment.destination?.pincode || shipment.customer.pincode || "—"}</span>
               </div>
             </div>
           </div>

@@ -1022,8 +1022,8 @@ export default function ShipmentDetailPage({
                   Delivery Location
                 </span>
                 <p className="font-medium text-slate-800 leading-relaxed mt-1">
-                  {shipment.destination.fullAddress ||
-                    `${shipment.destination.city || shipment.customer.city || "Mumbai"}, ${shipment.destination.state || ""}`}
+                  {shipment.destination?.fullAddress ||
+                    `${shipment.destination?.city || shipment.customer.city || "Mumbai"}, ${shipment.destination?.state || ""}`}
                 </p>
               </div>
 
@@ -1033,7 +1033,7 @@ export default function ShipmentDetailPage({
                     City
                   </span>
                   <p className="font-bold text-slate-800 mt-0.5">
-                    {shipment.destination.city || shipment.customer.city || "—"}
+                    {shipment.destination?.city || shipment.customer.city || "—"}
                   </p>
                 </div>
 
@@ -1042,7 +1042,7 @@ export default function ShipmentDetailPage({
                     Pincode
                   </span>
                   <p className="font-mono font-bold text-slate-800 mt-0.5">
-                    {shipment.destination.pincode || shipment.customer.pincode || "—"}
+                    {shipment.destination?.pincode || shipment.customer.pincode || "—"}
                   </p>
                 </div>
               </div>
