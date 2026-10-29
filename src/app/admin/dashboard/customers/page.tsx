@@ -26,7 +26,9 @@ import {
   ShoppingBag,
   IndianRupee,
   Sparkles,
-  CheckSquare
+  CheckSquare,
+  Crown,
+  Star
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
@@ -46,6 +48,7 @@ export default function CustomersPage() {
     activeCustomersCount: 0,
     blockedCustomersCount: 0,
     verifiedCustomersCount: 0,
+    vipCustomersCount: 0,
   });
   const [pagination, setPagination] = useState<PaginationMeta>({
     total: 0,
@@ -59,7 +62,7 @@ export default function CustomersPage() {
   // Query / Filter state
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterTab, setFilterTab] = useState<"ALL" | "ACTIVE" | "BLOCKED" | "VERIFIED">("ALL");
+  const [filterTab, setFilterTab] = useState<"ALL" | "VIP" | "ACTIVE" | "BLOCKED" | "VERIFIED">("ALL");
   const [sortOption, setSortOption] = useState<AdminCustomerSortType>("createdAt_desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -126,7 +129,9 @@ export default function CustomersPage() {
         params.search = debouncedSearch.trim();
       }
 
-      if (filterTab === "ACTIVE") {
+      if (filterTab === "VIP") {
+        params.isVip = true;
+      } else if (filterTab === "ACTIVE") {
         params.isBlocked = false;
       } else if (filterTab === "BLOCKED") {
         params.isBlocked = true;
@@ -172,6 +177,24 @@ export default function CustomersPage() {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(customers.map((c) => c.id)));
+    }
+  };
+
+  // Toggle VIP Status handler
+  const handleToggleVip = async (c: AdminCustomerItem) => {
+    try {
+      const nextVip = !c.isVip;
+      const res = await AdminCustomerService.updateCustomerVip(c.id, nextVip);
+      showToast(
+        res.message ||
+        (nextVip
+          ? `Customer "${c.name}" marked as VIP member.`
+          : `Customer "${c.name}" VIP status removed.`)
+      );
+      fetchCustomers();
+    } catch (err: any) {
+      const msg = AdminCustomerService.extractErrorMessage(err, "Failed to update VIP status.");
+      showToast(msg);
     }
   };
 
@@ -354,7 +377,7 @@ export default function CustomersPage() {
       {/* =========================================================
           1. STAT CARDS ROW (Responsive Grid)
           ========================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 w-full min-w-0">
         {/* Metric 1: Total Customers */}
         <button
           type="button"
@@ -377,6 +400,31 @@ export default function CustomersPage() {
           </p>
           <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate block mt-0.5">
             Registered directory
+          </span>
+        </button>
+
+        {/* Metric 2: VIP Customers */}
+        <button
+          type="button"
+          onClick={() => {
+            setFilterTab("VIP");
+            setCurrentPage(1);
+          }}
+          className={`clay-card p-3.5 sm:p-4 min-h-[84px] flex flex-col justify-between text-left transition active:scale-95 cursor-pointer min-w-0 ${
+            filterTab === "VIP" ? "ring-2 ring-amber-500 bg-amber-50/30" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-600 min-w-0">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider font-mono-eyebrow truncate">
+              VIP Members
+            </span>
+            <Crown className="h-4 w-4 text-amber-500 fill-amber-400 shrink-0" />
+          </div>
+          <p className="font-fraunces text-xl sm:text-2xl font-black text-amber-600 mt-1 truncate">
+            {(summary.vipCustomersCount || 0).toLocaleString()}
+          </p>
+          <span className="text-[10px] sm:text-[11px] font-semibold text-amber-700/80 truncate block mt-0.5">
+            Exclusive patrons
           </span>
         </button>
 
@@ -486,6 +534,7 @@ export default function CustomersPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             {[
               { id: "ALL", label: "All Customers", count: summary.totalCustomers },
+              { id: "VIP", label: "VIP Members", count: summary.vipCustomersCount || 0 },
               { id: "ACTIVE", label: "Active", count: summary.activeCustomersCount },
               { id: "VERIFIED", label: "Verified", count: summary.verifiedCustomersCount },
               { id: "BLOCKED", label: "Blocked", count: summary.blockedCustomersCount },
@@ -703,13 +752,22 @@ export default function CustomersPage() {
                               {c.name.slice(0, 2).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <Link
                                   href={`/admin/dashboard/customers/${c.id}`}
                                   className="font-bold text-slate-900 hover:text-orange-600 transition truncate"
                                 >
                                   {c.name}
                                 </Link>
+                                {c.isVip && (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-50 to-amber-100 text-amber-800 border border-amber-300 shadow-xs"
+                                    title={c.vipSince ? `VIP Member since ${new Date(c.vipSince).toLocaleDateString("en-IN")}` : "VIP Member"}
+                                  >
+                                    <Crown className="h-3 w-3 fill-amber-400 text-amber-500" />
+                                    <span>VIP</span>
+                                  </span>
+                                )}
                                 {c.isEmailVerified && (
                                   <span title="Verified Account">
                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
@@ -788,8 +846,20 @@ export default function CustomersPage() {
                             </Link>
 
                             <button
+                              onClick={() => handleToggleVip(c)}
+                              className={`p-1.5 rounded-xl border transition cursor-pointer ${
+                                c.isVip
+                                  ? "bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100 shadow-xs"
+                                  : "bg-slate-50 border-slate-200 text-slate-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50/50"
+                              }`}
+                              title={c.isVip ? "Remove VIP Status" : "Mark as VIP"}
+                            >
+                              <Crown className={`h-4 w-4 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                            </button>
+
+                            <button
                               onClick={() => setSelectedCustomer(c)}
-                              className={`p-1.5 rounded-xl transition ${
+                              className={`p-1.5 rounded-xl transition cursor-pointer ${
                                 c.isBlocked
                                   ? "text-emerald-600 hover:bg-emerald-50"
                                   : "text-rose-600 hover:bg-rose-50"
@@ -841,13 +911,22 @@ export default function CustomersPage() {
                         {c.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Link
                             href={`/admin/dashboard/customers/${c.id}`}
                             className="font-bold text-slate-900 truncate text-sm"
                           >
                             {c.name}
                           </Link>
+                          {c.isVip && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-50 text-amber-800 border border-amber-300"
+                              title={c.vipSince ? `VIP since ${new Date(c.vipSince).toLocaleDateString("en-IN")}` : "VIP Member"}
+                            >
+                              <Crown className="h-2.5 w-2.5 fill-amber-400 text-amber-500" />
+                              <span>VIP</span>
+                            </span>
+                          )}
                           {c.isEmailVerified && (
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                           )}
@@ -892,6 +971,19 @@ export default function CustomersPage() {
                     </span>
 
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleVip(c)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          c.isVip
+                            ? "bg-amber-50 text-amber-800 border border-amber-300"
+                            : "bg-slate-50 text-slate-600 border border-slate-200 hover:text-amber-600"
+                        }`}
+                        title={c.isVip ? "Remove VIP Status" : "Mark as VIP"}
+                      >
+                        <Crown className={`h-3 w-3 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                        <span>{c.isVip ? "VIP" : "Make VIP"}</span>
+                      </button>
+
                       <button
                         onClick={() => setSelectedCustomer(c)}
                         className={`px-3 py-1 rounded-xl text-xs font-bold transition ${

@@ -25,7 +25,9 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Crown,
+  Star
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, use, useCallback } from "react";
@@ -61,6 +63,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [vipActionLoading, setVipActionLoading] = useState(false);
 
   // Internal staff notes (persisted per customer in localStorage)
   const [note, setNote] = useState("");
@@ -120,6 +123,36 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     if (typeof window !== "undefined") {
       localStorage.setItem(`ka_cust_note_${customerId}`, note);
       showToast("Internal note saved successfully!");
+    }
+  };
+
+  // Toggle customer VIP status
+  const handleVipToggle = async () => {
+    if (!customer) return;
+    setVipActionLoading(true);
+    try {
+      const nextVip = !customer.isVip;
+      const res = await AdminCustomerService.updateCustomerVip(customer.id, nextVip);
+      setCustomer((prev) =>
+        prev
+          ? {
+              ...prev,
+              isVip: nextVip,
+              vipSince: nextVip ? (prev.vipSince || new Date().toISOString()) : null,
+            }
+          : null
+      );
+      showToast(
+        res.message ||
+        (nextVip
+          ? "Customer marked as VIP member."
+          : "Customer VIP status removed.")
+      );
+    } catch (err: any) {
+      const msg = AdminCustomerService.extractErrorMessage(err, "Failed to update VIP status.");
+      showToast(msg);
+    } finally {
+      setVipActionLoading(false);
     }
   };
 
@@ -223,10 +256,20 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-fraunces text-xl sm:text-2xl font-bold tracking-tight text-[#2A241E] truncate">
                   {customer.name}
                 </h1>
+
+                {customer.isVip && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-amber-50 to-amber-100 text-amber-900 border border-amber-300 shadow-xs"
+                    title={customer.vipSince ? `VIP since ${new Date(customer.vipSince).toLocaleDateString("en-IN")}` : "VIP Member"}
+                  >
+                    <Crown className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                    <span>VIP Customer</span>
+                  </span>
+                )}
 
                 <span
                   className={`
@@ -247,6 +290,15 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                   month: "short",
                   year: "numeric",
                 })}
+                {customer.isVip && customer.vipSince && (
+                  <span className="text-amber-700 font-bold ml-2">
+                    • VIP since {new Date(customer.vipSince).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -254,6 +306,24 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 self-start sm:self-auto pl-11 sm:pl-0">
+          <button
+            onClick={handleVipToggle}
+            disabled={vipActionLoading}
+            className={`clay-button inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 ${
+              customer.isVip
+                ? "bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 shadow-xs"
+                : "bg-slate-50 text-slate-700 hover:text-amber-700 hover:bg-amber-50/60 border border-slate-200"
+            }`}
+            title={customer.isVip ? "Revoke VIP status" : "Mark customer as VIP"}
+          >
+            {vipActionLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Crown className={`h-3.5 w-3.5 ${customer.isVip ? "fill-amber-400 text-amber-500" : "text-slate-400"}`} />
+            )}
+            <span>{customer.isVip ? "Remove VIP" : "Mark as VIP"}</span>
+          </button>
+
           <button
             onClick={() => setIsBlockModalOpen(true)}
             className={`

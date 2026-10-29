@@ -7,6 +7,7 @@ import {
   CustomerAddressesResponse,
   CustomerPetsResponse,
   UpdateCustomerStatusResponse,
+  UpdateCustomerVipResponse,
   AdminCustomersQueryParams,
   CustomerOrdersQueryParams,
   AdminCustomerDetail,
@@ -86,6 +87,21 @@ export const AdminCustomerService = {
     const res = await apiClient.patch<UpdateCustomerStatusResponse>(
       `/admin/customers/${encodeURIComponent(id)}/status`,
       { isBlocked, reason }
+    );
+    return res.data;
+  },
+
+  /**
+   * 7. Toggle Customer VIP Status
+   * PUT /api/v1/admin/customers/:id/vip
+   */
+  async updateCustomerVip(
+    id: string,
+    isVip: boolean
+  ): Promise<UpdateCustomerVipResponse> {
+    const res = await apiClient.put<UpdateCustomerVipResponse>(
+      `/admin/customers/${encodeURIComponent(id)}/vip`,
+      { isVip }
     );
     return res.data;
   },

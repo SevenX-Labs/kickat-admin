@@ -11,6 +11,7 @@ export interface CustomerSummary {
   activeCustomersCount: number;
   blockedCustomersCount: number;
   verifiedCustomersCount: number;
+  vipCustomersCount: number;
 }
 
 export interface PaginationMeta {
@@ -33,6 +34,8 @@ export interface AdminCustomerItem {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isBlocked: boolean;
+  isVip: boolean;
+  vipSince: string | null;
   ordersCount: number;
   petsCount: number;
   addressesCount: number;
@@ -96,6 +99,8 @@ export interface AdminCustomerDetail {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isBlocked: boolean;
+  isVip: boolean;
+  vipSince: string | null;
   stats: CustomerStats;
   addresses: CustomerAddressItem[];
   pets: CustomerPetItem[];
@@ -157,6 +162,7 @@ export interface AdminCustomersQueryParams {
   isEmailVerified?: boolean;
   isPhoneVerified?: boolean;
   isProfileComplete?: boolean;
+  isVip?: boolean;
   dateFrom?: string;
   dateTo?: string;
   sort?: AdminCustomerSortType | string;
@@ -180,6 +186,20 @@ export interface UpdateCustomerStatusResponse {
     id: string;
     name: string;
     isBlocked: boolean;
+    updatedAt: string;
+  };
+}
+
+export interface UpdateCustomerVipResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    isVip: boolean;
+    vipSince: string | null;
     updatedAt: string;
   };
 }
