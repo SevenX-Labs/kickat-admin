@@ -75,6 +75,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [vipTogglingIds, setVipTogglingIds] = useState<Set<string>>(new Set());
 
   // Floating scroll-to-top state
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -180,21 +181,69 @@ export default function CustomersPage() {
     }
   };
 
-  // Toggle VIP Status handler
+  // Toggle VIP Status handler with instant optimistic UI update
   const handleToggleVip = async (c: AdminCustomerItem) => {
+    if (vipTogglingIds.has(c.id)) return;
+
+    const nextVip = !c.isVip;
+    const originalItem = c;
+    const optimisticVipSince = nextVip ? (c.vipSince || new Date().toISOString()) : null;
+
+    // 1. Instantly reflect on customer row and badge (0ms delay)
+    setCustomers((prev) =>
+      prev.map((item) =>
+        item.id === c.id
+          ? {
+              ...item,
+              isVip: nextVip,
+              vipSince: optimisticVipSince,
+            }
+          : item
+      )
+    );
+
+    // 2. Instantly update VIP summary count
+    setSummary((prev) => ({
+      ...prev,
+      vipCustomersCount: Math.max(0, (prev.vipCustomersCount || 0) + (nextVip ? 1 : -1)),
+    }));
+
+    // 3. Immediately show notification toast
+    showToast(
+      nextVip
+        ? `Customer "${c.name}" marked as VIP member.`
+        : `Customer "${c.name}" VIP status removed.`
+    );
+
+    // 4. Mark customer id as syncing
+    setVipTogglingIds((prev) => new Set(prev).add(c.id));
+
     try {
-      const nextVip = !c.isVip;
       const res = await AdminCustomerService.updateCustomerVip(c.id, nextVip);
-      showToast(
-        res.message ||
-        (nextVip
-          ? `Customer "${c.name}" marked as VIP member.`
-          : `Customer "${c.name}" VIP status removed.`)
-      );
-      fetchCustomers();
+      if (res.data?.vipSince) {
+        setCustomers((prev) =>
+          prev.map((item) =>
+            item.id === c.id ? { ...item, vipSince: res.data.vipSince } : item
+          )
+        );
+      }
     } catch (err: any) {
+      // Revert optimistic update on failure
+      setCustomers((prev) =>
+        prev.map((item) => (item.id === c.id ? originalItem : item))
+      );
+      setSummary((prev) => ({
+        ...prev,
+        vipCustomersCount: Math.max(0, (prev.vipCustomersCount || 0) + (nextVip ? -1 : 1)),
+      }));
       const msg = AdminCustomerService.extractErrorMessage(err, "Failed to update VIP status.");
       showToast(msg);
+    } finally {
+      setVipTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(c.id);
+        return next;
+      });
     }
   };
 
@@ -847,14 +896,19 @@ export default function CustomersPage() {
 
                             <button
                               onClick={() => handleToggleVip(c)}
-                              className={`p-1.5 rounded-xl border transition cursor-pointer ${
+                              disabled={vipTogglingIds.has(c.id)}
+                              className={`p-1.5 rounded-xl border transition cursor-pointer disabled:opacity-60 ${
                                 c.isVip
                                   ? "bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100 shadow-xs"
                                   : "bg-slate-50 border-slate-200 text-slate-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50/50"
                               }`}
                               title={c.isVip ? "Remove VIP Status" : "Mark as VIP"}
                             >
-                              <Crown className={`h-4 w-4 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                              {vipTogglingIds.has(c.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                              ) : (
+                                <Crown className={`h-4 w-4 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                              )}
                             </button>
 
                             <button
@@ -973,14 +1027,19 @@ export default function CustomersPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleVip(c)}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                        disabled={vipTogglingIds.has(c.id)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-60 ${
                           c.isVip
                             ? "bg-amber-50 text-amber-800 border border-amber-300"
                             : "bg-slate-50 text-slate-600 border border-slate-200 hover:text-amber-600"
                         }`}
                         title={c.isVip ? "Remove VIP Status" : "Mark as VIP"}
                       >
-                        <Crown className={`h-3 w-3 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                        {vipTogglingIds.has(c.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
+                        ) : (
+                          <Crown className={`h-3 w-3 ${c.isVip ? "fill-amber-400 text-amber-500" : ""}`} />
+                        )}
                         <span>{c.isVip ? "VIP" : "Make VIP"}</span>
                       </button>
 

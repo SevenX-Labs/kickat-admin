@@ -126,29 +126,43 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Toggle customer VIP status
+  // Toggle customer VIP status (instant optimistic update)
   const handleVipToggle = async () => {
-    if (!customer) return;
+    if (!customer || vipActionLoading) return;
+    const previousCustomer = customer;
+    const nextVip = !customer.isVip;
+    const optimisticVipSince = nextVip ? (customer.vipSince || new Date().toISOString()) : null;
+
+    // 1. Immediately reflect in UI (0ms latency)
+    setCustomer((prev) =>
+      prev
+        ? {
+            ...prev,
+            isVip: nextVip,
+            vipSince: optimisticVipSince,
+          }
+        : null
+    );
+
+    // 2. Instant feedback toast
+    showToast(
+      nextVip
+        ? "Customer marked as VIP member."
+        : "Customer VIP status removed."
+    );
+
+    // 3. Sync with backend API
     setVipActionLoading(true);
     try {
-      const nextVip = !customer.isVip;
       const res = await AdminCustomerService.updateCustomerVip(customer.id, nextVip);
-      setCustomer((prev) =>
-        prev
-          ? {
-              ...prev,
-              isVip: nextVip,
-              vipSince: nextVip ? (prev.vipSince || new Date().toISOString()) : null,
-            }
-          : null
-      );
-      showToast(
-        res.message ||
-        (nextVip
-          ? "Customer marked as VIP member."
-          : "Customer VIP status removed.")
-      );
+      if (res.data?.vipSince) {
+        setCustomer((prev) =>
+          prev ? { ...prev, vipSince: res.data.vipSince } : null
+        );
+      }
     } catch (err: any) {
+      // Revert optimistic update on failure
+      setCustomer(previousCustomer);
       const msg = AdminCustomerService.extractErrorMessage(err, "Failed to update VIP status.");
       showToast(msg);
     } finally {
