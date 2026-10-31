@@ -154,7 +154,7 @@ export const UpdateOrderStatusModal: React.FC<UpdateOrderStatusModalProps> = ({
                 list="courier-list"
                 value={courierPartner}
                 onChange={(e) => setCourierPartner(e.target.value)}
-                placeholder="e.g. Delhivery, Shiprocket"
+                placeholder="e.g. Ekart Logistics"
                 className="w-full rounded-xl bg-[#F8F5F1] border border-slate-200/80 px-3 py-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-orange-500/20"
               />
               <datalist id="courier-list">

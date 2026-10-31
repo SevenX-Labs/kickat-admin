@@ -306,7 +306,7 @@ export const AdminShippingService = {
         const ord = orderRes.data?.data;
         if (ord) {
           const baseCreated = new Date(ord.createdAt).getTime();
-          const courier = ord.courierPartner || "Delhivery";
+          const courier = ord.courierPartner || "Ekart Logistics";
           const awb = ord.trackingNumber || `DLH-${ord.orderNumber.replace(/[^0-9]/g, "").slice(0, 10) || "8827162541"}`;
 
           return {

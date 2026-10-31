@@ -125,7 +125,7 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
   const trackingUrl =
     detail?.trackingUrl ||
     shipment.trackingUrl ||
-    (awb ? `https://www.delhivery.com/track/package/${awb}` : "");
+    (awb ? `https://app.elite.ekartlogistics.in/track/${awb}` : "");
 
   const getStatusBadge = (st: ShipmentStatus) => {
     switch (st) {
@@ -251,7 +251,7 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
                 className="h-10 px-3 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-800 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <ExternalLink className="h-3.5 w-3.5 text-orange-700" />
-                <span>Delhivery Portal</span>
+                <span>Ekart Logistics Portal</span>
               </a>
             ) : (
               <button

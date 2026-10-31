@@ -1072,7 +1072,7 @@ export default function SettingsPage() {
                     disabled={!deliveryFeeEnabled}
                     value={courierDefault}
                     onChange={(e) => setCourierDefault(e.target.value)}
-                    placeholder="Delhivery"
+                    placeholder="Ekart Logistics"
                     className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-800 disabled:opacity-50"
                   />
                 </div>

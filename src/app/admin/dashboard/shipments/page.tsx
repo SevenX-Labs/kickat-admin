@@ -296,7 +296,7 @@ export default function ShipmentsPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Delhivery & Shiprocket fulfillment portal, live AWB tracking, courier assignments & packing slips
+            Ekart Logistics fulfillment portal, live AWB tracking, courier assignments & packing slips
           </p>
         </div>
 
@@ -813,7 +813,7 @@ export default function ShipmentsPage() {
             const currentOrderId = shp.orderId || shp.id;
             const trackingUrl =
               shp.trackingUrl ||
-              (shp.awbNumber ? `https://www.delhivery.com/track/package/${shp.awbNumber}` : "");
+              (shp.awbNumber ? `https://app.elite.ekartlogistics.in/track/${shp.awbNumber}` : "");
 
             return (
               <div key={shp.id} className="clay-card p-4 space-y-3 min-w-0">
@@ -987,7 +987,7 @@ export default function ShipmentsPage() {
                   const currentOrderId = shp.orderId || shp.id;
                   const currentTrackingUrl =
                     shp.trackingUrl ||
-                    (shp.awbNumber ? `https://www.delhivery.com/track/package/${shp.awbNumber}` : "");
+                    (shp.awbNumber ? `https://app.elite.ekartlogistics.in/track/${shp.awbNumber}` : "");
 
                   return (
                     <tr

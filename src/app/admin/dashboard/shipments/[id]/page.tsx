@@ -90,7 +90,7 @@ export default function ShipmentDetailPage({
 
   // Fulfillment Form States
   const [assignForm, setAssignForm] = useState<AssignCourierPayload>({
-    courierPartner: "Delhivery",
+    courierPartner: "Ekart Logistics",
     awbNumber: "",
     estimatedDelivery: "",
     pickupLocation: "Kickat Central Warehouse, Mumbai",
@@ -146,7 +146,7 @@ export default function ShipmentDetailPage({
 
         // Prepopulate Assign Form
         setAssignForm({
-          courierPartner: shp.courierPartner && shp.courierPartner !== "Unassigned" ? shp.courierPartner : "Delhivery",
+          courierPartner: shp.courierPartner && shp.courierPartner !== "Unassigned" ? shp.courierPartner : "Ekart Logistics",
           awbNumber: shp.awbNumber || "",
           estimatedDelivery: shp.estimatedDelivery ? new Date(shp.estimatedDelivery).toISOString().slice(0, 10) : new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
           pickupLocation: shp.pickupLocation || "Kickat Central Warehouse, Mumbai",
@@ -324,7 +324,7 @@ export default function ShipmentDetailPage({
   const hasAwb = !!shipment.awbNumber;
   const trackingUrl =
     shipment.trackingUrl ||
-    (shipment.awbNumber ? `https://www.delhivery.com/track/package/${shipment.awbNumber}` : "");
+    (shipment.awbNumber ? `https://app.elite.ekartlogistics.in/track/${shipment.awbNumber}` : "");
 
   return (
     <div className="flex flex-col gap-5 sm:gap-6 pb-16 w-full min-w-0 animate-fade-in">
@@ -433,7 +433,7 @@ export default function ShipmentDetailPage({
             <span>Print Packing Slip</span>
           </button>
 
-          {/* 3. Track on Delhivery (or courier portal) */}
+          {/* 3. Track on Ekart Logistics Portal */}
           {trackingUrl ? (
             <a
               href={trackingUrl}
@@ -1064,7 +1064,7 @@ export default function ShipmentDetailPage({
               <span>KickAt Logistics Guarantee</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              All dispatches are insured with Delhivery and Shiprocket transit coverage. Tracking updates sync every 15 minutes.
+              All dispatches are insured with Ekart Logistics transit coverage. Tracking updates sync every 15 minutes.
             </p>
           </div>
         </div>

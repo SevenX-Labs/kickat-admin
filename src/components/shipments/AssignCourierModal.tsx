@@ -39,7 +39,7 @@ export const AssignCourierModal: React.FC<AssignCourierModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [courierPartner, setCourierPartner] = useState("Delhivery");
+  const [courierPartner, setCourierPartner] = useState("Ekart Logistics");
   const [awbNumber, setAwbNumber] = useState("");
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
   const [pickupLocation, setPickupLocation] = useState(
@@ -51,7 +51,7 @@ export const AssignCourierModal: React.FC<AssignCourierModalProps> = ({
 
   useEffect(() => {
     if (isOpen && shipment) {
-      setCourierPartner(shipment.courierPartner && shipment.courierPartner !== "Unassigned" ? shipment.courierPartner : "Delhivery");
+      setCourierPartner(shipment.courierPartner && shipment.courierPartner !== "Unassigned" ? shipment.courierPartner : "Ekart Logistics");
       setAwbNumber(shipment.awbNumber || "");
       if (shipment.estimatedDelivery) {
         setEstimatedDelivery(
