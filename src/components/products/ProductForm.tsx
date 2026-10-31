@@ -25,6 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
   Settings,
+  RefreshCw,
 } from "lucide-react";
 
 import {
@@ -165,6 +166,8 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
       : "single"
   );
   const [price, setPrice] = useState<number | "">(initialProduct?.price ?? "");
+  const [sku, setSku] = useState(initialProduct?.sku || "");
+  const [isSkuCustomized, setIsSkuCustomized] = useState(Boolean(initialProduct?.sku));
   const [discountPrice, setDiscountPrice] = useState<number | "" | null>(
     initialProduct?.discountPrice ?? ""
   );
@@ -363,6 +366,14 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
     if (!isSlugManual && mode === "create") {
       setSlug(slugify(val));
     }
+    if (!isSkuCustomized && mode === "create") {
+      setSku(val.trim() ? generateProductSku(val, "") : "");
+    }
+  };
+
+  const handleRegenerateSku = () => {
+    setIsSkuCustomized(false);
+    setSku(name.trim() ? generateProductSku(name, "") : "");
   };
 
   const handleCategoryChange = (newCatId: string, newCat?: AdminCategoryItem) => {
@@ -924,6 +935,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           faqs: validFaqs,
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
+          sku: !hasOptions ? (sku.trim() || null) : null,
           ...(hasOptions ? { variants: variantsPayload } : { variants: [] }),
         };
 
@@ -966,6 +978,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
           faqs: validFaqs,
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
+          sku: !hasOptions ? (sku.trim() || null) : null,
           variants: variantsPayload,
         };
 
@@ -1422,7 +1435,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Original Price */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-700">
@@ -1526,6 +1539,37 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
                         {errors.stock}
                       </p>
                     )}
+                  </div>
+
+                  {/* SKU / Product Code */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-700">
+                        SKU / Product Code
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRegenerateSku}
+                        title="Auto-generate SKU based on product name"
+                        className="text-[11px] font-semibold text-[#FF7A00] hover:text-[#e06c00] flex items-center gap-1 transition-colors"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Auto</span>
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={sku}
+                      onChange={(e) => {
+                        setIsSkuCustomized(true);
+                        setSku(e.target.value.toUpperCase());
+                      }}
+                      placeholder={name ? generateProductSku(name, "") : "e.g. KKT-DOG-CHEW"}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono text-slate-800 placeholder-slate-400 outline-none focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15 transition uppercase"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Auto-generated or enter custom.
+                    </p>
                   </div>
                 </div>
               </div>

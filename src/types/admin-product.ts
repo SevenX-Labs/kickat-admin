@@ -107,6 +107,7 @@ export interface AdminProductItem {
   id: string;
   name: string;
   slug: string;
+  sku?: string | null;
   descriptionTitle?: string | null;
   description?: string | null;
   materials?: string | null;
@@ -200,6 +201,7 @@ export interface ProductListParams {
 export interface CreateProductDto {
   name: string;
   slug?: string;
+  sku?: string | null;
   descriptionTitle?: string | null;
   description?: string | null;
   materials?: string | null;

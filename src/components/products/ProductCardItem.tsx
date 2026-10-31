@@ -77,7 +77,7 @@ export function ProductCardItem({
   const displayStock = activeVariant ? activeVariant.stock : product.stock;
 
   // Compute displayed SKU
-  const displaySku = activeVariant?.sku || product.slug || product.id.slice(0, 8);
+  const displaySku = activeVariant?.sku || product.sku || product.slug || product.id.slice(0, 8);
 
   return (
     <div
