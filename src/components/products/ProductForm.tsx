@@ -26,6 +26,7 @@ import {
   ChevronUp,
   Settings,
   RefreshCw,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -70,6 +71,17 @@ const PET_SPECIES_OPTIONS: Array<{ id: PetSpecies; label: string; icon: React.Co
   { id: "CAT", label: "Cat", icon: Cat },
   { id: "BIRD", label: "Bird", icon: Bird },
   { id: "FISH", label: "Fish", icon: Fish },
+];
+
+const PRESET_SAFETY_BADGES = [
+  "BPA & Phthalate Free",
+  "Non-Toxic Compounds",
+  "Lab Quality Tested",
+  "100% Food-Grade",
+  "Hypoallergenic",
+  "Eco-Friendly & Recyclable",
+  "Bite & Tear Resistant",
+  "Rust-Proof & Waterproof",
 ];
 
 export function ProductForm({ mode, initialProduct }: ProductFormProps) {
@@ -222,6 +234,11 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
   );
   const [description, setDescription] = useState(initialProduct?.description || "");
   const [materials, setMaterials] = useState(initialProduct?.materials || "");
+  const [safetyBadges, setSafetyBadges] = useState<string[]>(
+    initialProduct?.attributes?.safetyBadges || []
+  );
+  const [customBadgeInput, setCustomBadgeInput] = useState("");
+  const [showMaterialsPreview, setShowMaterialsPreview] = useState(false);
   const [highlights, setHighlights] = useState<ProductHighlight[]>(
     initialProduct?.highlights || []
   );
@@ -866,6 +883,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
         ...(dimensions ? { dimensions } : {}),
         ...(countryOfOrigin ? { countryOfOrigin } : {}),
         ...(customSpecs.length > 0 ? { custom: customSpecs } : {}),
+        ...(safetyBadges.length > 0 ? { safetyBadges } : {}),
       };
 
       // Build structured ingredients
@@ -1884,17 +1902,213 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
               </div>
 
               {/* Materials & Safety */}
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">
-                  Materials & Safety
-                </label>
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[#FF7A00]" />
+                    <label className="text-xs font-bold text-slate-800">
+                      Materials &amp; Safety Description
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const bulletPrefix = materials && !materials.endsWith("\n") ? "\n• " : "• ";
+                        setMaterials((prev) => prev + bulletPrefix);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:border-[#FF7A00] transition shadow-2xs cursor-pointer"
+                    >
+                      <Plus className="h-3 w-3 text-[#FF7A00]" />
+                      Add Bullet (•)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMaterialsPreview(!showMaterialsPreview)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border cursor-pointer ${
+                        showMaterialsPreview
+                          ? "bg-orange-50 border-orange-300 text-orange-700"
+                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {showMaterialsPreview ? "Hide Preview" : "Live Preview"}
+                    </button>
+                  </div>
+                </div>
+
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={materials}
                   onChange={(e) => setMaterials(e.target.value)}
-                  placeholder="e.g., 100% natural food-grade rubber. Free from BPA, phthalates, and harsh chemical compounds."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15 leading-relaxed"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const target = e.currentTarget;
+                      const val = target.value;
+                      const selectionStart = target.selectionStart;
+                      const currentLine = val.substring(0, selectionStart).split("\n").pop() || "";
+                      const bulletMatch = currentLine.match(/^([-*•–—]\s+|\d+[\.\)]\s+)/);
+                      if (bulletMatch) {
+                        e.preventDefault();
+                        const prefix = bulletMatch[0];
+                        if (currentLine.trim() === prefix.trim()) {
+                          const beforeLine = val.substring(0, selectionStart - currentLine.length);
+                          const afterLine = val.substring(selectionStart);
+                          setMaterials(beforeLine + afterLine);
+                          return;
+                        }
+                        const before = val.substring(0, selectionStart);
+                        const after = val.substring(selectionStart);
+                        setMaterials(before + "\n" + prefix + after);
+                        setTimeout(() => {
+                          target.selectionStart = target.selectionEnd = selectionStart + 1 + prefix.length;
+                        }, 0);
+                      }
+                    }
+                  }}
+                  placeholder="e.g.:&#10;Made from premium durable material.&#10;• 100% natural and pet-safe&#10;• Non-toxic paints and food-grade safe&#10;• Designed for daily active play"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/15 leading-relaxed font-normal"
                 />
+
+                <p className="text-[11px] text-slate-500">
+                  Tip: Start lines with <span className="font-semibold text-slate-700">•</span> or <span className="font-semibold text-slate-700">-</span>. Pressing Enter will automatically add the next bullet. On customer pages, bullets render as formatted pet-safe badges and checkmarks.
+                </p>
+
+                {/* Live Preview Box */}
+                {showMaterialsPreview && (
+                  <div className="p-3.5 rounded-xl bg-white border border-orange-200/70 shadow-2xs space-y-2">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-orange-600 block">
+                      Storefront Preview
+                    </span>
+                    {materials.trim() ? (
+                      <div className="space-y-2">
+                        {materials
+                          .split(/\r?\n/)
+                          .map((l) => l.trim())
+                          .filter(Boolean)
+                          .map((line, idx) => {
+                            const isBullet = /^[-*•–—]\s+|\d+[\.\)]\s+/.test(line);
+                            const text = isBullet
+                              ? line.replace(/^[-*•–—]\s+|\d+[\.\)]\s+/, "")
+                              : line;
+                            return isBullet ? (
+                              <div key={idx} className="flex items-start gap-2 text-xs text-slate-700">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                                <span>{text}</span>
+                              </div>
+                            ) : (
+                              <p key={idx} className="text-xs text-slate-600">
+                                {text}
+                              </p>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">Enter text above to preview formatting.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Safety Badges Selector */}
+                <div className="pt-3 border-t border-slate-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">
+                      Safety Certification Badges
+                    </label>
+                    <span className="text-[11px] text-slate-400 font-semibold">
+                      {safetyBadges.length} selected
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Click pills to toggle genuine certifications shown on the customer storefront.
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {PRESET_SAFETY_BADGES.map((badge) => {
+                      const isSelected = safetyBadges.includes(badge);
+                      return (
+                        <button
+                          key={badge}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSafetyBadges(safetyBadges.filter((b) => b !== badge));
+                            } else {
+                              setSafetyBadges([...safetyBadges, badge]);
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                            isSelected
+                              ? "bg-emerald-50 border border-emerald-300 text-emerald-800 shadow-2xs"
+                              : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                          }`}
+                        >
+                          <CheckCircle2
+                            className={`h-3.5 w-3.5 ${
+                              isSelected ? "text-emerald-600" : "text-slate-300"
+                            }`}
+                          />
+                          <span>{badge}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Custom badges */}
+                    {safetyBadges
+                      .filter((b) => !PRESET_SAFETY_BADGES.includes(b))
+                      .map((badge) => (
+                        <span
+                          key={badge}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-800 shadow-2xs"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>{badge}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSafetyBadges(safetyBadges.filter((b) => b !== badge))}
+                            className="ml-0.5 text-emerald-700 hover:text-rose-600 cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                  </div>
+
+                  {/* Add Custom Badge Input */}
+                  <div className="flex items-center gap-2 pt-1 max-w-sm">
+                    <input
+                      type="text"
+                      value={customBadgeInput}
+                      onChange={(e) => setCustomBadgeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && customBadgeInput.trim()) {
+                          e.preventDefault();
+                          const val = customBadgeInput.trim();
+                          if (!safetyBadges.includes(val)) {
+                            setSafetyBadges([...safetyBadges, val]);
+                          }
+                          setCustomBadgeInput("");
+                        }
+                      }}
+                      placeholder="+ Custom badge (e.g. Lead-Free)"
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#FF7A00] focus:ring-1 focus:ring-[#FF7A00]/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customBadgeInput.trim()) {
+                          const val = customBadgeInput.trim();
+                          if (!safetyBadges.includes(val)) {
+                            setSafetyBadges([...safetyBadges, val]);
+                          }
+                          setCustomBadgeInput("");
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 transition cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Highlights Editor */}
@@ -2677,6 +2891,7 @@ export function ProductForm({ mode, initialProduct }: ProductFormProps) {
             descriptionTitle={descriptionTitle}
             description={description}
             materials={materials}
+            safetyBadges={safetyBadges}
             highlights={highlights}
             additionalInfoCount={additionalInfoCount}
             onEditStep={(s) => setCurrentStep(s)}

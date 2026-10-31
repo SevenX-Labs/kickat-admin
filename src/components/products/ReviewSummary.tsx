@@ -38,6 +38,7 @@ export interface ReviewSummaryProps {
   descriptionTitle: string;
   description: string;
   materials: string;
+  safetyBadges?: string[];
   highlights: ProductHighlight[];
   additionalInfoCount: number;
   onEditStep: (step: number) => void;
@@ -64,6 +65,7 @@ export function ReviewSummary({
   descriptionTitle,
   description,
   materials,
+  safetyBadges,
   highlights,
   additionalInfoCount,
   onEditStep,
@@ -339,10 +341,25 @@ export function ReviewSummary({
             </div>
           )}
 
-          {materials && (
+          {(materials || (safetyBadges && safetyBadges.length > 0)) && (
             <div>
-              <span className="text-[11px] text-slate-400 font-medium block">Materials & Safety</span>
-              <p className="text-xs text-slate-600 line-clamp-1">{materials}</p>
+              <span className="text-[11px] text-slate-400 font-medium block mb-0.5">Materials & Safety</span>
+              {materials && (
+                <p className="text-xs text-slate-600 line-clamp-2 whitespace-pre-line leading-relaxed">{materials}</p>
+              )}
+              {safetyBadges && safetyBadges.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {safetyBadges.map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700"
+                    >
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

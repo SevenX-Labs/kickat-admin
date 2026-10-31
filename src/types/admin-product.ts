@@ -27,6 +27,7 @@ export interface ProductAttributes {
   colors?: string[];
   countryOfOrigin?: string;
   dimensions?: string;
+  safetyBadges?: string[];
   custom?: CustomProductAttribute[];
 }
 
