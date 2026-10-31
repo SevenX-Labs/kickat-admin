@@ -1,3 +1,14 @@
+function getFallbackTrackingUrl(courier?: string | null, awb?: string | null): string {
+  if (!awb) return "";
+  const c = String(courier || "").toLowerCase();
+  if (c.includes("ekart")) return `https://app.elite.ekartlogistics.in/track/${awb}`;
+  if (c.includes("delhivery")) return `https://www.delhivery.com/track/package/${awb}`;
+  if (c.includes("shiprocket")) return `https://shiprocket.co/tracking/${awb}`;
+  if (c.includes("bluedart") || c.includes("blue dart")) return "https://www.bluedart.com/tracking";
+  if (c.includes("dtdc")) return "https://www.dtdc.in/tracking.asp";
+  return `https://app.elite.ekartlogistics.in/track/${awb}`;
+}
+
 // services/adminShippingService.ts
 import { AxiosError } from "axios";
 import { apiClient } from "./api";
@@ -101,10 +112,7 @@ export const AdminShippingService = {
           ? ord.items.map((i: any) => `${i.productName} x${i.quantity}`).join(", ")
           : "Fulfillment Package"),
       trackingUrl:
-        ord.trackingUrl ||
-        (ord.trackingNumber
-          ? `https://www.delhivery.com/track/package/${ord.trackingNumber}`
-          : ""),
+        ord.trackingUrl || getFallbackTrackingUrl(ord.courierPartner, ord.trackingNumber),
       createdAt: ord.createdAt,
       updatedAt: ord.updatedAt,
     }));
@@ -154,10 +162,7 @@ export const AdminShippingService = {
           estimatedDelivery: item.estimatedDelivery || null,
           isRTO: item.isRTO ?? (item.status === "RETURN_INITIATED" || item.status === "RETURNED"),
           trackingUrl:
-            item.trackingUrl ||
-            (item.awbNumber || item.trackingNumber
-              ? `https://www.delhivery.com/track/package/${item.awbNumber || item.trackingNumber}`
-              : ""),
+            item.trackingUrl || getFallbackTrackingUrl(item.courierPartner, item.awbNumber || item.trackingNumber),
           customer: {
             id: item.customer?.id,
             name: item.customer?.name || "Customer",
@@ -229,9 +234,7 @@ export const AdminShippingService = {
             awbNumber: ord.trackingNumber || null,
             estimatedDelivery: ord.estimatedDelivery || ord.deliveryDate || null,
             isRTO: ord.status === "RETURN_INITIATED" || ord.status === "RETURNED" || !!ord.hasReturns,
-            trackingUrl: ord.trackingNumber
-              ? `https://www.delhivery.com/track/package/${ord.trackingNumber}`
-              : "",
+            trackingUrl: getFallbackTrackingUrl(ord.courierPartner, ord.trackingNumber),
             customer: {
               id: ord.customer?.id,
               name: ord.customer?.name || "Customer",
@@ -315,7 +318,7 @@ export const AdminShippingService = {
               courierPartner: courier,
               awbNumber: awb,
               status: ord.status || ord.orderStatus || "SHIPPED",
-              trackingUrl: awb ? `https://www.delhivery.com/track/package/${awb}` : "",
+              trackingUrl: getFallbackTrackingUrl(courier, awb),
               origin: "Kickat Central Fulfillment Warehouse, Mumbai",
               destination: [ord.shippingAddress?.city, ord.shippingAddress?.state, ord.shippingAddress?.pincode]
                 .filter(Boolean)
@@ -410,7 +413,7 @@ export const AdminShippingService = {
             courierPartner: payload.courierPartner,
             awbNumber: payload.awbNumber || "ASSIGNED",
             orderStatus: "SHIPPED",
-            trackingUrl: payload.awbNumber ? `https://www.delhivery.com/track/package/${payload.awbNumber}` : "",
+            trackingUrl: getFallbackTrackingUrl(payload.courierPartner, payload.awbNumber),
           },
         };
       }

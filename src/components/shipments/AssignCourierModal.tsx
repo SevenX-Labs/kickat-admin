@@ -23,6 +23,7 @@ interface AssignCourierModalProps {
 }
 
 const COURIER_PRESETS = [
+  "Ekart Logistics",
   "Delhivery",
   "Shiprocket",
   "Blue Dart",

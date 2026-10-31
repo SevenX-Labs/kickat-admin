@@ -44,6 +44,7 @@ import PackingSlipModal from "@/components/orders/PackingSlipModal";
 import OrderInvoiceModal from "@/components/orders/OrderInvoiceModal";
 
 const COURIER_PRESETS = [
+  "Ekart Logistics",
   "Delhivery",
   "Shiprocket",
   "Blue Dart",
